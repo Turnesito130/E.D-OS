@@ -5,9 +5,16 @@
 
 ## Objetivo
 
-Pasar del escritorio visual inicial a una plataforma experimental con funciones verificables. La prioridad es construir una base pequeña, comprensible y segura antes de ampliar el número de aplicaciones o dispositivos compatibles.
+Pasar del escritorio visual inicial a una plataforma experimental con funciones verificables. La prioridad es construir una base pequeña, comprensible y segura antes de ampliar el número de aplicaciones o dispositivos compatibles. El gestor de ventanas de la primera iteración está guardado en código, pero aún necesita pruebas reales.
 
 ## Orden de trabajo
+
+### Fase 0 — Escritorio y experiencia
+- [x] Añadir gestor experimental de ventanas múltiples.
+- [x] Abrir varias aplicaciones en ventanas independientes.
+- [x] Incorporar minimizar, maximizar, restaurar, cerrar y mover ventanas.
+- [ ] Probar ventanas y accesibilidad en navegadores reales y tamaños de pantalla distintos.
+- [ ] Añadir gestión de foco, ciclo de ventanas y persistencia de posición.
 
 ### Fase A — Aplicaciones locales
 - [x] Primera aplicación experimental de Archivos.
