@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f7f8fa">
+<title>Archivos · E.D-OS</title>
+<style>
+:root{color-scheme:light;--ink:#20242b;--muted:#7d8490;--line:#e8eaee;--panel:#fff;--accent:#303741}
+*{box-sizing:border-box}body{margin:0;background:#f5f6f8;color:var(--ink);font:14px Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+header{height:64px;padding:0 clamp(16px,4vw,48px);display:flex;align-items:center;justify-content:space-between;background:#fff;border-bottom:1px solid var(--line)}
+.brand{font-weight:750;font-size:20px;letter-spacing:-.06em}.brand span{font-weight:450;color:#8b929c}
+a{color:inherit;text-decoration:none}.back{font-size:12px;color:#737b86}
+main{max-width:1100px;margin:32px auto;padding:0 18px}.heading{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:20px}.heading h1{font-size:34px;letter-spacing:-.07em;margin:0 0 5px}.heading p{margin:0;color:var(--muted);font-size:12px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.btn{border:1px solid #e1e4e9;background:#fff;border-radius:10px;padding:10px 13px;font-size:12px;cursor:pointer;color:#3f4752}.btn.primary{background:#29313b;color:white;border-color:#29313b}.btn:focus-visible,input:focus-visible{outline:3px solid #cbd5e1;outline-offset:2px}
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:14px}.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}.panel h2{font-size:13px;margin:0 0 12px}.folder{display:flex;align-items:center;width:100%;text-align:left;border:0;background:transparent;border-radius:9px;padding:9px;font-size:12px;cursor:pointer;color:#4f5864}.folder.active{background:#f0f2f5;color:#20242b;font-weight:650}.folder small{margin-left:auto;color:#9aa1ab}.search{width:100%;border:1px solid #e2e5e9;border-radius:10px;padding:10px 12px;font:12px inherit;margin-bottom:12px}.file{display:flex;align-items:center;gap:10px;padding:12px 5px;border-top:1px solid #f0f1f3}.file-icon{width:34px;height:34px;border-radius:10px;background:#f1f3f6;display:grid;place-items:center}.file-info{min-width:0;flex:1}.file-info strong{display:block;font-size:12px;overflow-wrap:anywhere}.file-info small{font-size:10px;color:#969da7}.file-actions{display:flex;gap:5px}.tiny{border:1px solid #e8eaee;background:#fff;border-radius:8px;padding:6px 8px;font-size:10px;cursor:pointer}.empty{padding:32px 10px;text-align:center;color:#9098a3;font-size:12px}.notice{margin-top:14px;padding:12px 14px;background:#fff;border:1px solid var(--line);border-radius:12px;color:#7e8792;font-size:11px;line-height:1.55}.modal{position:fixed;inset:0;background:#20242b55;display:none;align-items:center;justify-content:center;padding:16px}.modal.open{display:flex}.dialog{width:min(460px,100%);background:white;border-radius:16px;padding:20px;box-shadow:0 20px 70px #10182833}.dialog h2{font-size:16px;margin:0 0 14px}.dialog input,.dialog textarea{width:100%;border:1px solid #e1e4e9;border-radius:9px;padding:10px;font:12px inherit;margin:6px 0 12px}.dialog textarea{min-height:150px;resize:vertical}.dialog-actions{display:flex;justify-content:end;gap:8px}.status{font-size:11px;color:#647080;min-height:18px;margin:10px 0}
+@media(max-width:650px){.layout{grid-template-columns:1fr}.heading{align-items:start;flex-direction:column}.file{align-items:flex-start}.file-actions{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<header><div class="brand">E.D-OS <span>/ Archivos</span></div><a class="back" href="../index.html">← Volver al escritorio</a></header>
+<main>
+<div class="heading"><div><h1>Archivos</h1><p>Organiza documentos dentro de este espacio local.</p></div><div id="count" class="back">0 elementos</div></div>
+<div class="toolbar">
+<button class="btn primary" id="newFile">＋ Nuevo archivo</button>
+<button class="btn" id="newFolder">＋ Nueva carpeta</button>
+<button class="btn" id="importFile">Importar texto</button>
+<button class="btn" id="backup">Exportar copia</button>
+<button class="btn" id="restore">Restaurar copia</button>
+<input id="picker" type="file" accept=".txt,.md,.json,.csv,.html,.css,.js" multiple hidden>
+<input id="backupPicker" type="file" accept="application/json,.json" hidden>
+</div>
+<div class="layout">
+<aside class="panel"><h2>Ubicaciones</h2><button class="folder active" data-folder="Todos">▦ Todos los archivos <small id="allCount">0</small></button><div id="folders"></div></aside>
+<section class="panel"><input class="search" id="search" placeholder="Buscar archivos y carpetas…" aria-label="Buscar"><div id="fileList"></div><div class="status" id="status" role="status" aria-live="polite"></div></section>
+</div>
+<div class="notice">Alcance de esta versión: los elementos se guardan en el almacenamiento de este navegador, no en el disco real del ordenador. No se sincronizan con otros dispositivos. Para evitar pérdida de datos, usa «Exportar copia» periódicamente. Solo se importan archivos de texto habituales.</div>
+</main>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><div class="dialog"><h2 id="dialogTitle">Nuevo archivo</h2><label for="itemName">Nombre</label><input id="itemName" maxlength="100"><div id="contentWrap"><label for="itemContent">Contenido</label><textarea id="itemContent" maxlength="500000"></textarea></div><div class="dialog-actions"><button class="btn" id="cancel">Cancelar</button><button class="btn primary" id="save">Guardar</button></div></div></div>
+<script>
+(()=>{
+'use strict';
+const KEY='ed-os-files-v1',FOLDER_KEY='ed-os-folders-v1';
+const $=id=>document.getElementById(id);
+let files=[],folders=[],active='Todos',mode='create',editingId=null;
+const say=m=>{$('status').textContent=m};
+const id=()=>('f-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8));
+function load(){try{const a=JSON.parse(localStorage.getItem(KEY)||'[]');files=Array.isArray(a)?a.filter(x=>x&&typeof x.name==='string'&&typeof x.content==='string'):[]}catch{files=[]}try{const a=JSON.parse(localStorage.getItem(FOLDER_KEY)||'[]');folders=Array.isArray(a)?a.filter(x=>typeof x==='string'&&x!=='Todos'):[]}catch{folders=[]}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(files));localStorage.setItem(FOLDER_KEY,JSON.stringify(folders));return true}catch(e){say('No se pudo guardar. El almacenamiento del navegador puede estar lleno. Exporta una copia o elimina archivos.');return false}}
+function safeName(v){return v.trim().replace(/[\\/:*?"<>|]/g,'-').slice(0,100)}
+function render(){const folderBox=$('folders');folderBox.replaceChildren();folders.forEach(name=>{const b=document.createElement('button');b.className='folder'+(active===name?' active':'');b.dataset.folder=name;b.textContent='📁 '+name;const n=document.createElement('small');n.textContent=files.filter(f=>f.folder===name).length;b.append(n);folderBox.append(b)});document.querySelectorAll('[data-folder]').forEach(b=>b.classList.toggle('active',b.dataset.folder===active));const q=$('search').value.trim().toLowerCase();const shown=files.filter(f=>(active==='Todos'||f.folder===active)&&(!q||(f.name+' '+f.content+' '+f.folder).toLowerCase().includes(q)));$('fileList').replaceChildren();if(!shown.length){const e=document.createElement('div');e.className='empty';e.textContent='No hay archivos aquí todavía.';$('fileList').append(e)}shown.forEach(f=>{const row=document.createElement('div');row.className='file';const ico=document.createElement('div');ico.className='file-icon';ico.textContent='▤';const info=document.createElement('div');info.className='file-info';const title=document.createElement('strong');title.textContent=f.name;const meta=document.createElement('small');meta.textContent=(f.folder||'Todos')+' · '+new Date(f.updated||Date.now()).toLocaleDateString('es-ES');info.append(title,meta);const actions=document.createElement('div');actions.className='file-actions';[['Abrir',()=>edit(f.id)],['Descargar',()=>download(f)],['Renombrar',()=>rename(f)],['Eliminar',()=>remove(f)]].forEach(([label,fn])=>{const b=document.createElement('button');b.className='tiny';b.textContent=label;b.addEventListener('click',fn);actions.append(b)});row.append(ico,info,actions);$('fileList').append(row)});$('count').textContent=shown.length+' elementos';$('allCount').textContent=files.length}
+function showDialog(title,name='',content='',showContent=true){$('dialogTitle').textContent=title;$('itemName').value=name;$('itemContent').value=content;$('contentWrap').hidden=!showContent;$('modal').classList.add('open');$('itemName').focus()}
+function closeDialog(){$('modal').classList.remove('open')}
+function edit(fileId){const f=files.find(x=>x.id===fileId);if(!f)return;mode='edit';editingId=fileId;showDialog('Editar archivo',f.name,f.content)}
+function rename(f){mode='rename';editingId=f.id;showDialog('Renombrar archivo',f.name,'',false)}
+function remove(f){if(!confirm('¿Eliminar «'+f.name+'» de este espacio local?'))return;files=files.filter(x=>x.id!==f.id);if(persist())render()}
+function download(f){const blob=new Blob([f.content],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=f.name;a.click();URL.revokeObjectURL(url)}
+$('newFile').addEventListener('click',()=>{mode='create';editingId=null;showDialog('Nuevo archivo','','')});
+$('newFolder').addEventListener('click',()=>{const name=safeName(prompt('Nombre de la carpeta:')||'');if(!name)return;if(folders.some(x=>x.toLowerCase()===name.toLowerCase()))return say('Ya existe una carpeta con ese nombre.');folders.push(name);if(persist())render()});
+$('save').addEventListener('click',()=>{const name=safeName($('itemName').value);if(!name)return say('Escribe un nombre válido.');if(mode==='rename'){const f=files.find(x=>x.id===editingId);if(f)f.name=name}else if(mode==='edit'){const f=files.find(x=>x.id===editingId);if(f){f.name=name;f.content=$('itemContent').value;f.updated=Date.now()}}else{files.push({id:id(),name,content:$('itemContent').value,folder:active==='Todos'?'':active,updated:Date.now()})}if(persist()){closeDialog();render();say('Cambios guardados en este navegador.')}});
+$('cancel').addEventListener('click',closeDialog);$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeDialog()});
+$('fileList').addEventListener('click',()=>{});$('folders').addEventListener('click',e=>{const b=e.target.closest('[data-folder]');if(b){active=b.dataset.folder;render()}});document.querySelector('[data-folder="Todos"]').addEventListener('click',()=>{active='Todos';render()});$('search').addEventListener('input',render);
+$('importFile').addEventListener('click',()=>$('picker').click());$('picker').addEventListener('change',async e=>{for(const file of [...e.target.files]){if(file.size>500000){say(file.name+' supera el límite de 500 KB.');continue}try{const content=await file.text();files.push({id:id(),name:safeName(file.name),content,folder:active==='Todos'?'':active,updated:Date.now()})}catch{say('No se pudo leer '+file.name)}}if(persist())render();e.target.value=''});
+$('backup').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({format:'ed-os-files-v1',files,folders},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='ed-os-copia-archivos.json';a.click();URL.revokeObjectURL(url);say('Copia exportada. Guárdala en un lugar seguro.')});
+$('restore').addEventListener('click',()=>$('backupPicker').click());$('backupPicker').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(data.format!=='ed-os-files-v1'||!Array.isArray(data.files)||!Array.isArray(data.folders))throw Error();if(!confirm('La restauración sustituirá los archivos y carpetas actuales. ¿Continuar?'))return;files=data.files.filter(x=>x&&typeof x.name==='string'&&typeof x.content==='string');folders=data.folders.filter(x=>typeof x==='string');if(persist()){active='Todos';render();say('Copia restaurada.')}}catch{say('La copia no tiene un formato válido.')}e.target.value=''});
+load();render();
+})();
+</script>
+</body>
+</html>
