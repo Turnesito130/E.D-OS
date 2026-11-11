@@ -6,6 +6,7 @@ Proyecto experimental para construir, por etapas, un sistema operativo y ecosist
 
 - Escritorio web experimental en `index.html`, con gestor de ventanas múltiples en `js/window-manager.js`, búsqueda local y centro de notificaciones en `js/system-tools.js` (pendiente de pruebas reales).
 - Aplicación experimental de archivos locales en `apps/archivos.html`.
+- Interfaz inicial de E.D. Freedom en `js/freedom.js`: búsquedas web externas y apertura de enlaces HTTP/HTTPS; no evita restricciones del navegador ni instala aplicaciones.
 - Aplicación de preferencias locales en `apps/ajustes.html` (tema, tamaño de texto, movimiento y reloj).
 - Prueba WebRTC de conexión directa en `connect.html`; todavía no verificada entre dos dispositivos reales.
 - Arquitectura inicial y hoja de ruta en `docs/`.
