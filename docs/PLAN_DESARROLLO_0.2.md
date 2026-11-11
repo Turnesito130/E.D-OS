@@ -17,6 +17,13 @@ Pasar del escritorio visual inicial a una plataforma experimental con funciones 
 - [ ] Añadir gestión de foco, ciclo de ventanas y persistencia de posición.
 
 ### Fase A — Aplicaciones locales
+- [x] Primera interfaz de E.D. Freedom para búsquedas web mediante buscadores externos.
+- [x] Abrir enlaces HTTP/HTTPS para que el navegador gestione la descarga o visualización.
+- [ ] Validar fuentes, seguridad de descargas y compatibilidad en un entorno instalable.
+- [ ] Crear gestor de descargas con historial y permisos en la plataforma nativa.
+- [ ] Diseñar catálogo e instalación de aplicaciones verificadas.
+
+**Límite de E.D. Freedom 0.1:** es una interfaz que delega las búsquedas a buscadores externos y abre enlaces en el navegador. No elimina bloqueos de ChromeOS, no descarga en segundo plano, no inspecciona archivos, no instala software y no concede permisos del sistema.
 - [x] Primera aplicación experimental de Archivos.
 - [ ] Probar creación, edición, importación, descarga y borrado en navegadores reales.
 - [ ] Añadir pruebas de límites de almacenamiento, nombres, errores y recuperación.
