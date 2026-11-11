@@ -57,7 +57,7 @@ function apply(s){const resolved=s.theme==='system'?(matchMedia('(prefers-color-
 function fill(s){$('theme').value=s.theme;$('textSize').value=s.textSize;$('reduceMotion').checked=s.reduceMotion;$('clock24').checked=s.clock24}
 function current(){return valid({theme:$('theme').value,textSize:$('textSize').value,reduceMotion:$('reduceMotion').checked,clock24:$('clock24').checked})}
 let settings=valid(read());fill(settings);apply(settings);
-if(settings.theme==='system')matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>apply(settings));
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(settings.theme==='system')apply(settings)});
 document.querySelectorAll('[data-section]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-section]').forEach(b=>b.classList.toggle('active',b===button));['appearance','behavior','about'].forEach(id=>$(id).hidden=id!==button.dataset.section)}));
 ['theme','textSize','reduceMotion','clock24'].forEach(id=>$(id).addEventListener('change',()=>{const preview=current();apply(preview);$('status').textContent='Vista previa: pulsa «Guardar preferencias» para conservar los cambios.'}));
 $('save').addEventListener('click',()=>{settings=current();try{localStorage.setItem(KEY,JSON.stringify(settings));apply(settings);$('status').textContent='Preferencias guardadas en este navegador.'}catch{$('status').textContent='No se pudieron guardar las preferencias. Comprueba el almacenamiento del navegador.'}});
