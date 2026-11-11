@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f7f8fa">
+<title>E.D-OS · Escritorio 0.1</title>
+<style>
+:root{color-scheme:light;--ink:#20242b;--muted:#7d8490;--line:#e8eaee;--panel:rgba(255,255,255,.84);--shadow:0 12px 40px rgba(34,43,58,.07)}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(ellipse at 70% 35%,#fff 0,#f8f9fb 42%,#f0f2f5 100%);overflow:hidden}
+.top{height:64px;padding:0 34px;display:flex;align-items:center;justify-content:space-between}.brand{font-weight:750;letter-spacing:-.06em;font-size:22px}.version{font-size:11px;color:#a0a6af;letter-spacing:.12em;text-transform:uppercase}
+main{display:grid;grid-template-columns:270px 1fr;gap:22px;padding:20px 30px 105px;height:calc(100vh - 64px)}
+.sidebar{display:flex;flex-direction:column;gap:16px}.panel{background:var(--panel);border:1px solid rgba(226,229,234,.9);border-radius:19px;padding:19px;box-shadow:var(--shadow);backdrop-filter:blur(18px)}.panel h2{font-size:14px;margin:0 0 14px;font-weight:650}.sub{font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:14px}
+.task{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f0f1f3;font-size:12px}.task input{accent-color:#555f70}.task.done span{text-decoration:line-through;color:#a5aab2}.add{border:0;background:#f2f3f5;border-radius:10px;padding:9px 11px;color:#59616d;font-size:11px;cursor:pointer;width:100%;text-align:left;margin-top:8px}
+.device{display:flex;align-items:center;gap:11px;padding:9px 0}.device-icon{width:34px;height:34px;border-radius:11px;background:#f2f3f5;display:grid;place-items:center;font-size:16px}.device strong{display:block;font-size:11px;font-weight:600}.device small{font-size:10px;color:#9aa1ab}.status{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#b9c0c9}
+.workspace{position:relative;border-radius:26px;display:flex;align-items:center;justify-content:center;overflow:hidden}.orb{width:min(38vw,410px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.98),rgba(239,242,246,.54) 48%,rgba(224,228,234,.18) 72%,transparent 73%);filter:drop-shadow(0 24px 55px rgba(70,80,100,.08))}.welcome{position:absolute;top:42%;text-align:center;pointer-events:none}.welcome h1{font-size:clamp(28px,4vw,48px);letter-spacing:-.07em;margin:0;font-weight:650;color:#303640}.welcome p{font-size:12px;color:#a0a6af;margin-top:8px}
+.dock-wrap{position:fixed;bottom:19px;left:0;right:0;display:flex;justify-content:center;pointer-events:none}.dock{pointer-events:auto;display:flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid rgba(224,227,232,.95);background:rgba(255,255,255,.88);backdrop-filter:blur(22px);border-radius:19px;box-shadow:0 12px 40px rgba(34,43,58,.12)}.app{width:42px;height:42px;border:0;border-radius:13px;background:#f3f4f6;color:#555e6b;font-size:17px;cursor:pointer;transition:transform .16s,background .16s}.app:hover{transform:translateY(-4px);background:#e9ebef}.sep{height:28px;width:1px;background:#e6e8ec;margin:0 4px}.ed{width:36px;height:36px;border:1px solid #e2e5e9;border-radius:50%;background:#fff;font-size:11px;font-weight:800;letter-spacing:-.06em;cursor:pointer}.clock{font-variant-numeric:tabular-nums;font-size:12px;color:#626a76;padding:0 7px;min-width:48px}
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:#272d36;color:white;padding:10px 15px;border-radius:12px;font-size:12px;opacity:0;transition:opacity .2s;pointer-events:none}.toast.show{opacity:1}
+@media(max-width:700px){body{overflow:auto}.top{padding:0 18px}main{height:auto;min-height:calc(100vh - 64px);grid-template-columns:1fr;padding:12px 14px 110px}.sidebar{display:grid;grid-template-columns:1fr 1fr;align-items:start}.workspace{min-height:230px;grid-row:1}.orb{width:230px}.welcome{top:43%}.panel{padding:14px}.dock{gap:5px;padding:7px}.app{width:36px;height:36px}.clock{font-size:11px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="brand">E.D-OS</div><div class="version">DESKTOP · 0.1</div></header>
+<main>
+<aside class="sidebar">
+<section class="panel"><h2>Tareas</h2><div class="sub">Tu espacio de organización</div>
+<div id="tasks"><label class="task"><input type="checkbox"><span>Explorar E.D-OS</span></label><label class="task"><input type="checkbox"><span>Organizar mis ideas</span></label></div>
+<button class="add" id="addTask">＋ Añadir tarea</button></section>
+<section class="panel"><h2>Dispositivos</h2><div class="sub">Tu ecosistema conectado</div>
+<div class="device"><div class="device-icon">▣</div><div><strong>Este ordenador</strong><small>Dispositivo actual</small></div><span class="status"></span></div>
+<div class="device"><div class="device-icon">▯</div><div><strong>Añadir dispositivo</strong><small>Conecta otro equipo más adelante</small></div><span class="status"></span></div>
+</section>
+</aside>
+<section class="workspace" aria-label="Espacio de trabajo"><div class="orb"></div><div class="welcome"><h1>Tu espacio.</h1><p>Todo empieza aquí.</p></div></section>
+</main>
+<div class="dock-wrap"><nav class="dock" aria-label="Aplicaciones">
+<button class="app" title="Inicio" data-app="Inicio">⌂</button><button class="app" title="Archivos" data-app="Archivos">▤</button><button class="app" title="Navegador" data-app="Navegador">◎</button><button class="app" title="Ajustes" data-app="Ajustes">⚙</button><span class="sep"></span><button class="ed" id="ed" title="Asistente E.D.">E.D.</button><time class="clock" id="clock">--:--</time>
+</nav></div><div class="toast" id="toast" role="status"></div>
+<script>
+const toast=document.getElementById('toast');let toastTimer;
+function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),1900)}
+document.querySelectorAll('[data-app]').forEach(button=>button.addEventListener('click',()=>notify(button.dataset.app+' estará disponible en una próxima versión.')));
+document.getElementById('ed').addEventListener('click',()=>notify('El asistente E.D. se integrará aquí.'));
+document.getElementById('addTask').addEventListener('click',()=>{const name=prompt('¿Qué tarea quieres añadir?');if(!name||!name.trim())return;const label=document.createElement('label');label.className='task';const input=document.createElement('input');input.type='checkbox';const span=document.createElement('span');span.textContent=name.trim();input.addEventListener('change',()=>label.classList.toggle('done',input.checked));label.append(input,span);document.getElementById('tasks').append(label);});
+document.querySelectorAll('#tasks input').forEach(input=>input.addEventListener('change',()=>input.closest('.task').classList.toggle('done',input.checked)));
+function updateClock(){document.getElementById('clock').textContent=new Intl.DateTimeFormat('es-ES',{hour:'2-digit',minute:'2-digit'}).format(new Date())}updateClock();setInterval(updateClock,15000);
+</script>
+</body></html>
