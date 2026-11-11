@@ -73,7 +73,8 @@
     win.querySelector('.close').addEventListener('click', () => close(name));
     if (window.innerWidth < 620) win.classList.add('mobile-window');
   }
-  document.addEventListener('ed-os:open-app', event => { if (event.detail && typeof event.detail.name === 'string') open(event.detail.name); });\n  document.querySelectorAll('[data-app]').forEach(button => {
+  document.addEventListener('ed-os:open-app', event => { if (event.detail && typeof event.detail.name === 'string') open(event.detail.name); });
+  document.querySelectorAll('[data-app]').forEach(button => {
     button.addEventListener('click', () => open(button.dataset.app));
   });
   document.getElementById('ed')?.addEventListener('click', () => open('Asistente E.D.'));
