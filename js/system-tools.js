@@ -22,7 +22,7 @@
     const q = query.trim().toLocaleLowerCase('es');
     if (!q) return [];
     const entries = [
-      ...['Inicio','Archivos','Navegador','Ajustes','E.D. Connect','Asistente E.D.'].map(name => ({type:'Aplicación',title:name,detail:'Abrir aplicación',action:()=>openApp(name)})),
+      ...['Inicio','Archivos','Navegador','Ajustes','E.D. Connect','Asistente E.D.','E.D. Freedom'].map(name => ({type:'Aplicación',title:name,detail:'Abrir aplicación',action:()=>openApp(name)})),
       ...[...document.querySelectorAll('#tasks .task')].map(row => ({type:'Tarea',title:row.querySelector('span')?.textContent || '',detail:row.querySelector('input')?.checked?'Completada':'Pendiente',action:()=>{row.scrollIntoView({behavior:'smooth',block:'center'});row.focus?.();}})),
       ...(() => { try { const docs=JSON.parse(localStorage.getItem('ed-os-files-v1')||'[]'); return Array.isArray(docs)?docs.filter(x=>x&&typeof x.name==='string').map(file=>({type:'Archivo',title:file.name,detail:'Guardado en este navegador',action:()=>openApp('Archivos')})):[]; } catch (_) { return []; } })()
     ];
