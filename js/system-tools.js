@@ -55,7 +55,7 @@
     const list=root.querySelector('[data-notification-list]');
     if(!list)return;
     list.replaceChildren();
-    root.querySelector('[data-clear-notifications]')?.addEventListener('click',()=>{items=[];save();renderNotifications(root);});
+    const clearButton=root.querySelector('[data-clear-notifications]'); if(clearButton) clearButton.onclick=()=>{items=[];save();renderNotifications(root);};
     if(!items.length){const empty=document.createElement('p');empty.className='window-note';empty.textContent='No tienes notificaciones.';list.append(empty);return;}
     items.forEach(item=>{
       const row=document.createElement('article');row.className='notification-item';
