@@ -45,6 +45,15 @@ main{display:grid;grid-template-columns:270px 1fr;gap:22px;padding:20px 30px 105
 .notification-item p{font-size:12px;line-height:1.5;margin:0 0 5px}
 :root[data-theme="dark"] .system-search-input{background:#252b34;border-color:#424a56;color:#eef0f3}
 :root[data-theme="dark"] .system-result:hover{background:#343b46}
+
+.freedom-form{display:grid;gap:8px;margin:16px 0;padding:14px;border:1px solid #eceef1;border-radius:13px}
+.freedom-form label{font-size:12px;font-weight:650;color:#626a76}
+.freedom-form input,.freedom-form select{width:100%;min-width:0;padding:11px 12px;border:1px solid #e1e5e9;border-radius:9px;background:#fff;color:#252a32;font:inherit;font-size:13px}
+.freedom-form button{border:0;border-radius:9px;padding:11px 13px;background:#303741;color:white;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+:root[data-theme="dark"] .freedom-form{border-color:#424a56}
+:root[data-theme="dark"] .freedom-form label{color:#c2c8d1}
+:root[data-theme="dark"] .freedom-form input,:root[data-theme="dark"] .freedom-form select{background:#252b34;border-color:#424a56;color:#eef0f3}
+:root[data-theme="dark"] .freedom-form button{background:#e8ebef;color:#252a32}
 </style>
 </head>
 <body>
@@ -64,7 +73,8 @@ main{display:grid;grid-template-columns:270px 1fr;gap:22px;padding:20px 30px 105
 <div class="dock-wrap"><nav class="dock" aria-label="Aplicaciones">
 <button class="app" title="Inicio" data-app="Inicio">⌂</button><button class="app" title="Archivos" data-app="Archivos">▤</button><button class="app" title="Navegador" data-app="Navegador">◎</button><button class="app" title="E.D. Freedom" data-app="E.D. Freedom">↗</button><button class="app" title="Ajustes" data-app="Ajustes">⚙</button><button class="app" title="E.D. Connect" data-app="E.D. Connect">⌘</button><span class="sep"></span><button class="ed" id="ed" title="Asistente E.D.">E.D.</button><time class="clock" id="clock">--:--</time>
 </nav></div><div id="windowLayer" aria-live="polite"></div><div class="toast" id="toast" role="status"></div>
-<script src="./js/window-manager.js" defer></script>\n<script src="./js/system-tools.js" defer></script>
+<script src="./js/window-manager.js" defer></script>
+<script src="./js/system-tools.js" defer></script>
 <script src="./js/freedom.js" defer></script>
 <script>
 const toast=document.getElementById('toast');let toastTimer;
