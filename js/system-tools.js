@@ -79,7 +79,9 @@
     const separator=dock.querySelector('.sep');
     const search=document.createElement('button');search.className='app system-app';search.type='button';search.title='Buscar';search.setAttribute('aria-label','Buscar');search.dataset.app='Buscar';search.textContent='⌕';
     const bell=document.createElement('button');bell.className='app system-app';bell.type='button';bell.title='Notificaciones';bell.setAttribute('aria-label','Notificaciones');bell.dataset.app='Notificaciones';bell.textContent='♧';
-    dock.insertBefore(search,separator);dock.insertBefore(bell,separator);\n    search.addEventListener('click',()=>openApp('Buscar'));\n    bell.addEventListener('click',()=>openApp('Notificaciones'));
+    dock.insertBefore(search,separator);dock.insertBefore(bell,separator);
+    search.addEventListener('click',()=>openApp('Buscar'));
+    bell.addEventListener('click',()=>openApp('Notificaciones'));
     notify('E.D-OS se ha iniciado en este navegador. Tus datos siguen almacenados localmente.');
     document.addEventListener('keydown',event=>{
       if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();openApp('Buscar');}
