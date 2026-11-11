@@ -9,7 +9,7 @@ Pasar del escritorio visual inicial a una plataforma experimental con funciones 
 
 ## Orden de trabajo
 
-### Fase 0 — Escritorio y experiencia
+### Fase 0 — Escritorio y experiencia\n- [x] Añadir búsqueda local de aplicaciones, tareas y nombres de archivos.\n- [x] Añadir centro de notificaciones local con historial limitado.\n- [x] Añadir atajo Ctrl/⌘ + K para abrir la búsqueda.\n- [ ] Probar búsqueda y notificaciones en navegadores reales y tecnologías de asistencia.
 - [x] Añadir gestor experimental de ventanas múltiples.
 - [x] Abrir varias aplicaciones en ventanas independientes.
 - [x] Incorporar minimizar, maximizar, restaurar, cerrar y mover ventanas.
