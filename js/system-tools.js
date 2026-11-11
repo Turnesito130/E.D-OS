@@ -83,7 +83,6 @@
     document.addEventListener('keydown',event=>{
       if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();openApp('Buscar');}
     });
-    document.getElementById('addTask')?.addEventListener('click',()=>setTimeout(()=>{const rows=[...document.querySelectorAll('#tasks .task')];if(rows.length&&rows[rows.length-1].querySelector('input')?.checked===false)notify('Se ha añadido una tarea.');},50));
     document.getElementById('tasks')?.addEventListener('change',event=>{if(event.target.matches('input[type=checkbox]'))notify(event.target.checked?'Tarea marcada como completada.':'Tarea marcada como pendiente.');});
   });
 })();
