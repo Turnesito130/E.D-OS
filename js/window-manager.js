@@ -9,7 +9,9 @@
     'Archivos': '<p class="window-note">Organiza documentos dentro del almacenamiento local de este navegador.</p><p><a href="./apps/archivos.html">Abrir Archivos →</a></p><p class="window-note">Todavía no accede al disco real ni sincroniza archivos.</p>',
     'Navegador': '<p class="window-note">El navegador integrado todavía no está implementado.</p><p class="window-note">Por ahora puedes abrir un navegador externo desde tu dispositivo.</p>',
     'Ajustes': '<p class="window-note">Personaliza el tema, el tamaño del texto y las preferencias de interacción.</p><p><a href="./apps/ajustes.html">Abrir Ajustes →</a></p>',
-    'E.D. Connect': '<p class="window-note">Prueba experimental de conexión directa entre navegadores.</p><p><a href="./connect.html">Abrir E.D. Connect →</a></p><p class="window-note">Todavía no ofrece emparejamiento automático ni transferencia de archivos.</p>'
+    'E.D. Connect': '<p class="window-note">Prueba experimental de conexión directa entre navegadores.</p><p><a href="./connect.html">Abrir E.D. Connect →</a></p><p class="window-note">Todavía no ofrece emparejamiento automático ni transferencia de archivos.</p>',
+    'Buscar': '<label class="search-label" for="edSearchInput">Buscar en E.D-OS</label><input class="system-search-input" id="edSearchInput" data-search-input type="search" placeholder="Aplicaciones, tareas y archivos…" autocomplete="off"><div data-search-results></div>',
+    'Notificaciones': '<div class="notification-toolbar"><p class="window-note">Avisos recientes de este navegador.</p><button type="button" class="window-control" data-clear-notifications>Limpiar</button></div><div data-notification-list></div>'
   };
   function focus(win) { topZ += 1; win.style.zIndex = String(topZ); }
   function close(name) {
@@ -70,7 +72,7 @@
     win.querySelector('.close').addEventListener('click', () => close(name));
     if (window.innerWidth < 620) win.classList.add('mobile-window');
   }
-  document.querySelectorAll('[data-app]').forEach(button => {
+  document.addEventListener('ed-os:open-app', event => { if (event.detail && typeof event.detail.name === 'string') open(event.detail.name); });\n  document.querySelectorAll('[data-app]').forEach(button => {
     button.addEventListener('click', () => open(button.dataset.app));
   });
   document.getElementById('ed')?.addEventListener('click', () => open('Asistente E.D.'));
