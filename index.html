@@ -55,6 +55,23 @@ main{display:grid;grid-template-columns:270px 1fr;gap:22px;padding:20px 30px 105
 :root[data-theme="dark"] .freedom-form input,:root[data-theme="dark"] .freedom-form select{background:#252b34;border-color:#424a56;color:#eef0f3}
 :root[data-theme="dark"] .freedom-form button{background:#e8ebef;color:#252a32}
 .freedom-shortcuts{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:12px 0}.freedom-shortcuts .window-note{width:100%;margin:0 0 2px}.freedom-shortcuts button{border:1px solid #e1e5e9;border-radius:9px;padding:9px 12px;background:#f7f8fa;color:#303741;font:inherit;font-size:12px;cursor:pointer}.freedom-shortcuts button:hover{background:#eceff3}:root[data-theme="dark"] .freedom-shortcuts button{background:#343b46;border-color:#424a56;color:#eef0f3}
+
+/* Pantalla de acceso experimental */
+#accessGate{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:22px;background:linear-gradient(145deg,#f7f8fa,#e9edf2);color:#20242b}
+#accessGate[hidden]{display:none}
+.access-card{width:min(390px,100%);padding:30px;border:1px solid #e2e6eb;border-radius:24px;background:rgba(255,255,255,.94);box-shadow:0 24px 80px rgba(30,40,55,.14);text-align:center}
+.access-mark{font-weight:850;font-size:25px;letter-spacing:-.08em;margin-bottom:22px}
+.access-card h1{font-size:21px;letter-spacing:-.04em;margin:0 0 8px}
+.access-card p{font-size:13px;line-height:1.55;color:#78818d}
+#accessPin{width:100%;padding:14px;border:1px solid #dce1e7;border-radius:12px;font:inherit;font-size:22px;letter-spacing:.45em;text-align:center;margin:12px 0}
+#accessSubmit{width:100%;border:0;border-radius:12px;padding:13px;background:#252c35;color:#fff;font:inherit;font-weight:650;cursor:pointer}
+#accessSubmit:disabled,#accessPin:disabled{opacity:.5;cursor:not-allowed}
+#accessMessage{min-height:22px;margin:12px 0 0;color:#a33;font-weight:600}
+:root[data-theme="dark"] #accessGate{background:linear-gradient(145deg,#171b21,#303741);color:#eef0f3}
+:root[data-theme="dark"] .access-card{background:#252b34;border-color:#424a56}
+:root[data-theme="dark"] .access-card p{color:#aab2bd}
+:root[data-theme="dark"] #accessPin{background:#1b2027;border-color:#424a56;color:#fff}
+
 </style>
 </head>
 <body>
@@ -89,4 +106,76 @@ document.getElementById('addTask').addEventListener('click',()=>{const name=prom
 document.querySelectorAll('#tasks .task').forEach(bindTask);
 let desktopPrefs={};try{desktopPrefs=JSON.parse(localStorage.getItem('ed-os-settings-v1')||'{}')}catch(_){}const desktopTheme=desktopPrefs.theme==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):(desktopPrefs.theme||'light');document.documentElement.dataset.theme=desktopTheme;document.body.classList.toggle('reduce-motion',!!desktopPrefs.reduceMotion);document.documentElement.style.fontSize=desktopPrefs.textSize==='large'?'18px':'';function updateClock(){document.getElementById('clock').textContent=new Intl.DateTimeFormat('es-ES',{hour:'2-digit',minute:'2-digit',hour12:desktopPrefs.clock24===false}).format(new Date())}updateClock();setInterval(updateClock,15000);
 </script>
+
+<div id="accessGate" role="dialog" aria-modal="true" aria-labelledby="accessTitle">
+  <form class="access-card" id="accessForm">
+    <div class="access-mark">E.D-OS</div>
+    <h1 id="accessTitle">Acceso protegido</h1>
+    <p>Introduce tu código para entrar en el escritorio.</p>
+    <label for="accessPin" class="window-note">Código de acceso</label>
+    <input id="accessPin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{3}" maxlength="3" autocomplete="off" required aria-label="Código de acceso de tres cifras">
+    <button id="accessSubmit" type="submit">Entrar</button>
+    <p id="accessMessage" role="status" aria-live="polite"></p>
+  </form>
+</div>
+<script>
+(() => {
+  'use strict';
+  const PIN = '085';
+  const gate = document.getElementById('accessGate');
+  const form = document.getElementById('accessForm');
+  const input = document.getElementById('accessPin');
+  const submit = document.getElementById('accessSubmit');
+  const message = document.getElementById('accessMessage');
+  const KEY = 'edos-access-state-v1';
+  let state = { failures: 0, lockedUntil: 0 };
+  try { state = { ...state, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch (_) {}
+  let ticker = null;
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (_) {} }
+  function render() {
+    const remaining = Math.max(0, state.lockedUntil - Date.now());
+    const locked = remaining > 0;
+    input.disabled = locked;
+    submit.disabled = locked;
+    if (locked) {
+      const seconds = Math.ceil(remaining / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const rest = seconds % 60;
+      message.textContent = 'Demasiados intentos. Espera ' + minutes + ':' + String(rest).padStart(2,'0') + ' para volver a intentarlo.';
+    } else {
+      state.lockedUntil = 0;
+      save();
+      message.textContent = state.failures ? 'Puedes volver a intentarlo. El siguiente fallo bloqueará el acceso durante ' + (state.failures >= 1 ? '10 minutos' : '5 minutos') + '.' : '';
+      if (ticker) { clearInterval(ticker); ticker = null; }
+    }
+  }
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    if (Date.now() < state.lockedUntil) return;
+    if (input.value === PIN) {
+      gate.hidden = true;
+      document.body.style.overflow = '';
+      try { sessionStorage.setItem('edos-access-granted','1'); } catch (_) {}
+      return;
+    }
+    state.failures += 1;
+    const waitMs = state.failures === 1 ? 5 * 60 * 1000 : 10 * 60 * 1000;
+    state.lockedUntil = Date.now() + waitMs;
+    input.value = '';
+    save();
+    render();
+    if (!ticker) ticker = setInterval(render, 1000);
+  });
+  document.body.style.overflow = 'hidden';
+  if (sessionStorage.getItem('edos-access-granted') === '1') {
+    gate.hidden = true;
+    document.body.style.overflow = '';
+  } else {
+    render();
+    if (state.lockedUntil > Date.now()) ticker = setInterval(render, 1000);
+    input.focus();
+  }
+})();
+</script>
+
 </body></html>
