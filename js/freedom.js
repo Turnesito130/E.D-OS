@@ -36,7 +36,8 @@
 
   function openExternal(url, label) {
     // Called directly from a submit/click gesture. Never proxies the site or handles credentials.
-    const opened = window.open(url, '_blank', 'noopener,noreferrer');
+    const opened = window.open(url, '_blank');
+    if (opened) { try { opened.opener = null; } catch (_) {} }
     if (!opened) {
       showMessage('El navegador no abrió una pestaña nueva. Puedes usar este enlace:', url, label);
       return false;
