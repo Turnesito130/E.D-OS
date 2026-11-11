@@ -13,7 +13,7 @@ Pasar del escritorio visual inicial a una plataforma experimental con funciones 
 - [x] Primera aplicación experimental de Archivos.
 - [ ] Probar creación, edición, importación, descarga y borrado en navegadores reales.
 - [ ] Añadir pruebas de límites de almacenamiento, nombres, errores y recuperación.
-- [ ] Convertir Ajustes en preferencias persistentes y accesibles.
+- [x] Crear Ajustes con preferencias persistentes en el navegador.\n- [ ] Probar cambios de preferencias y persistencia en navegadores reales.
 - [ ] Definir una interfaz común para abrir aplicaciones y comunicar errores.
 
 **Límite actual de Archivos:** guarda texto y metadatos en el almacenamiento del navegador. No accede al disco del sistema, no es un gestor de archivos nativo y no sincroniza entre dispositivos. Exportar copia es importante porque los datos pueden perderse si se borra el almacenamiento del navegador.
