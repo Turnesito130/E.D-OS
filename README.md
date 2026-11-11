@@ -4,7 +4,7 @@ Proyecto experimental para construir, por etapas, un sistema operativo y ecosist
 
 ## Estado actual
 
-- Escritorio web de concepto en `index.html`.
+- Escritorio web experimental en `index.html`, con gestor de ventanas múltiples en `js/window-manager.js` (minimizar, maximizar, mover, redimensionar y cerrar; pendiente de pruebas reales).
 - Aplicación experimental de archivos locales en `apps/archivos.html`.
 - Aplicación de preferencias locales en `apps/ajustes.html` (tema, tamaño de texto, movimiento y reloj).
 - Prueba WebRTC de conexión directa en `connect.html`; todavía no verificada entre dos dispositivos reales.
