@@ -13,6 +13,8 @@ Proyecto experimental para construir, por etapas, un sistema operativo y ecosist
 
 **Esto todavía no es un sistema operativo instalable ni una plataforma segura para datos personales.** El prototipo web no sustituye al kernel, los servicios del sistema, los controladores ni las aplicaciones nativas.
 
+- Pantalla de acceso experimental en el escritorio: PIN de tres cifras, un intento por turno y bloqueo de 5 minutos tras el primer fallo y 10 minutos tras el segundo. El estado de bloqueo se guarda en el navegador. **No es seguridad real**: el PIN está en el JavaScript público y el bloqueo puede eliminarse borrando los datos del navegador o modificando el código. No usar para proteger información sensible.
+
 ## Documentación
 
 - [Arquitectura inicial](docs/ARQUITECTURA_INICIAL.md)
