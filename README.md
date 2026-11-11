@@ -6,6 +6,7 @@ Proyecto experimental para construir, por etapas, un sistema operativo y ecosist
 
 - Escritorio web de concepto en `index.html`.
 - Aplicación experimental de archivos locales en `apps/archivos.html`.
+- Aplicación de preferencias locales en `apps/ajustes.html` (tema, tamaño de texto, movimiento y reloj).
 - Prueba WebRTC de conexión directa en `connect.html`; todavía no verificada entre dos dispositivos reales.
 - Arquitectura inicial y hoja de ruta en `docs/`.
 
