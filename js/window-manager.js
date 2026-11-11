@@ -59,6 +59,7 @@
     win.querySelector('.window-content').innerHTML = definitions[name] || '<p class="window-note">Esta aplicación todavía no está implementada.</p>';
     layer.append(win);
     windows.set(name, win);
+    document.dispatchEvent(new CustomEvent('ed-os:window-opened', { detail: { name, element: win } }));
     makeDraggable(win, win.querySelector('.window-head'));
     win.addEventListener('pointerdown', () => focus(win));
     win.querySelector('.minimize').addEventListener('click', () => { win.hidden = true; win.classList.add('minimized'); });
