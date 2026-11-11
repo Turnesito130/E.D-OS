@@ -33,6 +33,18 @@ main{display:grid;grid-template-columns:270px 1fr;gap:22px;padding:20px 30px 105
 .window-note{font-size:13px;color:#858c97;line-height:1.65}
 :root[data-theme="dark"] .window-control{background:#343b46;color:#e8ebef}
 @media(max-width:620px){#windowLayer{inset:64px 0 78px}.managed-window{left:8px;top:72px;width:calc(100vw - 16px);height:min(70vh,520px);resize:none}.managed-window.mobile-window.maximized{height:calc(100vh - 150px)!important}}
+
+.system-app{font-size:20px}
+.search-label{display:block;font-size:12px;font-weight:650;margin-bottom:8px}
+.system-search-input{width:100%;padding:12px 13px;border:1px solid #e2e5e9;border-radius:11px;font:inherit;font-size:13px;margin-bottom:14px;background:#fff;color:#20242b}
+.system-result{display:flex;flex-direction:column;gap:4px;width:100%;text-align:left;padding:12px;border:0;border-top:1px solid #eff0f2;background:transparent;cursor:pointer;color:inherit}
+.system-result:hover{background:#f5f6f8}
+.system-result strong{font-size:13px;font-weight:650}.system-result small,.notification-item small{font-size:10px;color:#9299a3}
+.notification-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.notification-item{padding:12px 4px;border-top:1px solid #eff0f2}
+.notification-item p{font-size:12px;line-height:1.5;margin:0 0 5px}
+:root[data-theme="dark"] .system-search-input{background:#252b34;border-color:#424a56;color:#eef0f3}
+:root[data-theme="dark"] .system-result:hover{background:#343b46}
 </style>
 </head>
 <body>
@@ -52,7 +64,7 @@ main{display:grid;grid-template-columns:270px 1fr;gap:22px;padding:20px 30px 105
 <div class="dock-wrap"><nav class="dock" aria-label="Aplicaciones">
 <button class="app" title="Inicio" data-app="Inicio">⌂</button><button class="app" title="Archivos" data-app="Archivos">▤</button><button class="app" title="Navegador" data-app="Navegador">◎</button><button class="app" title="Ajustes" data-app="Ajustes">⚙</button><button class="app" title="E.D. Connect" data-app="E.D. Connect">⌘</button><span class="sep"></span><button class="ed" id="ed" title="Asistente E.D.">E.D.</button><time class="clock" id="clock">--:--</time>
 </nav></div><div id="windowLayer" aria-live="polite"></div><div class="toast" id="toast" role="status"></div>
-<script src="./js/window-manager.js" defer></script>
+<script src="./js/window-manager.js" defer></script>\n<script src="./js/system-tools.js" defer></script>
 <script>
 const toast=document.getElementById('toast');let toastTimer;
 function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),1900)}
