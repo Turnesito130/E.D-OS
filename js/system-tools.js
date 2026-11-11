@@ -14,10 +14,10 @@
   function notify(message, kind = 'info') {
     const item = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), message: String(message).slice(0,240), kind, time: Date.now() };
     items.unshift(item); items = items.slice(0, MAX); save();
-    window.dispatchEvent(new CustomEvent('ed-os:notification-added', { detail: item }));
+    document.dispatchEvent(new CustomEvent('ed-os:notification-added', { detail: item }));
   }
   window.EDOS = Object.freeze({ notify });
-  function openApp(name) { window.dispatchEvent(new CustomEvent('ed-os:open-app', { detail: { name } })); }
+  function openApp(name) { document.dispatchEvent(new CustomEvent('ed-os:open-app', { detail: { name } })); }
   function searchIndex(query) {
     const q = query.trim().toLocaleLowerCase('es');
     if (!q) return [];
@@ -78,12 +78,12 @@
     const separator=dock.querySelector('.sep');
     const search=document.createElement('button');search.className='app system-app';search.type='button';search.title='Buscar';search.setAttribute('aria-label','Buscar');search.dataset.app='Buscar';search.textContent='⌕';
     const bell=document.createElement('button');bell.className='app system-app';bell.type='button';bell.title='Notificaciones';bell.setAttribute('aria-label','Notificaciones');bell.dataset.app='Notificaciones';bell.textContent='♧';
-    dock.insertBefore(search,separator);dock.insertBefore(bell,separator);
+    dock.insertBefore(search,separator);dock.insertBefore(bell,separator);\n    search.addEventListener('click',()=>openApp('Buscar'));\n    bell.addEventListener('click',()=>openApp('Notificaciones'));
     notify('E.D-OS se ha iniciado en este navegador. Tus datos siguen almacenados localmente.');
     document.addEventListener('keydown',event=>{
       if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();openApp('Buscar');}
     });
-    document.getElementById('addTask')?.addEventListener('click',()=>setTimeout(()=>{if(document.querySelector('#tasks .task:last-child span'))notify('Se ha añadido una tarea.');},0));
+    document.getElementById('addTask')?.addEventListener('click',()=>setTimeout(()=>{const rows=[...document.querySelectorAll('#tasks .task')];if(rows.length&&rows[rows.length-1].querySelector('input')?.checked===false)notify('Se ha añadido una tarea.');},50));
     document.getElementById('tasks')?.addEventListener('change',event=>{if(event.target.matches('input[type=checkbox]'))notify(event.target.checked?'Tarea marcada como completada.':'Tarea marcada como pendiente.');});
   });
 })();
