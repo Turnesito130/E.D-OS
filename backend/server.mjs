@@ -402,6 +402,13 @@ const server = createServer(async (req, res) => {
           typeof body.platform !== "string" || body.platform.trim().length < 1 || body.platform.length > 40) {
         return send(res, 400, { error: "Datos del dispositivo no válidos." });
       }
+      const existingDevices = await pool.query(
+        "SELECT 1 FROM devices WHERE account_id = $1 AND revoked_at IS NULL LIMIT 1",
+        [account.id]
+      );
+      if (existingDevices.rowCount) {
+        return send(res, 409, { error: "Esta cuenta ya tiene un dispositivo. Para añadir otro, utiliza el emparejamiento aprobado." });
+      }
       const result = await pool.query(
         `INSERT INTO devices (account_id, device_name, device_type, platform)
          VALUES ($1, $2, $3, $4)
