@@ -1,44 +1,59 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "kernel_strategy": "independent_ed_os_kernel",
   "linux_role": "study_reference_and_candidate_source_for_selective_components",
   "runtime_dependency_on_linux": false,
-  "status": "source_prototype_not_bootable",
+  "status": "boot_pipeline_implemented_qemu_result_pending",
+  "ed_os_target": {
+    "architecture": "x86_64",
+    "virtual_machine": "QEMU",
+    "firmware_targets": ["BIOS", "UEFI"],
+    "kernel_source_directory": "kernel/src",
+    "entry_contract": "Limine protocol base revision 3, x86_64 long mode"
+  },
+  "bootloader": {
+    "name": "Limine",
+    "version": "12.9.6",
+    "role": "external_bootloader_only_not_kernel",
+    "protocol": "Limine",
+    "release_url": "https://github.com/Limine-Bootloader/Limine/releases/tag/v12.9.6",
+    "license": "BSD-2-Clause",
+    "binary_archive_sha256": "b38aabb042b0c0f9f562b7741be3c1204838d7bbacfa78bb411c674bd5b984ee"
+  },
+  "implemented": [
+    "x86_64 assembly entry stub",
+    "initial 16 KiB kernel stack",
+    "freestanding C kernel entry",
+    "COM1 serial diagnostic output with KERNEL_BOOT_OK marker",
+    "Limine base revision 3 tag",
+    "higher-half ELF64 linker layout with separate RX, R and RW load segments",
+    "Clang/LLD build target",
+    "Limine BIOS/UEFI hybrid ISO build script",
+    "Limine boot configuration",
+    "GitHub Actions QEMU boot-test workflow"
+  ],
+  "verified": [
+    "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000."
+  ],
+  "pending_verification": [
+    "GitHub Actions downloads and verifies the pinned Limine release",
+    "Hybrid ISO creation",
+    "QEMU BIOS boot",
+    "KERNEL_BOOT_OK serial marker observed from QEMU",
+    "UEFI boot",
+    "physical hardware compatibility"
+  ],
   "linux_reference": {
     "repository": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
     "version_tag": null,
     "commit": null,
     "license_note": "Review the exact SPDX license and notices for each file or component before reuse. Linux kernel code is generally GPL-2.0-only, with exceptions."
   },
-  "ed_os_target": {
-    "architecture": "x86_64",
-    "virtual_machine": "QEMU",
-    "firmware": "not_selected",
-    "kernel_source_directory": "kernel/src",
-    "entry_contract": "64-bit long mode hand-off; bootloader/protocol not implemented"
-  },
-  "implemented": [
-    "x86_64 assembly entry stub",
-    "initial 16 KiB kernel stack",
-    "freestanding C kernel entry",
-    "COM1 serial diagnostic output",
-    "ELF64 linker layout",
-    "Clang/LLD build target"
-  ],
-  "verified": [
-    "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable."
-  ],
-  "not_yet_verified": [
-    "GitHub Actions build",
-    "bootloader hand-off",
-    "QEMU boot",
-    "serial output in an emulator",
-    "physical hardware compatibility"
-  ],
   "notes": [
     "E.D-OS must boot and run without the Linux kernel.",
-    "Linux is a study reference; compiling it in a separate lab does not make it an E.D-OS runtime dependency.",
-    "Do not import code until dependencies, provenance, exact license and redistribution obligations have been reviewed.",
+    "Limine is an external bootloader and protocol implementation; it is not the E.D-OS kernel.",
+    "The first bootable image is a development prototype, not a complete operating system.",
+    "Do not import Linux code until dependencies, provenance, exact license and redistribution obligations have been reviewed.",
     "A successfully linked ELF is not proof that the kernel can boot."
   ]
 }
