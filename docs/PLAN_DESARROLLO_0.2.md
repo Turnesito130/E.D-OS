@@ -43,12 +43,12 @@ Pasar del escritorio visual inicial a una plataforma experimental con funciones 
 No llamar a esta función Bluetooth ni sincronización hasta que esas capacidades existan y hayan sido probadas.
 
 ### Fase C — Cuentas y sincronización
-- [ ] Definir identidad de usuario, inicio/cierre de sesión y recuperación de cuenta.
-- [ ] Diseñar registro de dispositivos autorizados y revocación.
+- [x] Implementar registro, inicio/cierre de sesión y consulta de cuenta (API experimental).\n- [ ] Añadir verificación de correo, recuperación de cuenta y MFA/passkeys.
+- [x] Implementar registro, listado y revocación básica de dispositivos en la API experimental.\n- [x] Implementar solicitudes de emparejamiento temporales con aprobación autenticada y canje de sesión de un solo uso (API, aún sin cliente ni pruebas reales).
 - [ ] Separar datos locales, datos sincronizados y datos compartidos.
 - [ ] Definir cifrado en tránsito y protección de datos almacenados.
 - [ ] Diseñar resolución de conflictos y borrado sincronizado.
-- [ ] Implementar primero una prueba controlada; no sincronizar datos personales reales sin revisión de seguridad.
+- [ ] Probar la API con PostgreSQL y dos clientes reales; no sincronizar datos personales reales sin revisión de seguridad.
 
 Una cuenta no debe dar permiso automático para acceder a todos los dispositivos. Cada dispositivo y cada tipo de dato requiere autorización.
 
