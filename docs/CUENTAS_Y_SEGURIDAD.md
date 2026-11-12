@@ -1,6 +1,6 @@
 # E.D-OS — Cuentas, dispositivos y seguridad (diseño inicial)
 
-**Estado:** propuesta técnica; no hay cuentas ni sincronización implementadas.
+**Estado:** hay un backend experimental inicial de cuentas, sesiones e inventario de dispositivos en `backend/`. No está desplegado ni probado en un servidor real; no hay todavía emparejamiento confirmado ni sincronización.
 
 ## 1. Principios
 
@@ -32,7 +32,7 @@ No se deben guardar contraseñas en texto plano. Los tokens no deben incluirse e
 4. El servicio vincula el dispositivo a la cuenta y emite credenciales revocables.
 5. El usuario puede revocar el vínculo desde la lista de dispositivos.
 
-El prototipo WebRTC actual no implementa este flujo. El intercambio de SDP no prueba por sí mismo la identidad del otro extremo.
+El backend 0.1 permite registrar un dispositivo directamente desde una sesión ya autenticada, pero todavía no implementa este flujo de emparejamiento. El prototipo WebRTC tampoco prueba por sí mismo la identidad del otro extremo.
 
 ## 4. Sincronización
 
@@ -77,4 +77,4 @@ El prototipo WebRTC actual no implementa este flujo. El intercambio de SDP no pr
 
 ## 8. Estado real
 
-Este documento define requisitos, no una implementación. E.D-OS todavía no tiene backend de cuentas, registro de dispositivos, servicio de sincronización ni almacenamiento remoto. No introducir credenciales ni datos personales reales en los prototipos actuales.
+El backend 0.1 implementa registro e inicio de sesión, sesiones opacas revocables y alta/listado/revocación de dispositivos sobre PostgreSQL. El código está guardado en `backend/`, pero aún no se ha ejecutado ni probado con una base de datos real y no está desplegado. No hay sincronización ni almacenamiento remoto de archivos. No introducir credenciales ni datos personales reales en este prototipo.
