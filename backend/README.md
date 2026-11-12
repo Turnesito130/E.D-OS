@@ -109,7 +109,7 @@ Tipos admitidos: `phone`, `tablet`, `computer`, `watch`, `earbuds`, `other`.
 - Configurar HTTPS, secretos fuera del repositorio, copias de seguridad cifradas y monitorización.
 - Añadir pruebas automatizadas de aislamiento entre cuentas, caducidad, conflictos de sincronización y revocación.
 - Realizar revisión de seguridad independiente.
-- Verificar CORS del bucket desde un navegador real; la prueba MinIO de CI cubre PUT/HEAD/GET/DELETE desde Node, no la política CORS del navegador.
+- Verificar CORS del bucket desde un navegador real; la prueba de integración de CI contra LocalStack S3 cubre PUT/HEAD/GET/DELETE desde Node, no la política CORS del navegador.
 
 ## Flujo de emparejamiento
 
