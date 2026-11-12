@@ -21,10 +21,12 @@ Proyecto experimental para construir, por etapas, un sistema operativo y ecosist
 - Instrucciones y rutas disponibles: [backend/README.md](backend/README.md).
 - **No está desplegado ni probado contra PostgreSQL ni entre dispositivos reales.** No usar con datos personales reales. Faltan verificación y recuperación de cuenta, cliente de emparejamiento, cifrado de extremo a extremo, sincronización de archivos, pruebas de seguridad y revisión independiente.
 
-## Núcleo nativo
+## Núcleo propio
 
-- [Arquitectura del núcleo E.D-OS](docs/ARQUITECTURA_NUCLEO_ED_OS.md)
-- [Espacio de integración del kernel Linux](kernel/README.md)
+- [Arquitectura del núcleo propio E.D-OS](docs/ARQUITECTURA_NUCLEO_ED_OS.md)
+- [Espacio de investigación y desarrollo del kernel propio](kernel/README.md)
+
+E.D-OS no dependerá del kernel Linux para arrancar ni funcionar. Linux se estudiará como referencia y solo se evaluará la reutilización selectiva de componentes, tras revisar dependencias y licencias.
 
 
 - [Arquitectura inicial](docs/ARQUITECTURA_INICIAL.md)
