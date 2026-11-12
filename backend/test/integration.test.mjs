@@ -4,12 +4,18 @@ import { readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { Pool } from "pg";
+import { S3Client, CreateBucketCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { cleanupAbandonedUploads } from "../cloud-maintenance.mjs";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required for integration tests");
 const port = 19000 + Math.floor(Math.random() * 1000);
 const base = `http://127.0.0.1:${port}`;
 const pool = new Pool({ connectionString: databaseUrl });
+const s3 = new S3Client({
+  region: "us-east-1", endpoint: "http://127.0.0.1:9000", forcePathStyle: true,
+  credentials: { accessKeyId: "edtest", secretAccessKey: "ed_test_password_123" }
+});
 let child;
 
 async function request(path, { method = "GET", token, body } = {}) {
@@ -39,6 +45,7 @@ async function waitForServer() {
 
 test("API integration: accounts, device pairing, sync isolation and revocation", async t => {
   await pool.query(await readFile(new URL("../schema.sql", import.meta.url), "utf8"));
+  await s3.send(new CreateBucketCommand({ Bucket: "ed-test" }));
   child = spawn(process.execPath, ["server.mjs"], {
     cwd: new URL("..", import.meta.url),
     env: {
@@ -157,6 +164,59 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   const otherItems = await request("/v1/sync/items", { token: other.data.session.token });
   assert.equal(otherItems.status, 200);
   assert.equal(otherItems.data.items.length, 0);
+
+  // End-to-end Cloud upload, completion, signed download and deletion on MinIO.
+  const cloudToken = other.data.session.token;
+  const payload = Buffer.from("E.D. Cloud integration test payload");
+  const upload = await request("/v1/cloud/files", {
+    method: "POST", token: cloudToken,
+    body: { fileName: "hello.txt", contentType: "text/plain", sizeBytes: payload.length }
+  });
+  assert.equal(upload.status, 201);
+  const put = await fetch(upload.data.uploadUrl, {
+    method: "PUT", headers: upload.data.requiredHeaders, body: payload
+  });
+  assert.equal(put.status, 200);
+  const completed = await request(`/v1/cloud/files/${upload.data.file.id}/complete`, {
+    method: "POST", token: cloudToken
+  });
+  assert.equal(completed.status, 200);
+  assert.equal(completed.data.file.status, "completed");
+  const download = await request(`/v1/cloud/files/${upload.data.file.id}/download`, { token: cloudToken });
+  assert.equal(download.status, 200);
+  const downloaded = await fetch(download.data.downloadUrl);
+  assert.equal(downloaded.status, 200);
+  assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()), payload);
+  assert.equal((await request(`/v1/cloud/files/${upload.data.file.id}`, {
+    method: "DELETE", token: cloudToken
+  })).status, 200);
+
+  // An abandoned upload is marked deleting, retried after a storage error,
+  // and removed from both MinIO and PostgreSQL on the next cleanup pass.
+  const abandoned = await request("/v1/cloud/files", {
+    method: "POST", token: cloudToken,
+    body: { fileName: "abandoned.bin", contentType: "application/octet-stream", sizeBytes: payload.length }
+  });
+  assert.equal(abandoned.status, 201);
+  const abandonedPut = await fetch(abandoned.data.uploadUrl, {
+    method: "PUT", headers: abandoned.data.requiredHeaders, body: payload
+  });
+  assert.equal(abandonedPut.status, 200);
+  await pool.query("UPDATE cloud_files SET created_at = now() - interval '2 hours' WHERE id = $1", [abandoned.data.file.id]);
+  const failedCleanup = await cleanupAbandonedUploads({
+    pool, s3: { send: async () => { throw new Error("simulated temporary S3 outage"); } },
+    bucket: "ed-test", olderThanMinutes: 60
+  });
+  assert.equal(failedCleanup.failed, 1);
+  const retryState = await pool.query("SELECT status FROM cloud_files WHERE id = $1", [abandoned.data.file.id]);
+  assert.equal(retryState.rows[0].status, "deleting");
+  const retriedCleanup = await cleanupAbandonedUploads({ pool, s3, bucket: "ed-test", olderThanMinutes: 60 });
+  assert.equal(retriedCleanup.deleted, 1);
+  const abandonedRow = await pool.query("SELECT id FROM cloud_files WHERE id = $1", [abandoned.data.file.id]);
+  assert.equal(abandonedRow.rowCount, 0);
+  await assert.rejects(s3.send(new HeadObjectCommand({
+    Bucket: "ed-test", Key: abandoned.data.file && (await pool.query("SELECT object_key FROM cloud_files WHERE id = $1", [abandoned.data.file.id])).rows[0]?.object_key
+  })));
 
   assert.equal((await request(`/v1/devices/${firstDeviceId}/revoke`, { method: "POST", token })).status, 200);
   assert.equal((await request("/v1/devices", { token })).data.devices.length, 1);
