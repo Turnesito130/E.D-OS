@@ -17,9 +17,9 @@ Proyecto experimental para construir, por etapas, un sistema operativo y ecosist
 
 ## Backend de E.D. Ecosystem
 
-- Primer servicio experimental en `backend/`: registro e inicio de sesión de cuentas, sesiones revocables y gestión básica de dispositivos con PostgreSQL.
+- Servicio experimental en `backend/`: cuentas, sesiones revocables, inventario de dispositivos, emparejamiento temporal aprobado y sincronización versionada de registros JSON pequeños.
 - Instrucciones y rutas disponibles: [backend/README.md](backend/README.md).
-- **No está desplegado ni probado en un servidor real.** No usar con datos personales reales; todavía faltan verificación de correo, recuperación de cuenta, emparejamiento confirmado, sincronización y revisión de seguridad.
+- **No está desplegado ni probado contra PostgreSQL ni entre dispositivos reales.** No usar con datos personales reales. Faltan verificación y recuperación de cuenta, cliente de emparejamiento, cifrado de extremo a extremo, sincronización de archivos, pruebas de seguridad y revisión independiente.
 
 ## Documentación
 
