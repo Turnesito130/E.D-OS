@@ -125,24 +125,24 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
 
   // El endpoint de firma no necesita contactar con S3: permite probar
   // reservas concurrentes con credenciales ficticias, sin subir bytes reales.
-  const quotaRequests = await Promise.all(Array.from({ length: 41 }, (_, index) =>
+  const quotaRequests = await Promise.all(Array.from({ length: 42 }, (_, index) =>
     request("/v1/cloud/files", {
       method: "POST", token,
       body: {
         fileName: `quota-${index}.bin`,
         contentType: "application/octet-stream",
-        sizeBytes: 50 * 1024 * 1024
+        sizeBytes: 49 * 1024 * 1024
       }
     })
   ));
-  assert.equal(quotaRequests.filter(result => result.status === 201).length, 40, JSON.stringify(quotaRequests.slice(0, 5)));
+  assert.equal(quotaRequests.filter(result => result.status === 201).length, 41, JSON.stringify(quotaRequests.slice(0, 5)));
   assert.equal(quotaRequests.filter(result => result.status === 413).length, 1);
   const reserved = await pool.query(
     "SELECT COALESCE(sum(size_bytes), 0)::bigint AS used, count(*)::int AS files FROM cloud_files WHERE account_id = (SELECT id FROM accounts WHERE email = $1)",
     [email]
   );
-  assert.equal(Number(reserved.rows[0].used), 40 * 50 * 1024 * 1024);
-  assert.equal(reserved.rows[0].files, 40);
+  assert.equal(Number(reserved.rows[0].used), 41 * 49 * 1024 * 1024);
+  assert.equal(reserved.rows[0].files, 41);
 
   const created = await request("/v1/sync/items/preferences", {
     method: "PUT", token, body: { expectedVersion: 0, payload: { theme: "light" } }
