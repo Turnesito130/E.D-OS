@@ -39,6 +39,11 @@ footer{font-size:10px;color:#a1a8b1;text-align:center;padding:20px}
 <div class="row"><div class="field"><label>Clave del elemento</label><input id="syncKey" maxlength="100" placeholder="preferencias"></div><div class="field"><label>Versión esperada (0 para crear)</label><input id="syncVersion" type="number" min="0" value="0"></div></div>
 <div class="field"><label>Contenido JSON</label><textarea id="syncPayload">{ "tema": "claro" }</textarea></div><div class="row"><button class="primary" id="saveSync">Guardar / actualizar</button><button id="loadSync">Ver elementos sincronizados</button></div><pre id="syncResult" class="muted" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
 </section>
+<section class="card hidden" id="cloud">
+<h2>E.D. Cloud · Archivos</h2><p class="muted">Almacenamiento experimental de archivos en un servicio S3-compatible. Máximo 50 MB por archivo; cuota lógica de 2 GB por cuenta. No tiene cifrado de extremo a extremo.</p>
+<div class="row"><input id="cloudFile" type="file"><button class="primary" id="uploadCloud">Subir archivo</button><button id="refreshCloud">Actualizar lista</button></div>
+<div class="status" id="cloudStatus" aria-live="polite"></div><div id="cloudFiles" class="muted">Inicia sesión para consultar tus archivos.</div>
+</section>
 <footer>Prototipo experimental · No usar con datos personales reales · La sesión solo vive en memoria de esta página.</footer>
 </main>
 <script>
@@ -61,7 +66,7 @@ async function call(path, options = {}, auth = true) {
 function enter(data) {
   token = data.session.token; account = data.account;
   $('identity').textContent = account.email || account.id;
-  show('auth', false); show('dashboard', true); show('pair', true); show('sync', true);
+  show('auth', false); show('dashboard', true); show('pair', true); show('sync', true); show('cloud', true);
   refresh();
 }
 async function auth(mode) {
@@ -96,7 +101,7 @@ async function revokeDevice(id) {
 }
 $('login').onclick=()=>auth('login');
 $('register').onclick=()=>auth('register');
-$('logout').onclick=async()=>{try{await call('/v1/auth/logout',{method:'POST'});}catch{} token=null;account=null;show('auth',true);show('dashboard',false);show('pair',false);show('sync',false);};
+$('logout').onclick=async()=>{try{await call('/v1/auth/logout',{method:'POST'});}catch{} token=null;account=null;show('auth',true);show('dashboard',false);show('pair',false);show('sync',false);show('cloud',false);};
 $('refresh').onclick=refresh;
 $('addDevice').onclick=async()=>{
   try {
@@ -135,5 +140,40 @@ $('loadSync').onclick=async()=>{
   try {const {data}=await call('/v1/sync/items');$('syncResult').textContent=JSON.stringify(data.items,null,2);}
   catch(e){$('syncResult').textContent=e.message;}
 };
+async function refreshCloud() {
+  try {
+    const {data}=await call('/v1/cloud/files');
+    $('cloudFiles').replaceChildren();
+    if (!data.files.length) { $('cloudFiles').textContent='Todavía no hay archivos guardados.'; return; }
+    data.files.forEach(file=>{
+      const row=document.createElement('div');row.className='device';
+      const info=document.createElement('span');info.textContent=file.file_name;
+      const meta=document.createElement('small');meta.textContent=(Number(file.size_bytes)/1024/1024).toFixed(2)+' MB · '+file.content_type;
+      info.append(meta);
+      const actions=document.createElement('span');actions.className='row';
+      const download=document.createElement('button');download.textContent='Descargar';
+      download.onclick=async()=>{try{const {data}=await call('/v1/cloud/files/'+file.id+'/download');window.open(data.downloadUrl,'_blank','noopener');}catch(e){status('cloudStatus',e.message);}};
+      const remove=document.createElement('button');remove.textContent='Eliminar';
+      remove.onclick=async()=>{if(!confirm('¿Eliminar este archivo de E.D. Cloud?'))return;try{await call('/v1/cloud/files/'+file.id,{method:'DELETE'});await refreshCloud();status('cloudStatus','Archivo eliminado.');}catch(e){status('cloudStatus',e.message);}};
+      actions.append(download,remove);row.append(info,actions);$('cloudFiles').append(row);
+    });
+  } catch(e) { status('cloudStatus',e.message); }
+}
+$('refreshCloud').onclick=refreshCloud;
+$('uploadCloud').onclick=async()=>{
+  const file=$('cloudFile').files[0];
+  if(!file){status('cloudStatus','Selecciona primero un archivo.');return;}
+  try {
+    if(file.size>50*1024*1024)throw new Error('El límite por archivo es 50 MB.');
+    status('cloudStatus','Solicitando una carga segura…');
+    const {data}=await call('/v1/cloud/files',{method:'POST',body:JSON.stringify({fileName:file.name,contentType:file.type||'application/octet-stream',sizeBytes:file.size})});
+    const uploaded=await fetch(data.uploadUrl,{method:'PUT',headers:data.requiredHeaders,body:file});
+    if(!uploaded.ok)throw new Error('El almacenamiento rechazó la subida (HTTP '+uploaded.status+').');
+    status('cloudStatus','Verificando archivo en el almacenamiento…');
+    await call('/v1/cloud/files/'+data.file.id+'/complete',{method:'POST'});
+    $('cloudFile').value='';status('cloudStatus','Archivo guardado en E.D. Cloud.');await refreshCloud();
+  } catch(e) { status('cloudStatus',e.message); }
+};
+
 })();
 </script></body></html>
