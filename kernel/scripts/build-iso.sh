@@ -29,8 +29,8 @@ cp "$LIMINE_DIR/limine-bios-cd.bin" "$ISO_ROOT/boot/"
 cp "$LIMINE_DIR/limine-uefi-cd.bin" "$ISO_ROOT/boot/"
 cp "$LIMINE_DIR/BOOTX64.EFI" "$ISO_ROOT/EFI/BOOT/"
 
-xorriso -as mkisofs -R -r -J \
-    -b boot/limine-bios-cd.bin -no-emul-boot -boot-load-size 4 -boot-info-table \
+xorriso -as mkisofs -R -r -J -b boot/limine-bios-cd.bin \
+    -no-emul-boot -boot-load-size 4 -boot-info-table -hfsplus -apm-block-size 2048 \
     --efi-boot boot/limine-uefi-cd.bin -efi-boot-part --efi-boot-image \
     --protective-msdos-label "$ISO_ROOT" -o "$OUTPUT_ISO"
 
