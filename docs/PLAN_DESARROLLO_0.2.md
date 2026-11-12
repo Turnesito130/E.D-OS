@@ -56,7 +56,10 @@ No llamar a esta función Bluetooth ni sincronización hasta que esas capacidade
 - [ ] Separar datos locales, datos sincronizados y datos compartidos.
 - [ ] Definir cifrado en tránsito y protección de datos almacenados.
 - [ ] Diseñar resolución de conflictos y borrado sincronizado.
-- [x] Añadir pruebas automáticas de integración de cuentas, pairing, aislamiento, sync y revocación en PostgreSQL CI.\n- [x] Implementar primera API experimental E.D. Cloud con almacenamiento S3-compatible y URLs firmadas.\n- [ ] Configurar un bucket real y sus reglas CORS; desplegar API y secretos fuera del repositorio.\n- [ ] Probar carga/descarga/borrado entre dos dispositivos y cuentas distintas.\n- [ ] No sincronizar datos personales reales sin revisión de seguridad.
+- [x] Añadir pruebas automáticas de integración de cuentas, pairing, aislamiento, sync y revocación en PostgreSQL CI.
+- [x] Ampliar pruebas de E.D. Cloud: impedir que otra cuenta liste, descargue o elimine archivos ajenos.
+- [x] Ampliar pruebas de sincronización: validar tombstones versionados, conflictos de borrado y prevención de resurrección de datos.
+- [ ] Confirmar resultado verde de CI para la última ampliación; el commit está guardado, pero todavía no hay resultado de ejecución disponible.\n- [x] Implementar primera API experimental E.D. Cloud con almacenamiento S3-compatible y URLs firmadas.\n- [ ] Configurar un bucket real y sus reglas CORS; desplegar API y secretos fuera del repositorio.\n- [ ] Probar carga/descarga/borrado entre dos dispositivos y cuentas distintas.\n- [ ] No sincronizar datos personales reales sin revisión de seguridad.
 
 Una cuenta no debe dar permiso automático para acceder a todos los dispositivos. Cada dispositivo y cada tipo de dato requiere autorización.
 
