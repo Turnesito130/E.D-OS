@@ -133,7 +133,8 @@
       }
 
       // Open synchronously inside the user's submit/click gesture to reduce popup blocking.
-      const opened = window.open(destination, '_blank', 'noopener,noreferrer');
+      const opened = window.open(destination, '_blank');
+      if (opened) { try { opened.opener = null; } catch (_) {} }
       if (opened) {
         showStatus(looksLikeUrl ? 'Abriendo el sitio solicitado…' : 'Abriendo los resultados de búsqueda…');
       } else {
