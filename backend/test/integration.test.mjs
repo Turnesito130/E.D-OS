@@ -202,6 +202,8 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
     method: "PUT", headers: abandoned.data.requiredHeaders, body: payload
   });
   assert.equal(abandonedPut.status, 200);
+  const abandonedObject = await pool.query("SELECT object_key FROM cloud_files WHERE id = $1", [abandoned.data.file.id]);
+  assert.equal(abandonedObject.rowCount, 1);
   await pool.query("UPDATE cloud_files SET created_at = now() - interval '2 hours' WHERE id = $1", [abandoned.data.file.id]);
   const failedCleanup = await cleanupAbandonedUploads({
     pool, s3: { send: async () => { throw new Error("simulated temporary S3 outage"); } },
@@ -215,7 +217,7 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   const abandonedRow = await pool.query("SELECT id FROM cloud_files WHERE id = $1", [abandoned.data.file.id]);
   assert.equal(abandonedRow.rowCount, 0);
   await assert.rejects(s3.send(new HeadObjectCommand({
-    Bucket: "ed-test", Key: abandoned.data.file && (await pool.query("SELECT object_key FROM cloud_files WHERE id = $1", [abandoned.data.file.id])).rows[0]?.object_key
+    Bucket: "ed-test", Key: abandonedObject.rows[0].object_key
   })));
 
   assert.equal((await request(`/v1/devices/${firstDeviceId}/revoke`, { method: "POST", token })).status, 200);
