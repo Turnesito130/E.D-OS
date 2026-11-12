@@ -30,3 +30,7 @@ La compilación local del ELF x86_64 está verificada. La construcción de ISO h
 ## Desarrollo
 
 Rama de trabajo: `arquitectura/0.1`. Mantener `main` sin cambios durante esta etapa.
+
+## Experimento alternativo: kernel Linux
+
+La rama `experimento/linux-base` evalúa una segunda estrategia: mantener una edición propia de E.D-OS sobre el kernel Linux, sin depender de una distribución comercial concreta. Es una prueba separada; el kernel propio anterior se conserva en `arquitectura/0.1`. La documentación y el resultado de CI de esta rama determinarán si merece la pena continuar. No se debe confundir esta prueba con una ISO de E.D-OS terminada.
