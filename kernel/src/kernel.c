@@ -54,10 +54,10 @@ void kernel_main(void) {
         for (;;) __asm__ volatile ("cli; hlt");
     }
     if (!idt_init()) {
-        serial_write("IDT_ERROR: could not install exception table.\\n");
+        serial_write("IDT_ERROR: could not install exception table.\n");
         for (;;) __asm__ volatile ("cli; hlt");
     }
-    serial_write("IDT_READY entries=256 exceptions=32\\n");
+    serial_write("IDT_READY entries=256 exceptions=32\n");
 
     serial_write("MEMORY_MAP_OK usable_bytes=");
     serial_hex(memory_usable_bytes());
@@ -75,6 +75,8 @@ void kernel_main(void) {
     serial_write(" allocated_pages=");
     serial_hex(pmm_pages_allocated());
     serial_write("\nKERNEL_MEMORY_MILESTONE_OK\n");
+    serial_write("TEST: triggering breakpoint exception (vector 3).\n");
+    __asm__ volatile ("int3");
 
     for (;;) __asm__ volatile ("cli; hlt");
 }
@@ -86,6 +88,6 @@ void kernel_exception_panic(u64 vector, u64 error_code) {
     serial_hex(vector);
     serial_write(" error=");
     serial_hex(error_code);
-    serial_write("\\nKERNEL_HALTED_ON_EXCEPTION\\n");
+    serial_write("\nKERNEL_HALTED_ON_EXCEPTION\n");
     for (;;) __asm__ volatile ("cli; hlt");
 }
