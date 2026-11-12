@@ -501,6 +501,7 @@ const server = createServer(async (req, res) => {
           "UPDATE cloud_files SET status = 'completed', completed_at = now() WHERE id = $1 AND account_id = $2 AND status = 'uploading' RETURNING id, file_name, content_type, size_bytes, status, completed_at",
           [fileId, account.id]
         );
+        if (!completed.rowCount) return send(res, 409, { error: "La carga caducó o está siendo limpiada. Vuelve a subir el archivo." });
         return send(res, 200, { file: completed.rows[0] });
       }
       if (req.method === "GET" && action === "download") {
