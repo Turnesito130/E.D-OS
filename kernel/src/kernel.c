@@ -3,8 +3,8 @@ typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long long u64;
 
-/* Limine base revision 3 tag. The bootloader sets the last value to zero
- * when it supports the requested protocol revision. */
+/* Limine base revision 3 tag. A compatible bootloader sets the last value
+ * to zero before transferring control to the kernel. */
 __attribute__((used, section(".limine_requests"), aligned(8)))
 volatile u64 limine_base_revision[3] = {
     0xf9562b2d5c95a6c8ULL,
@@ -53,7 +53,13 @@ __attribute__((noreturn))
 void kernel_main(void) {
     serial_init();
     serial_write("\nE.D-OS kernel 0.0.2\n");
-    serial_write("BOOT_PROTOCOL=Limine\n");
+
+    if (limine_base_revision[2] != 0) {
+        serial_write("BOOT_ERROR: Limine base revision 3 not confirmed.\n");
+        for (;;) __asm__ volatile ("cli; hlt");
+    }
+
+    serial_write("BOOT_PROTOCOL=Limine revision 3\n");
     serial_write("KERNEL_BOOT_OK\n");
     serial_write("Kernel entered in x86_64 long mode.\n");
     serial_write("Next: memory map, physical allocator and IDT.\n");
