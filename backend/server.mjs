@@ -434,13 +434,12 @@ const server = createServer(async (req, res) => {
       const fileName = typeof body.fileName === "string" ? body.fileName.trim() : "";
       const contentType = typeof body.contentType === "string" ? body.contentType.trim() : "";
       const sizeBytes = body.sizeBytes;
-      const invalidFileName = !fileName || fileName.length > 180 || fileName.includes("/") || fileName.includes("\\\\") || /[\\x00-\\x1f]/.test(fileName);
+      const invalidFileName = !fileName || fileName.length > 180 || fileName.includes("/") || fileName.includes("\\") || /[\x00-\x1f]/.test(fileName);
       const invalidContentType = !contentType || contentType.length > 150;
       const invalidSize = !Number.isSafeInteger(sizeBytes) || sizeBytes < 1 || sizeBytes > CLOUD_MAX_FILE_BYTES;
       if (invalidFileName || invalidContentType || invalidSize) {
         return send(res, 400, {
-          error: "Archivo no válido. Máximo 50 MB; nombre y tipo MIME obligatorios.",
-          validation: { invalidFileName, invalidContentType, invalidSize, sizeBytes, maxFileBytes: CLOUD_MAX_FILE_BYTES }
+          error: "Archivo no válido. Máximo 50 MB; nombre y tipo MIME obligatorios."
         });
       }
       const id = randomBytes(16).toString("hex");
