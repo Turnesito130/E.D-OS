@@ -1,10 +1,4 @@
-/*
- * E.D-OS kernel entry stub.
- *
- * Contract: this entry point expects to be entered in 64-bit long mode by a
- * future, explicitly selected boot protocol/loader. No Linux kernel is used.
- * A bootloader and its hand-off contract are not implemented yet.
- */
+/* E.D-OS kernel entry. Limine transfers control in x86_64 long mode. */
 .section .text.entry,"ax"
 .global _start
 .type _start, @function
@@ -12,6 +6,7 @@
 
 _start:
     cli
+    cld
     lea kernel_stack_top(%rip), %rsp
     andq $-16, %rsp
     call kernel_main
