@@ -15,8 +15,8 @@ Este servicio es el primer backend ejecutable de E.D. ID y del inventario de dis
 ## No incluye todavía
 
 - Verificación de correo, recuperación de contraseña ni passkeys.
-- Confirmación de un dispositivo nuevo mediante código de un solo uso.
-- Sincronización de archivos, E.D. Cloud, TURN ni señalización WebRTC.
+- 
+- Sincronización de archivos, E.D. Cloud, TURN ni señalización WebRTC. La API solo sincroniza registros JSON pequeños.
 - Rate limiting distribuido, MFA, auditoría completa ni recuperación segura de claves.
 - Despliegue, dominio, certificados TLS, copias de seguridad o monitorización.
 
@@ -71,7 +71,7 @@ Todas las respuestas son JSON. Las rutas privadas requieren `Authorization: Bear
 | GET | `/v1/account/me` | Sesión | Consultar identidad |
 | GET | `/v1/devices` | Sesión | Listar dispositivos activos |
 | POST | `/v1/devices` | Sesión | Registrar dispositivo |
-| POST | `/v1/devices/{id}/revoke` | Sesión | Revocar un dispositivo propio |
+| POST | `/v1/devices/{id}/revoke` | Sesión | Revocar un dispositivo propio |\n| POST | `/v1/pairing/requests` | Público | Crear solicitud temporal en el nuevo dispositivo |\n| POST | `/v1/pairing/approve` | Sesión | Aprobar solicitud desde un dispositivo registrado |\n| POST | `/v1/pairing/claim` | Secreto temporal | Completar una vez el emparejamiento y obtener sesión |\n| GET | `/v1/sync/items` | Sesión | Listar registros JSON sincronizados |\n| PUT | `/v1/sync/items/{key}` | Sesión | Crear/actualizar con control de versión |\n| DELETE | `/v1/sync/items/{key}` | Sesión | Borrado lógico con control de versión |
 
 Ejemplo de registro:
 
@@ -97,8 +97,8 @@ Tipos admitidos: `phone`, `tablet`, `computer`, `watch`, `earbuds`, `other`.
 ## Reglas antes de producción
 
 - Añadir verificación de correo y recuperación de cuenta segura.
-- Implementar emparejamiento con código de un solo uso, expiración y aprobación explícita.
+- Añadir una pantalla cliente que cree y apruebe emparejamientos, y pruebas automatizadas de caducidad, uso único y revocación.
 - Incorporar límites de intentos distribuidos y protección frente a abuso.
 - Configurar HTTPS, secretos fuera del repositorio, copias de seguridad cifradas y monitorización.
-- Añadir pruebas automatizadas de aislamiento entre cuentas, caducidad y revocación.
+- Añadir pruebas automatizadas de aislamiento entre cuentas, caducidad, conflictos de sincronización y revocación.
 - Realizar revisión de seguridad independiente.
