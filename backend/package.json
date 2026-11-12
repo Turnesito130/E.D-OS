@@ -6,7 +6,8 @@
   "description": "Prototipo inicial de API para identidad y dispositivos E.D.",
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs"
+    "check": "node --check server.mjs",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=20"
