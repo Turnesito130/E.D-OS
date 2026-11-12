@@ -15,7 +15,7 @@ Este servicio es el primer backend ejecutable de E.D. ID y del inventario de dis
 ## No incluye todavía
 
 - Verificación de correo, recuperación de contraseña ni passkeys.
-- Sincronización de archivos/binarios, E.D. Cloud, TURN ni señalización WebRTC. La sincronización actual solo admite registros JSON de hasta 12 KB por elemento.
+- E.D. Cloud experimental: metadatos en PostgreSQL y bytes en almacenamiento S3-compatible mediante URLs firmadas. Requiere configurar el proveedor; no está desplegado ni auditado.
 - Rate limiting distribuido, MFA, auditoría completa ni recuperación segura de claves.
 - Despliegue, dominio, certificados TLS, copias de seguridad o monitorización.
 
@@ -47,7 +47,7 @@ npm install
 - `DATABASE_URL`: cadena de conexión PostgreSQL.
 - `PORT`: opcional; por defecto 8787.
 - `PGSSLMODE=require`: activa TLS para PostgreSQL cuando el proveedor lo requiera.
-- `CORS_ORIGINS`: lista separada por comas de orígenes web autorizados, por ejemplo `https://turnesito130.github.io`. No uses `*`.
+- `CORS_ORIGINS`: lista separada por comas de orígenes web autorizados, por ejemplo `https://turnesito130.github.io`. No uses `*`.\n- `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` y opcionalmente `S3_REGION`: configuración S3-compatible; secretos solo en el gestor de secretos del servidor.
 
 5. Configurar `CORS_ORIGINS` con el origen exacto desde el que se abrirá `apps/ecosystem.html`.
 6. Iniciar:
@@ -78,7 +78,7 @@ Todas las respuestas son JSON. Las rutas privadas requieren `Authorization: Bear
 | POST | `/v1/pairing/claim` | Secreto temporal | Completar una vez el emparejamiento y obtener sesión |
 | GET | `/v1/sync/items` | Sesión | Listar hasta 500 registros JSON |
 | PUT | `/v1/sync/items/{key}` | Sesión | Crear/actualizar con control de versión |
-| DELETE | `/v1/sync/items/{key}` | Sesión | Borrado lógico con control de versión |
+| DELETE | `/v1/sync/items/{key}` | Sesión | Borrado lógico con control de versión |\n| GET | `/v1/cloud/files` | Sesión | Listar archivos completados |\n| POST | `/v1/cloud/files` | Sesión | Crear reserva y URL firmada de subida (máx. 50 MB) |\n| POST | `/v1/cloud/files/{id}/complete` | Sesión | Verificar archivo tras la subida |\n| GET | `/v1/cloud/files/{id}/download` | Sesión | Obtener URL temporal de descarga |\n| DELETE | `/v1/cloud/files/{id}` | Sesión | Eliminar objeto y metadatos |
 
 Ejemplo de registro:
 
@@ -101,7 +101,7 @@ Ejemplo de alta de dispositivo:
 
 Tipos admitidos: `phone`, `tablet`, `computer`, `watch`, `earbuds`, `other`.
 
-## Reglas antes de producción
+## E.D. Cloud experimental\n\nEl cliente solicita una URL PUT firmada y sube directamente al almacenamiento de objetos. Después llama a `POST /v1/cloud/files/{id}/complete`; el servidor comprueba tamaño y tipo MIME con HEAD antes de marcar el archivo como disponible. Las descargas usan URLs GET firmadas de cinco minutos. Límite: 50 MB por archivo y cuota lógica de 2 GB por cuenta. Configura CORS del bucket para permitir PUT desde el origen del escritorio y el header `Content-Type`. La cuota actual no es una reserva transaccional estricta ante subidas concurrentes. No hay cifrado E2EE, análisis antimalware ni limpieza automática de cargas abandonadas.\n\nSi faltan variables S3, las rutas Cloud devuelven 503; no se guarda el archivo localmente como sustituto.\n\n## Reglas antes de producción
 
 - Añadir verificación de correo y recuperación de cuenta segura.
 - Añadir una pantalla cliente que cree y apruebe emparejamientos, y pruebas automatizadas de caducidad, uso único y revocación.
