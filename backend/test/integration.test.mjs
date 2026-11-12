@@ -6,6 +6,7 @@ import { once } from "node:events";
 import { Pool } from "pg";
 import { S3Client, CreateBucketCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { cleanupAbandonedUploads } from "../cloud-maintenance.mjs";
+import { createS3ProtocolFixture } from "./s3-protocol-fixture.mjs";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required for integration tests");
@@ -17,6 +18,7 @@ const s3 = new S3Client({
   credentials: { accessKeyId: "edtest", secretAccessKey: "ed_test_password_123" }
 });
 let child;
+let mockS3Server;
 
 async function request(path, { method = "GET", token, body } = {}) {
   const response = await fetch(base + path, {
@@ -45,6 +47,12 @@ async function waitForServer() {
 
 test("API integration: accounts, device pairing, sync isolation and revocation", async t => {
   await pool.query(await readFile(new URL("../schema.sql", import.meta.url), "utf8"));
+  const fixture = createS3ProtocolFixture();
+  mockS3Server = fixture.server;
+  await new Promise((resolve, reject) => {
+    mockS3Server.once("error", reject);
+    mockS3Server.listen(4566, "127.0.0.1", resolve);
+  });
   await s3.send(new CreateBucketCommand({ Bucket: "ed-test" }));
   child = spawn(process.execPath, ["server.mjs"], {
     cwd: new URL("..", import.meta.url),
@@ -62,6 +70,7 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   t.after(async () => {
     if (child && child.exitCode === null) child.kill("SIGTERM");
     if (child) await Promise.race([once(child, "exit"), new Promise(resolve => setTimeout(resolve, 2000))]);
+    if (mockS3Server?.listening) await new Promise(resolve => mockS3Server.close(resolve));
     await pool.query("TRUNCATE pairing_requests, sync_items, devices, sessions, accounts CASCADE");
     await pool.end();
   });
@@ -165,7 +174,7 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   assert.equal(otherItems.status, 200);
   assert.equal(otherItems.data.items.length, 0);
 
-  // End-to-end Cloud upload, completion, signed download and deletion on LocalStack S3.
+  // End-to-end Cloud upload, completion, signed download and deletion through the S3 HTTP fixture.
   const cloudToken = other.data.session.token;
   const payload = Buffer.from("E.D. Cloud integration test payload");
   const upload = await request("/v1/cloud/files", {
