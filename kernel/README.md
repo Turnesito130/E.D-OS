@@ -1,51 +1,42 @@
-# E.D-OS kernel workspace
+# E.D-OS — espacio de desarrollo del núcleo propio
 
-This directory is the integration point for the Linux kernel used as a starting
-point for E.D-OS. The upstream kernel source is intentionally **not copied into
-this repository yet**: first we pin an upstream revision, record its license
-and provenance, and make builds reproducible.
+E.D-OS está destinado a tener un **kernel propio e independiente**. El sistema no utilizará el kernel Linux para arrancar ni para funcionar.
 
-## Initial target
+Este directorio organiza el estudio técnico de Linux y el desarrollo del núcleo E.D-OS. El código Linux puede servir como referencia y, tras una evaluación individual, como origen de componentes seleccionados. No se importará el árbol completo ni se asumirá que sus subsistemas se pueden trasladar directamente.
 
-- First bring-up target: x86_64 under QEMU with UEFI/OVMF.
-- First physical target: a standard x86_64 UEFI PC, selected after hardware
-  compatibility checks.
-- ARM64/mobile support is a later target; it is not implied by the first build.
+## Objetivo inicial
 
-## Source and modification policy
+- Primer entorno de desarrollo y pruebas: x86_64 en QEMU con firmware UEFI/OVMF.
+- Primer hito: arrancar un kernel mínimo escrito para E.D-OS, independiente de Linux.
+- Hardware físico y ARM64/móviles: objetivos posteriores, sujetos a drivers, firmware y pruebas reales.
 
-1. Select a maintained upstream stable/LTS kernel revision and record the
-   exact tag and commit before importing or building it.
-2. Keep upstream source distinguishable from E.D-OS changes.
-3. Store E.D-OS kernel changes as small, reviewable patches under
-   `kernel/patches/`, with rationale and test evidence.
-4. Keep configuration fragments under `kernel/config/`; do not silently
-   replace upstream defaults.
-5. Preserve upstream copyright notices, SPDX identifiers, and all applicable
-   license texts. Linux kernel contributions are generally GPL-2.0-only;
-   review the exact licensing of every imported component.
-6. Do not claim a kernel boots until a reproducible build and QEMU boot test
-   have both succeeded.
+## Reglas de trabajo
 
-## Planned layout
+1. Mantener el código original de E.D-OS separado del código de terceros.
+2. Estudiar las dependencias e interfaces de cada subsistema Linux antes de considerar su adaptación.
+3. Registrar para cada componente externo su URL de origen, versión o commit, licencia, avisos, modificaciones y pruebas.
+4. No copiar código GPL-2.0-only sin revisar las obligaciones legales y de redistribución aplicables.
+5. Preferir una implementación propia cuando portar un subsistema Linux resulte demasiado acoplado o costoso.
+6. No declarar que E.D-OS tiene un kernel funcional hasta que el kernel propio compile y arranque en QEMU.
 
-- `kernel/config/`: E.D-OS configuration fragments per target.
-- `kernel/patches/`: E.D-OS patches against the pinned upstream revision.
-- `kernel/manifest.json`: exact upstream version, commit, source URL and
-  checksums once selected.
-- `kernel/build/`: generated build output only; never commit build products.
+## Estructura prevista
 
-## First milestones
+- `research/linux/`: notas y análisis de subsistemas; no contiene código copiado.
+- `design/`: especificaciones de interfaces y arquitectura de E.D-OS.
+- `src/`: código fuente original del kernel E.D-OS.
+- `third_party/`: componentes externos aprobados, con sus licencias y procedencia.
+- `patches/`: adaptaciones mantenidas contra una versión concreta de un componente externo, cuando proceda.
+- `manifest.json`: estado de investigación y registro de fuentes externas.
 
-- [ ] Choose and pin a maintained kernel revision.
-- [ ] Define a reproducible x86_64 toolchain and build environment.
-- [ ] Produce an unmodified reference kernel build.
-- [ ] Boot the reference kernel in QEMU.
-- [ ] Add one narrowly scoped E.D-OS patch only after the reference build works.
-- [ ] Rebuild and boot-test after each patch.
+## Primeros hitos
 
-## Important boundary
+- [ ] Documentar la arquitectura general del kernel Linux.
+- [ ] Analizar memoria, planificación, interrupciones, IPC y drivers.
+- [ ] Definir la arquitectura mínima del kernel E.D-OS.
+- [ ] Crear el proyecto de kernel propio y su toolchain reproducible.
+- [ ] Arrancar el primer kernel E.D-OS en QEMU.
+- [ ] Evaluar por separado cualquier código externo candidato.
 
-The current E.D-OS web desktop and ecosystem API are not a bootable operating
-system. This directory documents and prepares the native-kernel work; it does
-not yet contain a kernel image, bootloader, root filesystem, or tested patch.
+## Límite actual
+
+El escritorio web y la API del ecosistema no son un sistema operativo arrancable. Este directorio contiene planificación: todavía no hay kernel propio, bootloader, root filesystem ni pruebas de arranque.
