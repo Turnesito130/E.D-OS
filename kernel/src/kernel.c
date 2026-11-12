@@ -1,10 +1,16 @@
-/*
- * E.D-OS kernel 0.0.1 — minimal freestanding core.
- * Original E.D-OS code. No Linux headers or runtime dependencies.
- */
+/* E.D-OS kernel 0.0.2 — freestanding x86_64 boot milestone. */
 typedef unsigned char u8;
 typedef unsigned short u16;
-typedef unsigned int u32;
+typedef unsigned long long u64;
+
+/* Limine base revision 3 tag. The bootloader sets the last value to zero
+ * when it supports the requested protocol revision. */
+__attribute__((used, section(".limine_requests"), aligned(8)))
+volatile u64 limine_base_revision[3] = {
+    0xf9562b2d5c95a6c8ULL,
+    0x6a7b384944536bdcULL,
+    3
+};
 
 static inline void outb(u16 port, u8 value) {
     __asm__ volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
@@ -17,14 +23,13 @@ static inline u8 inb(u16 port) {
 }
 
 static void serial_init(void) {
-    const u16 com1 = 0x3F8;
-    outb(com1 + 1, 0x00); /* Disable UART interrupts. */
-    outb(com1 + 3, 0x80); /* Enable divisor latch. */
-    outb(com1 + 0, 0x01); /* 115200 baud. */
-    outb(com1 + 1, 0x00);
-    outb(com1 + 3, 0x03); /* 8 data bits, no parity, one stop bit. */
-    outb(com1 + 2, 0xC7); /* Enable and clear FIFO. */
-    outb(com1 + 4, 0x0B); /* Enable IRQs, RTS/DSR. */
+    outb(0x3F9, 0x00);
+    outb(0x3FB, 0x80);
+    outb(0x3F8, 0x01);
+    outb(0x3F9, 0x00);
+    outb(0x3FB, 0x03);
+    outb(0x3FA, 0xC7);
+    outb(0x3FC, 0x0B);
 }
 
 static void serial_write_char(char value) {
@@ -39,9 +44,7 @@ static void serial_write_char(char value) {
 
 static void serial_write(const char *message) {
     while (*message != '\0') {
-        if (*message == '\n') {
-            serial_write_char('\r');
-        }
+        if (*message == '\n') serial_write_char('\r');
         serial_write_char(*message++);
     }
 }
@@ -49,12 +52,10 @@ static void serial_write(const char *message) {
 __attribute__((noreturn))
 void kernel_main(void) {
     serial_init();
-    serial_write("\nE.D-OS kernel 0.0.1\n");
-    serial_write("Independent kernel entry reached.\n");
-    serial_write("Serial diagnostics initialized.\n");
-    serial_write("CPU halted: next milestone is a documented bootloader hand-off.\n");
-
-    for (;;) {
-        __asm__ volatile ("cli; hlt");
-    }
+    serial_write("\nE.D-OS kernel 0.0.2\n");
+    serial_write("BOOT_PROTOCOL=Limine\n");
+    serial_write("KERNEL_BOOT_OK\n");
+    serial_write("Kernel entered in x86_64 long mode.\n");
+    serial_write("Next: memory map, physical allocator and IDT.\n");
+    for (;;) __asm__ volatile ("cli; hlt");
 }
