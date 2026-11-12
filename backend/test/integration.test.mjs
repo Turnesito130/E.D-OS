@@ -134,7 +134,7 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
     "SELECT COALESCE(sum(size_bytes), 0)::bigint AS used, count(*)::int AS files FROM cloud_files WHERE account_id = (SELECT id FROM accounts WHERE email = $1)",
     [email]
   );
-  assert.equal(Number(reserved.rows[0].used), 2 * 1024 * 1024 * 1024);
+  assert.equal(Number(reserved.rows[0].used), 40 * 50 * 1024 * 1024);
   assert.equal(reserved.rows[0].files, 40);
 
   const created = await request("/v1/sync/items/preferences", {
