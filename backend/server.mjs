@@ -4,6 +4,7 @@ import { promisify } from "node:util";
 import pg from "pg";
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { cleanupAbandonedUploads } from "./cloud-maintenance.mjs";
 
 const scrypt = promisify(scryptCallback);
 const { Pool } = pg;
@@ -17,6 +18,8 @@ const attempts = new Map();
 const allowedOrigins = new Set((process.env.CORS_ORIGINS || "").split(",").map(value => value.trim()).filter(Boolean));
 const CLOUD_MAX_FILE_BYTES = 50 * 1024 * 1024;
 const CLOUD_QUOTA_BYTES = 2 * 1024 * 1024 * 1024;
+const CLOUD_UPLOAD_TTL_MINUTES = 60;
+let cleanupRunning = false;
 const cloudConfig = {
   endpoint: process.env.S3_ENDPOINT,
   bucket: process.env.S3_BUCKET,
@@ -448,7 +451,7 @@ const server = createServer(async (req, res) => {
           [account.id]
         );
         const usage = await client.query(
-          "SELECT COALESCE(sum(size_bytes), 0)::bigint AS used FROM cloud_files WHERE account_id = $1 AND status IN ('uploading', 'completed')",
+          "SELECT COALESCE(sum(size_bytes), 0)::bigint AS used FROM cloud_files WHERE account_id = $1 AND status IN ('uploading', 'completed', 'deleting')",
           [account.id]
         );
         if (Number(usage.rows[0].used) + sizeBytes > CLOUD_QUOTA_BYTES) {
@@ -568,8 +571,27 @@ const server = createServer(async (req, res) => {
   }
 });
 
+async function runCloudCleanup() {
+  if (!cloudEnabled || !pool || cleanupRunning) return;
+  cleanupRunning = true;
+  try {
+    const result = await cleanupAbandonedUploads({
+      pool, s3, bucket: cloudConfig.bucket, olderThanMinutes: CLOUD_UPLOAD_TTL_MINUTES
+    });
+    if (result.deleted || result.failed) {
+      console.log(`E.D. Cloud cleanup: ${result.deleted} eliminados, ${result.failed} pendientes`);
+    }
+  } catch (error) {
+    console.error("E.D. Cloud cleanup falló:", error.message);
+  } finally { cleanupRunning = false; }
+}
+
 server.listen(PORT, () => {
   console.log(`E.D. Ecosystem API escuchando en el puerto ${PORT}`);
+  const startupCleanup = setTimeout(runCloudCleanup, 30_000);
+  startupCleanup.unref();
+  const cleanupInterval = setInterval(runCloudCleanup, 15 * 60_000);
+  cleanupInterval.unref();
 });
 
 process.on("SIGTERM", async () => {
