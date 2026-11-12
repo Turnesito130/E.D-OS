@@ -91,8 +91,15 @@ CREATE TABLE IF NOT EXISTS cloud_files (
   file_name TEXT NOT NULL CHECK (length(file_name) BETWEEN 1 AND 180),
   content_type TEXT NOT NULL CHECK (length(content_type) BETWEEN 1 AND 150),
   size_bytes BIGINT NOT NULL CHECK (size_bytes BETWEEN 1 AND 52428800),
-  status TEXT NOT NULL DEFAULT 'uploading' CHECK (status IN ('uploading', 'completed')),
+  status TEXT NOT NULL DEFAULT 'uploading' CHECK (status IN ('uploading', 'completed', 'deleting')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   completed_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS cloud_files_account_idx ON cloud_files(account_id, created_at DESC);
+
+-- Allow retryable cleanup state on databases created by earlier 0.1 revisions.
+ALTER TABLE cloud_files DROP CONSTRAINT IF EXISTS cloud_files_status_check;
+ALTER TABLE cloud_files ADD CONSTRAINT cloud_files_status_check
+  CHECK (status IN ('uploading', 'completed', 'deleting'));
+CREATE INDEX IF NOT EXISTS cloud_files_cleanup_idx
+  ON cloud_files(created_at) WHERE status IN ('uploading', 'deleting');
