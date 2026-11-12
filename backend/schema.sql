@@ -65,3 +65,19 @@ CREATE TABLE IF NOT EXISTS pairing_requests (
 
 CREATE INDEX IF NOT EXISTS pairing_requests_expiry_idx ON pairing_requests(expires_at);
 CREATE INDEX IF NOT EXISTS pairing_requests_account_idx ON pairing_requests(account_id);
+
+
+-- Registros JSON pequeños sincronizados por cuenta, con control de versiones.
+-- No guardar archivos binarios ni secretos en esta tabla.
+CREATE TABLE IF NOT EXISTS sync_items (
+  account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  item_key TEXT NOT NULL CHECK (length(item_key) BETWEEN 1 AND 100),
+  payload JSONB,
+  version INTEGER NOT NULL DEFAULT 1 CHECK (version > 0),
+  deleted BOOLEAN NOT NULL DEFAULT false,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (account_id, item_key),
+  CHECK ((deleted = true AND payload IS NULL) OR deleted = false)
+);
+
+CREATE INDEX IF NOT EXISTS sync_items_updated_idx ON sync_items(account_id, updated_at DESC);
