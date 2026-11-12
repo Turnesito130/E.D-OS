@@ -456,7 +456,7 @@ const server = createServer(async (req, res) => {
       return send(res, 201, { file: { id, fileName, contentType, sizeBytes, status: "uploading" }, uploadUrl, uploadMethod: "PUT", requiredHeaders: { "content-type": contentType }, expiresInSeconds: 300 });
     }
 
-    const cloudFileMatch = url.pathname.match(/^\\/v1\\/cloud\\/files\\/([a-f0-9]{32})(?:\\/(complete|download))?$/);
+    const cloudFileMatch = url.pathname.match(/^\/v1\/cloud\/files\/([a-f0-9]{32})(?:\/(complete|download))?$/);
     if (cloudFileMatch) {
       if (!cloudEnabled) return send(res, 503, { error: "E.D. Cloud no está configurado: falta el almacenamiento S3." });
       const [, fileId, action] = cloudFileMatch;
