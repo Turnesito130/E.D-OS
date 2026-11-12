@@ -18,7 +18,8 @@ Pasar del escritorio visual inicial a una plataforma experimental con funciones 
 - [x] Abrir varias aplicaciones en ventanas independientes.
 - [x] Incorporar minimizar, maximizar, restaurar, cerrar y mover ventanas.
 - [ ] Probar ventanas y accesibilidad en navegadores reales y tamaños de pantalla distintos.
-- [ ] Añadir gestión de foco, ciclo de ventanas y persistencia de posición.
+- [x] Añadir gestión de foco, ciclo de ventanas con Alt+Tab y persistencia local de posición/tamaño.
+- [ ] Probar el ciclo Alt+Tab, restauración de geometría y redimensionado en navegadores reales.
 
 ### Fase A — Aplicaciones locales
 - [x] Primera interfaz de E.D. Freedom para búsquedas web mediante buscadores externos.
