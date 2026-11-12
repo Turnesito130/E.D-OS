@@ -5,7 +5,7 @@ TARGET = $(BUILD_DIR)/ed-os-kernel.elf
 ISO = $(BUILD_DIR)/ed-os.iso
 CFLAGS = --target=x86_64-unknown-none-elf -std=c11 -O2 -Wall -Wextra -Werror \
          -ffreestanding -fno-builtin -fno-stack-protector -fno-pic -fno-pie \
-         -mno-red-zone -mcmodel=kernel
+         -mno-red-zone -mno-sse -mno-sse2 -mno-mmx -mcmodel=kernel
 ASFLAGS = --target=x86_64-unknown-none-elf -ffreestanding -fno-pic -fno-pie
 LDFLAGS = -nostdlib -static -z max-page-size=0x1000 -T linker.ld
 
