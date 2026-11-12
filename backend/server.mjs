@@ -214,7 +214,7 @@ const server = createServer(async (req, res) => {
       if (!account) return send(res, 401, { error: "Necesitas una sesión válida para aprobar dispositivos." });
       const body = await readJson(req);
       if (typeof body.requestId !== "string" || typeof body.pairingCode !== "string" ||
-          !/^\\d{8}$/.test(body.pairingCode) || typeof body.approvedByDeviceId !== "string") {
+          !/^\d{8}$/.test(body.pairingCode) || typeof body.approvedByDeviceId !== "string") {
         return send(res, 400, { error: "Solicitud de aprobación no válida." });
       }
       const client = await pool.connect();
@@ -340,7 +340,7 @@ const server = createServer(async (req, res) => {
       return send(res, 200, { items: result.rows });
     }
 
-    const syncMatch = url.pathname.match(/^\\/v1\\/sync\\/items\\/([a-zA-Z0-9._-]{1,100})$/);
+    const syncMatch = url.pathname.match(/^\/v1\/sync\/items\/([a-zA-Z0-9._-]{1,100})$/);
     if (req.method === "PUT" && syncMatch) {
       const body = await readJson(req);
       if (!Number.isSafeInteger(body.expectedVersion) || body.expectedVersion < 0 ||
