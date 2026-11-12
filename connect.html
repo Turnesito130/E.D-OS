@@ -35,7 +35,8 @@ main{max-width:1080px;margin:0 auto;padding:54px 24px 80px}.eyebrow{font-size:11
 <label for="remoteCode">Código del otro dispositivo</label><textarea id="remoteCode" placeholder="Pega aquí el código recibido del otro dispositivo…"></textarea>
 <button class="btn primary" id="applyCode">Usar código recibido</button>
 <div class="pairstatus" id="pairStatus" role="status" aria-live="polite">Todavía no hay ninguna conexión.</div>
-<div id="messageArea" class="hidden"><label for="messageInput">Mensaje de prueba entre dispositivos</label><div class="chatrow"><input id="messageInput" placeholder="Escribe un mensaje…" maxlength="500"><button class="btn primary" id="sendMessage">Enviar</button></div><div class="notice" id="messageLog">Canal de datos preparado cuando la conexión esté abierta.</div></div>
+<div id="messageArea" class="hidden"><label for="messageInput">Mensaje de prueba entre dispositivos</label><div class="chatrow"><input id="messageInput" placeholder="Escribe un mensaje…" maxlength="500"><button class="btn primary" id="sendMessage">Enviar</button></div><div class="notice" id="messageLog">Canal de datos preparado cuando la conexión esté abierta.</div>
+<div class="pairbox" style="margin-top:14px"><label for="fileToSend">Enviar un archivo al otro dispositivo</label><input id="fileToSend" type="file" class="btn" style="width:100%;text-align:left"><button class="btn primary" id="sendFile" type="button">Enviar archivo</button><div class="pairstatus" id="fileStatus" role="status" aria-live="polite">Transferencia directa por WebRTC. Máximo: 25 MB por archivo.</div></div></div>
 <div class="notice">Seguridad: WebRTC cifra el transporte con DTLS, pero este intercambio manual no sustituye una identidad verificada. Comparte los códigos solo con alguien de confianza. El servicio STUN requiere Internet y la conexión puede fallar en algunas redes.</div>
 </div>
 <div class="notice" id="feedback" role="status">Esta primera prueba intenta conectar dos navegadores directamente. No empareja Bluetooth ni sincroniza archivos todavía.</div>
@@ -53,10 +54,25 @@ main{max-width:1080px;margin:0 auto;padding:54px 24px 80px}.eyebrow{font-size:11
 </main>
 <script>
 const feedback=document.getElementById('feedback'),pairBox=document.getElementById('pairBox'),role=document.getElementById('role'),localCode=document.getElementById('localCode'),remoteCode=document.getElementById('remoteCode'),pairStatus=document.getElementById('pairStatus'),messageArea=document.getElementById('messageArea'),messageLog=document.getElementById('messageLog');
-let peer=null,dataChannel=null;
+let peer=null,dataChannel=null,incomingFile=null;
 function status(message){pairStatus.textContent=message;}
 function log(message){messageLog.textContent=message;}
-function setChannel(channel){dataChannel=channel;channel.onopen=()=>{status('¡Conexión directa establecida! Ya puedes enviar mensajes de prueba.');messageArea.classList.remove('hidden');};channel.onclose=()=>status('El canal se ha cerrado.');channel.onerror=()=>status('Se ha producido un error en el canal.');channel.onmessage=event=>log('Otro dispositivo: '+event.data);}
+function setChannel(channel){
+ dataChannel=channel;channel.binaryType='arraybuffer';
+ channel.onopen=()=>{status('¡Conexión directa establecida! Mensajes y archivos disponibles.');messageArea.classList.remove('hidden');};
+ channel.onclose=()=>status('El canal se ha cerrado.');
+ channel.onerror=()=>status('Se ha producido un error en el canal.');
+ channel.onmessage=event=>{
+  if(typeof event.data==='string'){
+   let packet;try{packet=JSON.parse(event.data)}catch(_){log('Otro dispositivo: '+event.data);return;}
+   if(packet.type==='file-start'){incomingFile={name:String(packet.name||'archivo').replaceAll('/','_').replaceAll('\\','_').slice(0,120),mime:String(packet.mime||'application/octet-stream'),size:Number(packet.size)||0,chunks:[],received:0};document.getElementById('fileStatus').textContent='Recibiendo '+incomingFile.name+'…';}
+   else if(packet.type==='file-end'&&incomingFile){const blob=new Blob(incomingFile.chunks,{type:incomingFile.mime});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=incomingFile.name;a.textContent='Descargar '+incomingFile.name+' ('+Math.round(blob.size/1024)+' KB)';a.style.display='block';a.style.marginTop='10px';document.getElementById('fileStatus').replaceChildren(document.createTextNode('Archivo recibido. '),a);setTimeout(()=>URL.revokeObjectURL(url),60000);incomingFile=null;}
+   else if(packet.type==='file-error'){document.getElementById('fileStatus').textContent='Transferencia cancelada.';incomingFile=null;}
+   return;
+  }
+  if(incomingFile){incomingFile.chunks.push(event.data);incomingFile.received+=event.data.byteLength||event.data.size||0;document.getElementById('fileStatus').textContent='Recibiendo '+incomingFile.name+' · '+Math.min(100,Math.round(incomingFile.received/Math.max(1,incomingFile.size)*100))+'%';}
+ };
+}
 function makePeer(){if(!window.RTCPeerConnection)throw new Error('Este navegador no ofrece WebRTC. Prueba con una versión actualizada de Chrome o Edge.');peer=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});peer.onconnectionstatechange=()=>{if(peer.connectionState==='failed')status('La conexión ha fallado. Puede que esta red necesite un servidor TURN o bloquee WebRTC.');else if(peer.connectionState==='disconnected')status('Conexión interrumpida; esperando recuperación…');};peer.ondatachannel=event=>setChannel(event.channel);return peer;}
 async function waitIce(pc){if(pc.iceGatheringState==='complete')return;await new Promise((resolve,reject)=>{let finished=false;const finish=(error)=>{if(finished)return;finished=true;clearTimeout(timer);pc.removeEventListener('icegatheringstatechange',check);error?reject(error):resolve();};const check=()=>{if(pc.iceGatheringState==='complete')finish();};const timer=setTimeout(()=>finish(new Error('La búsqueda de rutas de red tardó demasiado. Reinicia la prueba o inténtalo en otra red.')),15000);pc.addEventListener('icegatheringstatechange',check);check();});}
 function encode(desc){return btoa(unescape(encodeURIComponent(JSON.stringify({type:desc.type,sdp:desc.sdp}))));}
@@ -67,7 +83,26 @@ document.getElementById('applyCode').addEventListener('click',async()=>{try{cons
 document.getElementById('copyCode').addEventListener('click',async()=>{if(!localCode.value){status('Primero crea un código.');return;}try{await navigator.clipboard.writeText(localCode.value);status('Código copiado. Compártelo solo con el otro dispositivo.');}catch(_){localCode.select();status('No se pudo copiar automáticamente. Mantén pulsado el texto y cópialo.');}});
 document.getElementById('sendMessage').addEventListener('click',()=>{const input=document.getElementById('messageInput'),value=input.value.trim();if(!value)return;if(!dataChannel||dataChannel.readyState!=='open'){status('El canal todavía no está conectado.');return;}dataChannel.send(value);log('Tú: '+value);input.value='';});
 document.getElementById('messageInput').addEventListener('keydown',event=>{if(event.key==='Enter')document.getElementById('sendMessage').click();});
-document.getElementById('resetPair').addEventListener('click',()=>{if(peer)peer.close();peer=null;dataChannel=null;localCode.value='';remoteCode.value='';messageArea.classList.add('hidden');status('Sesión reiniciada. No hay conexión activa.');});
+document.getElementById('sendFile').addEventListener('click',async()=>{
+ const input=document.getElementById('fileToSend'),file=input.files&&input.files[0],label=document.getElementById('fileStatus');
+ if(!file){label.textContent='Selecciona primero un archivo.';return;}
+ if(!dataChannel||dataChannel.readyState!=='open'){label.textContent='Primero conecta los dos dispositivos.';return;}
+ if(file.size>25*1024*1024){label.textContent='El archivo supera el límite de 25 MB.';return;}
+ const button=document.getElementById('sendFile');button.disabled=true;
+ try{
+  dataChannel.send(JSON.stringify({type:'file-start',name:file.name,mime:file.type||'application/octet-stream',size:file.size}));
+  const chunkSize=16*1024;
+  for(let offset=0;offset<file.size;offset+=chunkSize){
+   while(dataChannel.bufferedAmount>1024*1024){await new Promise(resolve=>setTimeout(resolve,40));if(dataChannel.readyState!=='open')throw new Error('La conexión se cerró.');}
+   const buffer=await file.slice(offset,Math.min(offset+chunkSize,file.size)).arrayBuffer();
+   dataChannel.send(buffer);
+   label.textContent='Enviando '+file.name+' · '+Math.min(100,Math.round((offset+buffer.byteLength)/Math.max(1,file.size)*100))+'%';
+  }
+  dataChannel.send(JSON.stringify({type:'file-end'}));label.textContent='Archivo enviado. Esperando confirmación del otro dispositivo.';
+ }catch(error){label.textContent='No se pudo enviar: '+(error.message||'error de conexión');}
+ finally{button.disabled=false;}
+});
+document.getElementById('resetPair').addEventListener('click',()=>{if(peer)peer.close();peer=null;dataChannel=null;incomingFile=null;localCode.value='';remoteCode.value='';messageArea.classList.add('hidden');status('Sesión reiniciada. No hay conexión activa.');});
 </script>
 </body>
 </html>
