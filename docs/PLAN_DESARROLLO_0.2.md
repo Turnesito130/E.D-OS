@@ -9,7 +9,11 @@ Pasar del escritorio visual inicial a una plataforma experimental con funciones 
 
 ## Orden de trabajo
 
-### Fase 0 — Escritorio y experiencia\n- [x] Añadir búsqueda local de aplicaciones, tareas y nombres de archivos.\n- [x] Añadir centro de notificaciones local con historial limitado.\n- [x] Añadir atajo Ctrl/⌘ + K para abrir la búsqueda.\n- [ ] Probar búsqueda y notificaciones en navegadores reales y tecnologías de asistencia.
+### Fase 0 — Escritorio y experiencia
+- [x] Añadir búsqueda local de aplicaciones, tareas y nombres de archivos.
+- [x] Añadir centro de notificaciones local con historial limitado.
+- [x] Añadir atajo Ctrl/⌘ + K para abrir la búsqueda.
+- [ ] Probar búsqueda y notificaciones en navegadores reales y tecnologías de asistencia.
 - [x] Añadir gestor experimental de ventanas múltiples.
 - [x] Abrir varias aplicaciones en ventanas independientes.
 - [x] Incorporar minimizar, maximizar, restaurar, cerrar y mover ventanas.
@@ -27,7 +31,8 @@ Pasar del escritorio visual inicial a una plataforma experimental con funciones 
 - [x] Primera aplicación experimental de Archivos.
 - [ ] Probar creación, edición, importación, descarga y borrado en navegadores reales.
 - [ ] Añadir pruebas de límites de almacenamiento, nombres, errores y recuperación.
-- [x] Crear Ajustes con preferencias persistentes en el navegador.\n- [ ] Probar cambios de preferencias y persistencia en navegadores reales.
+- [x] Crear Ajustes con preferencias persistentes en el navegador.
+- [ ] Probar cambios de preferencias y persistencia en navegadores reales.
 - [ ] Definir una interfaz común para abrir aplicaciones y comunicar errores.
 
 **Límite actual de Archivos:** guarda texto y metadatos en el almacenamiento del navegador. No accede al disco del sistema, no es un gestor de archivos nativo y no sincroniza entre dispositivos. Exportar copia es importante porque los datos pueden perderse si se borra el almacenamiento del navegador.
@@ -43,8 +48,10 @@ Pasar del escritorio visual inicial a una plataforma experimental con funciones 
 No llamar a esta función Bluetooth ni sincronización hasta que esas capacidades existan y hayan sido probadas.
 
 ### Fase C — Cuentas y sincronización
-- [x] Implementar registro, inicio/cierre de sesión y consulta de cuenta (API experimental).\n- [ ] Añadir verificación de correo, recuperación de cuenta y MFA/passkeys.
-- [x] Implementar registro, listado y revocación básica de dispositivos en la API experimental.\n- [x] Implementar solicitudes de emparejamiento temporales con aprobación autenticada y canje de sesión de un solo uso (API, aún sin cliente ni pruebas reales).
+- [x] Implementar registro, inicio/cierre de sesión y consulta de cuenta (API experimental).
+- [ ] Añadir verificación de correo, recuperación de cuenta y MFA/passkeys.
+- [x] Implementar registro, listado y revocación básica de dispositivos en la API experimental.
+- [x] Implementar solicitudes de emparejamiento temporales con aprobación autenticada y canje de sesión de un solo uso (API, aún sin cliente ni pruebas reales).
 - [ ] Separar datos locales, datos sincronizados y datos compartidos.
 - [ ] Definir cifrado en tránsito y protección de datos almacenados.
 - [ ] Diseñar resolución de conflictos y borrado sincronizado.
