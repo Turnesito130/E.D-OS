@@ -1,42 +1,54 @@
-# E.D-OS — espacio de desarrollo del núcleo propio
+# E.D-OS — desarrollo del núcleo propio
 
-E.D-OS está destinado a tener un **kernel propio e independiente**. El sistema no utilizará el kernel Linux para arrancar ni para funcionar.
+E.D-OS tendrá un **kernel propio e independiente**. No utilizará el kernel Linux para arrancar ni para funcionar.
 
-Este directorio organiza el estudio técnico de Linux y el desarrollo del núcleo E.D-OS. El código Linux puede servir como referencia y, tras una evaluación individual, como origen de componentes seleccionados. No se importará el árbol completo ni se asumirá que sus subsistemas se pueden trasladar directamente.
+Linux se estudia como referencia de ingeniería. Cualquier reutilización de código será selectiva y requerirá revisar dependencias, procedencia, licencia y obligaciones de redistribución antes de incorporarlo.
+
+## Prototipo de código 0.0.1
+
+Ya existe una primera base de código original en kernel/src:
+
+- src/entry.S: punto de entrada x86_64 y pila inicial de 16 KiB.
+- src/kernel.c: núcleo freestanding mínimo y diagnóstico por puerto serie COM1.
+- linker.ld: distribución ELF64 inicial a partir de 1 MiB.
+- Makefile: compilación reproducible con Clang/LLD.
+- .github/workflows/kernel-build.yml: compilación automatizada y publicación del ELF como artefacto.
+
+El código no usa libc ni cabeceras del kernel Linux. El punto de entrada presupone que un cargador futuro transfiere el control en modo long 64-bit. **Todavía no se ha elegido ni implementado el protocolo/cargador de arranque**, por lo que este ELF no debe presentarse como un sistema arrancable.
 
 ## Objetivo inicial
 
-- Primer entorno de desarrollo y pruebas: x86_64 en QEMU con firmware UEFI/OVMF.
-- Primer hito: arrancar un kernel mínimo escrito para E.D-OS, independiente de Linux.
+- Arquitectura de desarrollo: x86_64.
+- Primer entorno de ejecución previsto: QEMU.
+- Primer hito de arranque: definir un protocolo de hand-off, preparar el cargador y demostrar que el kernel propio recibe el control en QEMU.
 - Hardware físico y ARM64/móviles: objetivos posteriores, sujetos a drivers, firmware y pruebas reales.
+
+## Estructura prevista
+
+- research/linux/: notas y análisis; no contiene código copiado.
+- design/: especificaciones de interfaces y arquitectura.
+- src/: código fuente original del kernel E.D-OS.
+- third_party/: componentes externos aprobados, con licencias y procedencia.
+- patches/: adaptaciones mantenidas contra una versión concreta de un componente externo.
+- manifest.json: estado y registro de fuentes externas.
 
 ## Reglas de trabajo
 
 1. Mantener el código original de E.D-OS separado del código de terceros.
 2. Estudiar las dependencias e interfaces de cada subsistema Linux antes de considerar su adaptación.
-3. Registrar para cada componente externo su URL de origen, versión o commit, licencia, avisos, modificaciones y pruebas.
+3. Registrar URL, versión/commit, licencia, avisos, modificaciones y pruebas de cada componente externo.
 4. No copiar código GPL-2.0-only sin revisar las obligaciones legales y de redistribución aplicables.
 5. Preferir una implementación propia cuando portar un subsistema Linux resulte demasiado acoplado o costoso.
-6. No declarar que E.D-OS tiene un kernel funcional hasta que el kernel propio compile y arranque en QEMU.
+6. No declarar el kernel funcional hasta compilarlo y arrancarlo en un entorno controlado.
+7. No afirmar que una compilación ELF equivale a un arranque probado.
 
-## Estructura prevista
+## Estado verificado
 
-- `research/linux/`: notas y análisis de subsistemas; no contiene código copiado.
-- `design/`: especificaciones de interfaces y arquitectura de E.D-OS.
-- `src/`: código fuente original del kernel E.D-OS.
-- `third_party/`: componentes externos aprobados, con sus licencias y procedencia.
-- `patches/`: adaptaciones mantenidas contra una versión concreta de un componente externo, cuando proceda.
-- `manifest.json`: estado de investigación y registro de fuentes externas.
+- [x] Código fuente mínimo de entrada y núcleo creado.
+- [x] Compilación local de prueba con Clang/LLD: ELF64 x86-64 generado correctamente.
+- [ ] Compilación automatizada de GitHub Actions confirmada.
+- [ ] Protocolo/cargador de arranque seleccionado e implementado.
+- [ ] Arranque del kernel propio probado en QEMU.
+- [ ] Memoria física/virtual e interrupciones implementadas.
 
-## Primeros hitos
-
-- [ ] Documentar la arquitectura general del kernel Linux.
-- [ ] Analizar memoria, planificación, interrupciones, IPC y drivers.
-- [ ] Definir la arquitectura mínima del kernel E.D-OS.
-- [ ] Crear el proyecto de kernel propio y su toolchain reproducible.
-- [ ] Arrancar el primer kernel E.D-OS en QEMU.
-- [ ] Evaluar por separado cualquier código externo candidato.
-
-## Límite actual
-
-El escritorio web y la API del ecosistema no son un sistema operativo arrancable. Este directorio contiene planificación: todavía no hay kernel propio, bootloader, root filesystem ni pruebas de arranque.
+La prueba local solo verifica que el código compila y enlaza. No demuestra que el kernel arranque, que COM1 funcione en una máquina virtual ni que exista compatibilidad con hardware físico.
