@@ -111,7 +111,9 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
     body: { requestId: pairing.data.requestId, pollSecret: pairing.data.pollSecret }
   })).status, 409);
 
-  assert.equal((await request("/v1/cloud/files", { token })).status, 503);\n\n  const created = await request("/v1/sync/items/preferences", {
+  assert.equal((await request("/v1/cloud/files", { token })).status, 503);
+
+  const created = await request("/v1/sync/items/preferences", {
     method: "PUT", token, body: { expectedVersion: 0, payload: { theme: "light" } }
   });
   assert.equal(created.status, 200);
