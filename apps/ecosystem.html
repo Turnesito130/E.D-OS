@@ -32,7 +32,7 @@ footer{font-size:10px;color:#a1a8b1;text-align:center;padding:20px}
 <div class="field"><label>ID de solicitud</label><input id="requestId" placeholder="UUID de la solicitud"></div><div class="row"><div class="field"><label>Código de 8 cifras</label><input id="pairCode" inputmode="numeric" maxlength="8" placeholder="00000000"></div><div class="field"><label>Dispositivo que aprueba</label><select id="approver"></select></div></div><button class="primary" id="approve">Aprobar nuevo dispositivo</button>
 <hr style="border:0;border-top:1px solid #eef0f3;margin:18px 0">
 <h2>Este es el dispositivo nuevo</h2><div class="row"><div class="field"><label>Nombre</label><input id="newName" placeholder="Mi segundo móvil"></div><div class="field"><label>Tipo</label><select id="newType"><option value="phone">Móvil</option><option value="tablet">Tablet</option><option value="computer">Ordenador</option><option value="watch">Reloj</option><option value="earbuds">Auriculares</option><option value="other">Otro</option></select></div><div class="field"><label>Plataforma</label><input id="newPlatform" placeholder="android"></div></div>
-<button id="createPair">Crear solicitud de emparejamiento</button><div id="pairResult" class="hidden"><div class="muted">Código temporal para introducir en el dispositivo de confianza:</div><div class="code" id="shownCode"></div><div class="muted" id="pairExpiry"></div><div class="field"><label>Guarda el secreto de consulta de este dispositivo (no lo compartas)</label><input id="pollSecret" readonly></div><div class="field"><label>ID de solicitud</label><input id="createdRequest" readonly></div><button class="primary" id="claim">Comprobar aprobación y completar</button></div><div class="status" id="pairStatus" aria-live="polite"></div>
+<button id="createPair">Crear solicitud de emparejamiento</button><div id="pairResult" class="hidden"><div class="muted">Código temporal para introducir en el dispositivo de confianza:</div><div class="code" id="shownCode"></div><div class="muted" id="pairExpiry"></div><div class="field"><label>Guarda el secreto de consulta de este dispositivo (no lo compartas)</label><input id="pollSecret" readonly></div><div class="field"><label>ID de solicitud</label><input id="createdRequest" readonly></div><div class="row"><button class="primary" id="claim">Esperar aprobación y vincular</button><button id="cancelClaim" class="hidden">Dejar de comprobar</button></div></div><div class="status" id="pairStatus" aria-live="polite"></div>
 </section>
 <section class="card hidden" id="sync">
 <h2>Sincronización experimental</h2><p class="muted">Prueba con pequeños datos JSON. No es sincronización de archivos ni está cifrada de extremo a extremo.</p>
@@ -50,6 +50,7 @@ footer{font-size:10px;color:#a1a8b1;text-align:center;padding:20px}
 (() => {
 'use strict';
 let token = null, account = null, devices = [];
+let pairingPollTimer = null, pairingExpiresAt = 0;
 const $ = id => document.getElementById(id);
 const api = () => $('api').value.trim().replace(/\/$/, '');
 const show = (id, visible) => $(id).classList.toggle('hidden', !visible);
@@ -110,9 +111,10 @@ $('addDevice').onclick=async()=>{
   } catch(e) { status('pairStatus',e.message); }
 };
 $('createPair').onclick=async()=>{
+  stopPairPolling();
   try {
     const {data}=await call('/v1/pairing/requests',{method:'POST',body:JSON.stringify({deviceName:$('newName').value,deviceType:$('newType').value,platform:$('newPlatform').value})},false);
-    $('shownCode').textContent=data.pairingCode; $('pollSecret').value=data.pollSecret; $('createdRequest').value=data.requestId; $('pairExpiry').textContent='Caduca: '+new Date(data.expiresAt).toLocaleString();
+    $('shownCode').textContent=data.pairingCode; $('pollSecret').value=data.pollSecret; $('createdRequest').value=data.requestId; pairingExpiresAt=Date.parse(data.expiresAt); $('pairExpiry').textContent='Caduca: '+new Date(data.expiresAt).toLocaleString();
     show('pairResult',true); status('pairStatus','Solicitud creada. Apruébala desde tu otro dispositivo.');
   } catch(e) { status('pairStatus',e.message); }
 };
@@ -122,13 +124,43 @@ $('approve').onclick=async()=>{
     status('pairStatus',data.message || 'Dispositivo aprobado.');
   } catch(e) { status('pairStatus',e.message); }
 };
-$('claim').onclick=async()=>{
+function stopPairPolling() {
+  if (pairingPollTimer) clearTimeout(pairingPollTimer);
+  pairingPollTimer = null;
+  $('cancelClaim').classList.add('hidden');
+  $('claim').disabled = false;
+}
+async function checkPairClaim() {
   try {
     const {response,data}=await call('/v1/pairing/claim',{method:'POST',body:JSON.stringify({requestId:$('createdRequest').value,pollSecret:$('pollSecret').value})},false);
-    if(response.status===202){status('pairStatus','Todavía está pendiente de aprobación. Vuelve a comprobarlo.');return;}
-    enter(data); status('pairStatus','¡Dispositivo vinculado! Guarda tu sesión con seguridad antes de cerrar esta página.');
-  } catch(e) { status('pairStatus',e.message); }
+    if(response.status===202) {
+      if(Date.now() >= pairingExpiresAt) {
+        stopPairPolling();
+        status('pairStatus','La solicitud ha caducado. Crea una nueva para volver a intentarlo.');
+        return;
+      }
+      status('pairStatus','Esperando la aprobación del dispositivo de confianza…');
+      pairingPollTimer=setTimeout(checkPairClaim,2500);
+      return;
+    }
+    stopPairPolling();
+    enter(data);
+    status('pairStatus','¡Dispositivo vinculado! La sesión solo permanecerá en esta página.');
+  } catch(e) {
+    stopPairPolling();
+    status('pairStatus',e.message);
+  }
+}
+$('claim').onclick=()=>{
+  if(!$('createdRequest').value || !$('pollSecret').value) { status('pairStatus','Primero crea una solicitud en este dispositivo.'); return; }
+  if(!pairingExpiresAt || Date.now() >= pairingExpiresAt) { status('pairStatus','La solicitud ha caducado. Crea una nueva.'); return; }
+  stopPairPolling();
+  $('claim').disabled=true;
+  $('cancelClaim').classList.remove('hidden');
+  status('pairStatus','Comprobando aprobación…');
+  checkPairClaim();
 };
+$('cancelClaim').onclick=()=>{stopPairPolling();status('pairStatus','Comprobación detenida. La solicitud sigue pendiente hasta que caduque.');};
 $('saveSync').onclick=async()=>{
   try {
     const payload=JSON.parse($('syncPayload').value);
