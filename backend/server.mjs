@@ -336,6 +336,11 @@ const server = createServer(async (req, res) => {
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
+        // Serialize first-write and update races for the same account/key.
+        await client.query(
+          "SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))",
+          [account.id, syncMatch[1]]
+        );
         const current = await client.query(
           "SELECT version, deleted FROM sync_items WHERE account_id = $1 AND item_key = $2 FOR UPDATE",
           [account.id, syncMatch[1]]
