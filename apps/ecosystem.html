@@ -140,7 +140,7 @@ async function checkPairClaim() {
         return;
       }
       status('pairStatus','Esperando la aprobación del dispositivo de confianza…');
-      pairingPollTimer=setTimeout(checkPairClaim,2500);
+      pairingPollTimer=setTimeout(checkPairClaim,5000);
       return;
     }
     stopPairPolling();
