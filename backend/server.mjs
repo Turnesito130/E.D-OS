@@ -2,6 +2,8 @@ import { createServer } from "node:http";
 import { randomBytes, randomInt, scrypt as scryptCallback, timingSafeEqual, createHash } from "node:crypto";
 import { promisify } from "node:util";
 import pg from "pg";
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const scrypt = promisify(scryptCallback);
 const { Pool } = pg;
@@ -13,6 +15,20 @@ const MAX_BODY_BYTES = 16 * 1024;
 const pool = DATABASE_URL ? new Pool({ connectionString: DATABASE_URL, ssl: process.env.PGSSLMODE === "require" ? { rejectUnauthorized: true } : undefined }) : null;
 const attempts = new Map();
 const allowedOrigins = new Set((process.env.CORS_ORIGINS || "").split(",").map(value => value.trim()).filter(Boolean));
+const CLOUD_MAX_FILE_BYTES = 50 * 1024 * 1024;
+const CLOUD_QUOTA_BYTES = 2 * 1024 * 1024 * 1024;
+const cloudConfig = {
+  endpoint: process.env.S3_ENDPOINT,
+  bucket: process.env.S3_BUCKET,
+  accessKeyId: process.env.S3_ACCESS_KEY_ID,
+  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+  region: process.env.S3_REGION || "us-east-1"
+};
+const cloudEnabled = [cloudConfig.endpoint, cloudConfig.bucket, cloudConfig.accessKeyId, cloudConfig.secretAccessKey].every(Boolean);
+const s3 = cloudEnabled ? new S3Client({
+  region: cloudConfig.region, endpoint: cloudConfig.endpoint, forcePathStyle: true,
+  credentials: { accessKeyId: cloudConfig.accessKeyId, secretAccessKey: cloudConfig.secretAccessKey }
+}) : null;
 
 function send(res, status, data) {
   const body = JSON.stringify(data);
@@ -396,6 +412,87 @@ const server = createServer(async (req, res) => {
       );
       if (!result.rowCount) return send(res, 409, { error: "Conflicto: el elemento cambió o no existe." });
       return send(res, 200, { item: result.rows[0] });
+    }
+
+    // File bytes live in S3-compatible object storage; PostgreSQL stores metadata only.
+    if (url.pathname === "/v1/cloud/files" && req.method === "GET") {
+      if (!cloudEnabled) return send(res, 503, { error: "E.D. Cloud no está configurado: falta el almacenamiento S3." });
+      const result = await pool.query(
+        `SELECT id, file_name, content_type, size_bytes, status, created_at, completed_at
+           FROM cloud_files WHERE account_id = $1 AND status = 'completed'
+          ORDER BY created_at DESC LIMIT 500`, [account.id]
+      );
+      return send(res, 200, { files: result.rows, maxFileBytes: CLOUD_MAX_FILE_BYTES, quotaBytes: CLOUD_QUOTA_BYTES });
+    }
+
+    if (url.pathname === "/v1/cloud/files" && req.method === "POST") {
+      if (!cloudEnabled) return send(res, 503, { error: "E.D. Cloud no está configurado: falta el almacenamiento S3." });
+      const body = await readJson(req);
+      const fileName = typeof body.fileName === "string" ? body.fileName.trim() : "";
+      const contentType = typeof body.contentType === "string" ? body.contentType.trim() : "";
+      const sizeBytes = body.sizeBytes;
+      if (!fileName || fileName.length > 180 || /[\\/\\\\\\u0000-\\u001f]/.test(fileName) ||
+          !contentType || contentType.length > 150 || !Number.isSafeInteger(sizeBytes) ||
+          sizeBytes < 1 || sizeBytes > CLOUD_MAX_FILE_BYTES) {
+        return send(res, 400, { error: "Archivo no válido. Máximo 50 MB; nombre y tipo MIME obligatorios." });
+      }
+      const usage = await pool.query(
+        "SELECT COALESCE(sum(size_bytes), 0)::bigint AS used FROM cloud_files WHERE account_id = $1 AND status IN ('uploading', 'completed')",
+        [account.id]
+      );
+      if (Number(usage.rows[0].used) + sizeBytes > CLOUD_QUOTA_BYTES) {
+        return send(res, 413, { error: "Superarías la cuota experimental de 2 GB de E.D. Cloud." });
+      }
+      const id = randomBytes(16).toString("hex");
+      const objectKey = `${account.id}/${id}`;
+      await pool.query(
+        `INSERT INTO cloud_files (id, account_id, object_key, file_name, content_type, size_bytes, status)
+         VALUES ($1, $2, $3, $4, $5, $6, 'uploading')`,
+        [id, account.id, objectKey, fileName, contentType, sizeBytes]
+      );
+      const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({
+        Bucket: cloudConfig.bucket, Key: objectKey, ContentType: contentType
+      }), { expiresIn: 300 });
+      return send(res, 201, { file: { id, fileName, contentType, sizeBytes, status: "uploading" }, uploadUrl, uploadMethod: "PUT", requiredHeaders: { "content-type": contentType }, expiresInSeconds: 300 });
+    }
+
+    const cloudFileMatch = url.pathname.match(/^\\/v1\\/cloud\\/files\\/([a-f0-9]{32})(?:\\/(complete|download))?$/);
+    if (cloudFileMatch) {
+      if (!cloudEnabled) return send(res, 503, { error: "E.D. Cloud no está configurado: falta el almacenamiento S3." });
+      const [, fileId, action] = cloudFileMatch;
+      const found = await pool.query("SELECT * FROM cloud_files WHERE id = $1 AND account_id = $2", [fileId, account.id]);
+      if (!found.rowCount) return send(res, 404, { error: "Archivo no encontrado." });
+      const file = found.rows[0];
+      if (req.method === "POST" && action === "complete") {
+        if (file.status !== "uploading") return send(res, 409, { error: "El archivo no está esperando una carga." });
+        let head;
+        try { head = await s3.send(new HeadObjectCommand({ Bucket: cloudConfig.bucket, Key: file.object_key })); }
+        catch { return send(res, 409, { error: "No se ha encontrado el archivo cargado en el almacenamiento." }); }
+        if (Number(head.ContentLength) !== Number(file.size_bytes) || head.ContentType !== file.content_type) {
+          await s3.send(new DeleteObjectCommand({ Bucket: cloudConfig.bucket, Key: file.object_key }));
+          await pool.query("DELETE FROM cloud_files WHERE id = $1 AND account_id = $2", [fileId, account.id]);
+          return send(res, 400, { error: "El tamaño o tipo del archivo no coincide; carga descartada." });
+        }
+        const completed = await pool.query(
+          "UPDATE cloud_files SET status = 'completed', completed_at = now() WHERE id = $1 AND account_id = $2 AND status = 'uploading' RETURNING id, file_name, content_type, size_bytes, status, completed_at",
+          [fileId, account.id]
+        );
+        return send(res, 200, { file: completed.rows[0] });
+      }
+      if (req.method === "GET" && action === "download") {
+        if (file.status !== "completed") return send(res, 409, { error: "El archivo todavía no está disponible." });
+        const downloadUrl = await getSignedUrl(s3, new GetObjectCommand({
+          Bucket: cloudConfig.bucket, Key: file.object_key,
+          ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(file.file_name)}`
+        }), { expiresIn: 300 });
+        return send(res, 200, { downloadUrl, expiresInSeconds: 300 });
+      }
+      if (req.method === "DELETE" && !action) {
+        await s3.send(new DeleteObjectCommand({ Bucket: cloudConfig.bucket, Key: file.object_key }));
+        await pool.query("DELETE FROM cloud_files WHERE id = $1 AND account_id = $2", [fileId, account.id]);
+        return send(res, 200, { success: true });
+      }
+      return send(res, 405, { error: "Método no permitido para este archivo." });
     }
 
     if (req.method === "GET" && url.pathname === "/v1/devices") {
