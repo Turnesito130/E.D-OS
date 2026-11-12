@@ -113,11 +113,11 @@
       if (!raw) { showStatus('Escribe algo para buscar.'); return; }
 
       let destination = '';
-      const looksLikeUrl = /^(https?:\\/\\/|www\\.)/i.test(raw) ||
-        /^[a-z0-9-]+\\.[a-z]{2,}([/:?#]|$)/i.test(raw);
+      const looksLikeUrl = /^(https?:\/\/|www\.)/i.test(raw) ||
+        /^[a-z0-9-]+\.[a-z]{2,}([/:?#]|$)/i.test(raw);
       if (looksLikeUrl) {
         try {
-          const candidate = /^https?:\\/\\//i.test(raw) ? raw : 'https://' + raw;
+          const candidate = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
           const parsed = new URL(candidate);
           if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.hostname.includes('.')) {
             showStatus('La dirección no es válida.'); return;
