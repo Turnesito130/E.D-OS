@@ -29,19 +29,6 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
-      localstack:
-        image: localstack/localstack:3.8.1
-        env:
-          SERVICES: s3
-          DEFAULT_REGION: us-east-1
-          DEBUG: "0"
-        ports:
-          - 4566:4566
-        options: >-
-          --health-cmd "curl -f http://localhost:4566/_localstack/health || exit 1"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
     defaults:
       run:
         working-directory: backend
