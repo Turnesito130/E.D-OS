@@ -4,6 +4,37 @@
   if (!layer) return;
   let topZ = 20;
   const windows = new Map();
+  const GEOMETRY_KEY = 'ed-os-window-geometry-v1';
+  let geometry = {};
+  try {
+    const saved = JSON.parse(localStorage.getItem(GEOMETRY_KEY) || '{}');
+    if (saved && typeof saved === 'object' && !Array.isArray(saved)) geometry = saved;
+  } catch (_) {}
+
+  function saveGeometry(win) {
+    const name = win.dataset.appWindow;
+    if (!name || win.classList.contains('maximized') || win.hidden) return;
+    const rect = win.getBoundingClientRect();
+    geometry[name] = {
+      left: Math.round(rect.left), top: Math.round(rect.top),
+      width: Math.round(rect.width), height: Math.round(rect.height)
+    };
+    try { localStorage.setItem(GEOMETRY_KEY, JSON.stringify(geometry)); } catch (_) {}
+  }
+
+  function restoreGeometry(win, name) {
+    const saved = geometry[name];
+    if (!saved || typeof saved !== 'object') return;
+    const width = Math.max(280, Math.min(Number(saved.width) || 560, window.innerWidth - 16));
+    const height = Math.max(180, Math.min(Number(saved.height) || 390, window.innerHeight - 110));
+    const left = Math.max(0, Math.min(Number(saved.left) || 0, window.innerWidth - Math.min(width, 140)));
+    const top = Math.max(64, Math.min(Number(saved.top) || 72, window.innerHeight - 90));
+    win.style.left = left + 'px';
+    win.style.top = top + 'px';
+    win.style.width = width + 'px';
+    win.style.height = height + 'px';
+    win.style.transform = 'none';
+  }
 
   const frame = (name, src) => '<iframe class="app-frame" title="' + name + '" src="' + src + '"></iframe>';
   const definitions = {
@@ -19,7 +50,21 @@
     'Notificaciones': '<div class="notification-toolbar"><p class="window-note">Avisos recientes de este navegador.</p><button type="button" class="window-control" data-clear-notifications>Limpiar</button></div><div data-notification-list></div>'
   };
 
-  function focus(win) { topZ += 1; win.style.zIndex = String(topZ); }
+  function focus(win) {
+    topZ += 1;
+    win.style.zIndex = String(topZ);
+    win.focus({ preventScroll: true });
+  }
+
+  function cycleWindows() {
+    const visible = [...windows.values()].filter(win => !win.hidden);
+    if (!visible.length) return;
+    const active = visible.reduce((best, win) =>
+      Number(win.style.zIndex) > Number(best.style.zIndex) ? win : best
+    );
+    const index = visible.indexOf(active);
+    focus(visible[(index + 1) % visible.length]);
+  }
   function close(name) {
     const win = windows.get(name);
     if (win) { win.remove(); windows.delete(name); }
@@ -78,22 +123,26 @@
     win.dataset.appWindow = name;
     win.setAttribute('role', 'dialog');
     win.setAttribute('aria-label', name);
+    win.tabIndex = -1;
     win.style.zIndex = String(++topZ);
     win.innerHTML = '<header class="window-head"><h2></h2><div class="window-controls"><button type="button" class="window-control minimize" aria-label="Minimizar" title="Minimizar">−</button><button type="button" class="window-control maximize" aria-label="Maximizar" title="Maximizar">□</button><button type="button" class="window-control close" aria-label="Cerrar" title="Cerrar">×</button></div></header><div class="window-content"></div>';
     win.querySelector('h2').textContent = name;
     win.querySelector('.window-content').innerHTML = definitions[name] || '<p class="window-note">Esta aplicación todavía no está implementada.</p>';
     layer.append(win); windows.set(name, win);
+    restoreGeometry(win, name);
     document.dispatchEvent(new CustomEvent('ed-os:window-opened', { detail: { name, element: win } }));
     if (name === 'Navegador') bindBrowser(win);
     makeDraggable(win, win.querySelector('.window-head'));
     win.addEventListener('pointerdown', () => focus(win));
+    win.addEventListener('pointerup', () => saveGeometry(win));
     win.querySelector('.minimize').addEventListener('click', () => { win.hidden = true; win.classList.add('minimized'); });
     win.querySelector('.maximize').addEventListener('click', event => {
       const maximized = win.classList.toggle('maximized');
       event.currentTarget.textContent = maximized ? '❐' : '□';
       event.currentTarget.title = maximized ? 'Restaurar' : 'Maximizar';
       event.currentTarget.setAttribute('aria-label', event.currentTarget.title);
-      if (!maximized) { win.style.left = ''; win.style.top = ''; win.style.width = ''; win.style.height = ''; win.style.transform = ''; }
+      if (!maximized) { win.style.left = ''; win.style.top = ''; win.style.width = ''; win.style.height = ''; win.style.transform = ''; restoreGeometry(win, name); }
+      else { try { localStorage.setItem(GEOMETRY_KEY, JSON.stringify(geometry)); } catch (_) {} }
     });
     win.querySelector('.close').addEventListener('click', () => close(name));
     if (window.innerWidth < 620) win.classList.add('mobile-window');
@@ -103,6 +152,11 @@
   document.querySelectorAll('[data-app]').forEach(button => button.addEventListener('click', () => open(button.dataset.app)));
   document.getElementById('ed')?.addEventListener('click', () => open('Asistente E.D.'));
   document.addEventListener('keydown', event => {
+    if (event.altKey && event.key === 'Tab') {
+      event.preventDefault();
+      cycleWindows();
+      return;
+    }
     if (event.key === 'Escape') {
       const active = [...windows.values()].filter(win => !win.hidden).sort((a,b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
       if (active) close(active.dataset.appWindow);
