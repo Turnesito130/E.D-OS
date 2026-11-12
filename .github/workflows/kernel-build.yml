@@ -1,0 +1,40 @@
+name: E.D-OS kernel build
+
+on:
+  push:
+    branches:
+      - arquitectura/0.1
+    paths:
+      - "kernel/**"
+      - ".github/workflows/kernel-build.yml"
+  pull_request:
+    branches:
+      - arquitectura/0.1
+    paths:
+      - "kernel/**"
+      - ".github/workflows/kernel-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld make binutils
+      - name: Build freestanding kernel
+        run: make -C kernel clean all
+      - name: Verify ELF architecture and entry point
+        run: |
+          file kernel/build/ed-os-kernel.elf
+          readelf -h kernel/build/ed-os-kernel.elf
+          readelf -h kernel/build/ed-os-kernel.elf | grep -q "Advanced Micro Devices X86-64"
+          readelf -h kernel/build/ed-os-kernel.elf | grep -q "Entry point address"
+      - name: Upload kernel ELF
+        uses: actions/upload-artifact@v4
+        with:
+          name: ed-os-kernel-elf
+          path: kernel/build/ed-os-kernel.elf
