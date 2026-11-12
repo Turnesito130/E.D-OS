@@ -1,0 +1,112 @@
+name: E.D-OS Linux-base boot experiment
+
+on:
+  push:
+    branches: [experimento/linux-base]
+    paths:
+      - ".github/workflows/linux-base-boot.yml"
+      - "docs/EXPERIMENTO_KERNEL_LINUX.md"
+  pull_request:
+    branches: [experimento/linux-base]
+    paths:
+      - ".github/workflows/linux-base-boot.yml"
+      - "docs/EXPERIMENTO_KERNEL_LINUX.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-boot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Install build and emulator tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bc bison flex libssl-dev libelf-dev libncurses-dev xz-utils cpio busybox-static qemu-system-x86
+
+      - name: Download pinned Linux longterm source
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.63.tar.xz -o linux.tar.xz
+          mkdir linux-src
+          tar -xJf linux.tar.xz --strip-components=1 -C linux-src
+          test -f linux-src/Makefile
+          grep -m1 '^VERSION\|^PATCHLEVEL\|^SUBLEVEL' linux-src/Makefile
+
+      - name: Configure and build x86_64 kernel
+        run: |
+          set -euo pipefail
+          cd linux-src
+          make defconfig
+          scripts/config --enable BLK_DEV_INITRD
+          scripts/config --enable BINFMT_ELF
+          scripts/config --enable DEVTMPFS
+          scripts/config --enable DEVTMPFS_MOUNT
+          scripts/config --enable PROC_FS
+          scripts/config --enable SYSFS
+          scripts/config --enable TMPFS
+          scripts/config --enable PRINTK
+          scripts/config --enable SERIAL_8250
+          scripts/config --enable SERIAL_8250_CONSOLE
+          scripts/config --enable SERIAL_CORE
+          scripts/config --enable SERIAL_CORE_CONSOLE
+          scripts/config --enable TTY
+          scripts/config --enable RD_GZIP
+          make olddefconfig
+          make -j2 bzImage
+          test -s arch/x86/boot/bzImage
+
+      - name: Create minimal E.D-OS test initramfs
+        run: |
+          set -euo pipefail
+          ROOT="$PWD/rootfs"
+          mkdir -p "$ROOT"/{bin,dev,proc,sys}
+          cp /bin/busybox "$ROOT/bin/busybox"
+          chroot "$ROOT" /bin/busybox --install -s /bin
+          cat > "$ROOT/init" <<'INIT'
+          #!/bin/sh
+          mount -t devtmpfs devtmpfs /dev 2>/dev/null || true
+          mount -t proc proc /proc 2>/dev/null || true
+          mount -t sysfs sysfs /sys 2>/dev/null || true
+          echo "EDOS_LINUX_BASE_INIT_REACHED"
+          echo "E.D-OS Linux-base experiment: userspace init is running."
+          echo "This is a Linux-kernel proof of concept, not yet a complete OS."
+          /bin/busybox poweroff -f
+          echo "EDOS_TEST_INIT_FINISHED"
+          while true; do sleep 1; done
+          INIT
+          chmod +x "$ROOT/init"
+          (cd "$ROOT" && find . -print0 | cpio --null -o --format=newc | gzip -9) > initramfs.cpio.gz
+          test -s initramfs.cpio.gz
+
+      - name: Boot Linux kernel and E.D-OS test init in QEMU
+        run: |
+          set -euo pipefail
+          set +e
+          timeout 60s qemu-system-x86_64 \
+            -machine q35 -m 1G \
+            -kernel linux-src/arch/x86/boot/bzImage \
+            -initrd initramfs.cpio.gz \
+            -append "console=ttyS0 rdinit=/init panic=-1" \
+            -display none -serial file:qemu-serial.log -monitor none \
+            -no-reboot -no-shutdown
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ] && [ "$status" -ne 124 ]; then
+            echo "QEMU exited unexpectedly: $status"
+            exit "$status"
+          fi
+          cat qemu-serial.log
+          grep -q "EDOS_LINUX_BASE_INIT_REACHED" qemu-serial.log
+          grep -q "E.D-OS Linux-base experiment: userspace init is running." qemu-serial.log
+
+      - name: Upload Linux-base boot artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: edos-linux-base-boot-test
+          path: |
+            linux-src/arch/x86/boot/bzImage
+            initramfs.cpio.gz
+            qemu-serial.log
