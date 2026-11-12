@@ -61,7 +61,8 @@
         const engine = form.querySelector('[name="engine"]').value;
         url = engine + encodeURIComponent(raw);
       }
-      const opened = window.open(url, '_blank', 'noopener,noreferrer');
+      const opened = window.open(url, '_blank');
+      if (opened) { try { opened.opener = null; } catch (_) {} }
       status.textContent = opened ? 'Se ha solicitado abrir la página en otra pestaña.' : 'El navegador bloqueó la ventana. Permite las ventanas emergentes o copia la dirección: ' + url;
     };
     form.addEventListener('submit', event => { event.preventDefault(); launch(form.querySelector('[name="query"]').value); });
