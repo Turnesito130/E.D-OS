@@ -71,6 +71,21 @@ Una cuenta no debe dar permiso automático para acceder a todos los dispositivos
 - [ ] Elegir hardware y base técnica para un prototipo instalable.
 - [ ] Evaluar aislamiento de aplicaciones, servicios del sistema y compatibilidad.
 
+
+### Fase E — Núcleo nativo E.D-OS (prioridad 10/10)
+- [x] Definir estrategia de reutilización y adaptación del kernel Linux.
+- [x] Crear el espacio de integración y documentar separación upstream/parches.
+- [x] Definir primer objetivo x86_64 en QEMU y criterios de evidencia.
+- [ ] Seleccionar y fijar una versión estable/LTS mantenida con commit y checksum.
+- [ ] Preparar toolchain reproducible y configuración mínima.
+- [ ] Compilar kernel upstream sin modificaciones.
+- [ ] Arrancar kernel de referencia en QEMU y conservar logs.
+- [ ] Añadir la primera personalización específica de E.D-OS como parche pequeño.
+- [ ] Recompilar y repetir pruebas tras cada modificación.
+- [ ] Crear root filesystem y prototipo instalable.
+
+**Estado honesto:** en esta entrega se ha añadido arquitectura y estructura documental. Todavía no se ha descargado, compilado, modificado ni arrancado el kernel Linux.
+
 ## Criterios de calidad
 
 Cada entrega debe incluir:
