@@ -25,7 +25,8 @@ No significa adquirir propiedad exclusiva sobre el código Linux ni poder impedi
 
 ### Fase 0 — Preparación
 - Confirmar arquitectura de CPU objetivo (inicialmente x86_64).
-- Elegir una versión estable/LTS de Linux y registrar su versión y checksum.
+- **Versión elegida para el primer prototipo: Linux 6.18.63 LTS**, publicada como longterm en kernel.org el 10-11-2026; la página oficial indica una fecha proyectada de fin de vida en diciembre de 2028. Esa fecha es una proyección que puede cambiar, no una garantía de soporte. Fuente: https://www.kernel.org/releases.html
+- Registrar y verificar criptográficamente el archivo fuente antes de usarlo en una compilación de distribución.
 - Preparar un entorno de compilación reproducible.
 - Definir configuración mínima y un initramfs de prueba.
 
@@ -57,4 +58,4 @@ No se declara que la estrategia sea mejor hasta comparar:
 
 ## Situación actual
 
-Este documento establece el experimento; todavía no incorpora código del kernel Linux, no genera una ISO y no demuestra un arranque Linux. El primer hito técnico será un arranque mínimo reproducible en QEMU.
+El workflow `.github/workflows/linux-base-boot.yml` intenta compilar Linux 6.18.63 x86_64, crear un initramfs mínimo con BusyBox y arrancarlo en QEMU. La descarga está fijada a una versión, pero la verificación criptográfica del tarball todavía debe añadirse antes de considerar el proceso reproducible y apto para distribución. El arranque solo se considerará demostrado cuando CI termine correctamente y el log serie confirme que se ejecutó `/init`.
