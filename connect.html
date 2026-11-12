@@ -65,7 +65,7 @@ function setChannel(channel){
  channel.onmessage=event=>{
   if(typeof event.data==='string'){
    let packet;try{packet=JSON.parse(event.data)}catch(_){log('Otro dispositivo: '+event.data);return;}
-   if(packet.type==='file-start'){incomingFile={name:String(packet.name||'archivo').replaceAll('/','_').replaceAll('\\','_').slice(0,120),mime:String(packet.mime||'application/octet-stream'),size:Number(packet.size)||0,chunks:[],received:0};document.getElementById('fileStatus').textContent='Recibiendo '+incomingFile.name+'…';}
+   if(packet.type==='file-start'){const size=Number(packet.size)||0;if(size<0||size>25*1024*1024){incomingFile=null;document.getElementById('fileStatus').textContent='Archivo rechazado: supera el límite de 25 MB.';return;}incomingFile={name:String(packet.name||'archivo').replaceAll('/','_').replaceAll('\\','_').slice(0,120),mime:String(packet.mime||'application/octet-stream'),size,chunks:[],received:0};document.getElementById('fileStatus').textContent='Recibiendo '+incomingFile.name+'…';}
    else if(packet.type==='file-end'&&incomingFile){const blob=new Blob(incomingFile.chunks,{type:incomingFile.mime});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=incomingFile.name;a.textContent='Descargar '+incomingFile.name+' ('+Math.round(blob.size/1024)+' KB)';a.style.display='block';a.style.marginTop='10px';document.getElementById('fileStatus').replaceChildren(document.createTextNode('Archivo recibido. '),a);setTimeout(()=>URL.revokeObjectURL(url),60000);incomingFile=null;}
    else if(packet.type==='file-error'){document.getElementById('fileStatus').textContent='Transferencia cancelada.';incomingFile=null;}
    return;
