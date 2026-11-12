@@ -47,9 +47,11 @@ npm install
 
 - `DATABASE_URL`: cadena de conexión PostgreSQL.
 - `PORT`: opcional; por defecto 8787.
-- `PGSSLMODE=require`: activa TLS para PostgreSQL cuando el proveedor lo requiera.\n- `CORS_ORIGINS`: lista separada por comas de orígenes web autorizados, por ejemplo `https://turnesito130.github.io`. No uses `*`.
+- `PGSSLMODE=require`: activa TLS para PostgreSQL cuando el proveedor lo requiera.
+- `CORS_ORIGINS`: lista separada por comas de orígenes web autorizados, por ejemplo `https://turnesito130.github.io`. No uses `*`.
 
-5. Configurar `CORS_ORIGINS` con el origen exacto desde el que se abrirá `apps/ecosystem.html`.\n6. Iniciar:
+5. Configurar `CORS_ORIGINS` con el origen exacto desde el que se abrirá `apps/ecosystem.html`.
+6. Iniciar:
 
 ```sh
 npm run check
