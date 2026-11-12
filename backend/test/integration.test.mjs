@@ -166,6 +166,25 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
     method: "PUT", token, body: { expectedVersion: 1, payload: { theme: "stale" } }
   })).status, 409);
 
+  // A delete must publish a versioned tombstone so another device does not
+  // silently resurrect an older copy during a later sync.
+  const deleted = await request("/v1/sync/items/preferences", {
+    method: "DELETE", token, body: { expectedVersion: 2 }
+  });
+  assert.equal(deleted.status, 200);
+  assert.equal(deleted.data.item.version, 3);
+  assert.equal(deleted.data.item.deleted, true);
+  assert.equal((await request("/v1/sync/items/preferences", {
+    method: "DELETE", token, body: { expectedVersion: 2 }
+  })).status, 409);
+  const tombstones = await request("/v1/sync/items", { token });
+  const preferenceTombstone = tombstones.data.items.find(item => item.item_key === "preferences");
+  assert.equal(preferenceTombstone.deleted, true);
+  assert.equal(preferenceTombstone.payload, null);
+  assert.equal((await request("/v1/sync/items/preferences", {
+    method: "PUT", token, body: { expectedVersion: 0, payload: { theme: "resurrected" } }
+  })).status, 409);
+
   const other = await request("/v1/auth/register", {
     method: "POST", body: { email: `other-${Date.now()}@example.test`, password }
   });
@@ -175,6 +194,7 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
 
   // End-to-end Cloud upload, completion, signed download and deletion through the S3 HTTP fixture.
   const cloudToken = other.data.session.token;
+  assert.equal((await request("/v1/cloud/files", { token: cloudToken })).data.files.length, 0);
   const payload = Buffer.from("E.D. Cloud integration test payload");
   const upload = await request("/v1/cloud/files", {
     method: "POST", token: cloudToken,
@@ -190,6 +210,13 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   });
   assert.equal(completed.status, 200);
   assert.equal(completed.data.file.status, "completed");
+  // File IDs are not authorization: a different account must not read,
+  // download, or delete another account's Cloud object.
+  assert.equal((await request("/v1/cloud/files", { token })).data.files.length, 0);
+  assert.equal((await request(`/v1/cloud/files/${upload.data.file.id}/download`, { token })).status, 404);
+  assert.equal((await request(`/v1/cloud/files/${upload.data.file.id}`, {
+    method: "DELETE", token
+  })).status, 404);
   const download = await request(`/v1/cloud/files/${upload.data.file.id}/download`, { token: cloudToken });
   assert.equal(download.status, 200);
   const downloaded = await fetch(download.data.downloadUrl);
