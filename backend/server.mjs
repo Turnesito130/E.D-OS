@@ -313,6 +313,71 @@ const server = createServer(async (req, res) => {
       return send(res, 200, { success: true });
     }
 
+
+    // Small JSON sync records with optimistic version checks. This is not file sync.
+    if (req.method === "GET" && url.pathname === "/v1/sync/items") {
+      const result = await pool.query(
+        `SELECT item_key, payload, version, deleted, updated_at
+           FROM sync_items WHERE account_id = $1
+          ORDER BY updated_at DESC LIMIT 500`,
+        [account.id]
+      );
+      return send(res, 200, { items: result.rows });
+    }
+
+    const syncMatch = url.pathname.match(/^\\/v1\\/sync\\/items\\/([a-zA-Z0-9._-]{1,100})$/);
+    if (req.method === "PUT" && syncMatch) {
+      const body = await readJson(req);
+      if (!Number.isSafeInteger(body.expectedVersion) || body.expectedVersion < 0 ||
+          body.expectedVersion > 2_000_000_000 ||
+          body.payload === undefined || Buffer.byteLength(JSON.stringify(body.payload)) > 12_000) {
+        return send(res, 400, { error: "Se requiere expectedVersion y un payload JSON de hasta 12 KB." });
+      }
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const current = await client.query(
+          "SELECT version, deleted FROM sync_items WHERE account_id = $1 AND item_key = $2 FOR UPDATE",
+          [account.id, syncMatch[1]]
+        );
+        const version = current.rowCount ? current.rows[0].version : 0;
+        if (version !== body.expectedVersion || (current.rowCount && current.rows[0].deleted)) {
+          await client.query("ROLLBACK");
+          return send(res, 409, { error: "Conflicto de sincronización.", currentVersion: version });
+        }
+        const saved = await client.query(
+          `INSERT INTO sync_items (account_id, item_key, payload, version, deleted, updated_at)
+           VALUES ($1, $2, $3::jsonb, 1, false, now())
+           ON CONFLICT (account_id, item_key)
+           DO UPDATE SET payload = EXCLUDED.payload, version = sync_items.version + 1,
+                         deleted = false, updated_at = now()
+           RETURNING item_key, payload, version, deleted, updated_at`,
+          [account.id, syncMatch[1], JSON.stringify(body.payload)]
+        );
+        await client.query("COMMIT");
+        return send(res, 200, { item: saved.rows[0] });
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally { client.release(); }
+    }
+
+    if (req.method === "DELETE" && syncMatch) {
+      const body = await readJson(req);
+      if (!Number.isSafeInteger(body.expectedVersion) || body.expectedVersion < 1) {
+        return send(res, 400, { error: "Se requiere expectedVersion para borrar." });
+      }
+      const result = await pool.query(
+        `UPDATE sync_items SET payload = NULL, deleted = true,
+                version = version + 1, updated_at = now()
+          WHERE account_id = $1 AND item_key = $2 AND version = $3 AND deleted = false
+          RETURNING item_key, version, deleted, updated_at`,
+        [account.id, syncMatch[1], body.expectedVersion]
+      );
+      if (!result.rowCount) return send(res, 409, { error: "Conflicto: el elemento cambió o no existe." });
+      return send(res, 200, { item: result.rows[0] });
+    }
+
     if (req.method === "GET" && url.pathname === "/v1/devices") {
       const result = await pool.query(
         `SELECT id, device_name, device_type, platform, created_at, last_seen_at
