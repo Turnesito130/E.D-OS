@@ -101,7 +101,7 @@ Ejemplo de alta de dispositivo:
 
 Tipos admitidos: `phone`, `tablet`, `computer`, `watch`, `earbuds`, `other`.
 
-## E.D. Cloud experimental\n\nEl cliente solicita una URL PUT firmada y sube directamente al almacenamiento de objetos. Después llama a `POST /v1/cloud/files/{id}/complete`; el servidor comprueba tamaño y tipo MIME con HEAD antes de marcar el archivo como disponible. Las descargas usan URLs GET firmadas de cinco minutos. Límite: 50 MB por archivo y cuota lógica de 2 GB por cuenta. Configura CORS del bucket para permitir PUT desde el origen del escritorio y el header `Content-Type`. La cuota actual no es una reserva transaccional estricta ante subidas concurrentes. No hay cifrado E2EE, análisis antimalware ni limpieza automática de cargas abandonadas.\n\nSi faltan variables S3, las rutas Cloud devuelven 503; no se guarda el archivo localmente como sustituto.\n\n## Reglas antes de producción
+## E.D. Cloud experimental\n\nEl cliente solicita una URL PUT firmada y sube directamente al almacenamiento de objetos. Después llama a `POST /v1/cloud/files/{id}/complete`; el servidor comprueba tamaño y tipo MIME con HEAD antes de marcar el archivo como disponible. Las descargas usan URLs GET firmadas de cinco minutos. Límite: 50 MB por archivo y cuota lógica de 2 GB por cuenta. Configura CORS del bucket para permitir PUT desde el origen del escritorio y el header `Content-Type`. Las reservas de cuota se serializan por cuenta con bloqueos transaccionales de PostgreSQL. Las cargas que siguen en estado `uploading` tras 60 minutos pasan a `deleting`; un proceso periódico las elimina del almacenamiento y después de la base de datos. Si el proveedor falla, la fila permanece en `deleting` para reintentarse en la siguiente ejecución. El barrido se inicia 30 segundos después del arranque y se repite cada 15 minutos. No hay cifrado E2EE ni análisis antimalware.\n\nSi faltan variables S3, las rutas Cloud devuelven 503; no se guarda el archivo localmente como sustituto.\n\n## Reglas antes de producción
 
 - Añadir verificación de correo y recuperación de cuenta segura.
 - Añadir una pantalla cliente que cree y apruebe emparejamientos, y pruebas automatizadas de caducidad, uso único y revocación.
@@ -109,6 +109,7 @@ Tipos admitidos: `phone`, `tablet`, `computer`, `watch`, `earbuds`, `other`.
 - Configurar HTTPS, secretos fuera del repositorio, copias de seguridad cifradas y monitorización.
 - Añadir pruebas automatizadas de aislamiento entre cuentas, caducidad, conflictos de sincronización y revocación.
 - Realizar revisión de seguridad independiente.
+- Verificar CORS del bucket desde un navegador real; la prueba MinIO de CI cubre PUT/HEAD/GET/DELETE desde Node, no la política CORS del navegador.
 
 ## Flujo de emparejamiento
 
