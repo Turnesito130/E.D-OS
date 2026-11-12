@@ -9,7 +9,7 @@ Este servicio es el primer backend ejecutable de E.D. ID y del inventario de dis
 - Inicio de sesión con token aleatorio opaco; en PostgreSQL solo se guarda su SHA-256.
 - Sesiones con caducidad de 12 horas y cierre de sesión revocable.
 - Consulta de la cuenta autenticada.
-- Alta, listado y revocación de dispositivos asociados a la cuenta.
+- Alta del primer dispositivo de la cuenta, listado y revocación de dispositivos. Los siguientes requieren emparejamiento.
 - Consultas SQL parametrizadas y límite básico de intentos por IP en memoria.
 
 ## No incluye todavía
@@ -119,7 +119,7 @@ Tipos admitidos: `phone`, `tablet`, `computer`, `watch`, `earbuds`, `other`.
 
 1. El nuevo equipo envía `POST /v1/pairing/requests` con `deviceName`, `deviceType` y `platform`.
 2. La respuesta contiene `requestId`, `pairingCode` (8 cifras), `pollSecret` (secreto privado) y caducidad de cinco minutos. Mostrar el código en el nuevo equipo; guardar el secreto solo en memoria segura del cliente.
-3. En una sesión autenticada de la cuenta, el dispositivo de confianza envía `POST /v1/pairing/approve` con `requestId`, `pairingCode` y `approvedByDeviceId`.
+3. En una sesión autenticada de la cuenta, el usuario selecciona un dispositivo ya vinculado y envía `POST /v1/pairing/approve` con `requestId`, `pairingCode` y `approvedByDeviceId`.
 4. El nuevo equipo envía `POST /v1/pairing/claim` con `requestId` y `pollSecret`. Mientras espera, recibe HTTP 202. Tras aprobarse, recibe una sesión una sola vez.
 
 Ejemplo de creación:
@@ -142,7 +142,7 @@ Ejemplo de aprobación:
 }
 ```
 
-El código de ocho cifras caduca en cinco minutos y solo se guarda su hash. El secreto de consulta es independiente del código. La aprobación exige una sesión válida de la cuenta y un ID de dispositivo activo de esa misma cuenta. El backend no implementa todavía escaneo QR, interfaz cliente de emparejamiento ni límites de intentos distribuidos. Por tanto, esta es una API experimental y no una garantía de seguridad de producción.
+El código de ocho cifras caduca en cinco minutos y solo se guarda su hash. El secreto de consulta es independiente del código. La aprobación exige una sesión válida de la cuenta y un ID de dispositivo activo de esa misma cuenta. El backend no implementa todavía escaneo QR ni límites de intentos distribuidos. La interfaz experimental está en `apps/ecosystem.html`; necesita una URL HTTPS de API desplegada y no conserva el token de sesión al cerrar la página. Por tanto, esta es una API experimental y no una garantía de seguridad de producción.
 
 ## Sincronización JSON experimental
 
