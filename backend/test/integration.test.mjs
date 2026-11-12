@@ -132,8 +132,7 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
     body: { requestId: pairing.data.requestId, pollSecret: pairing.data.pollSecret }
   })).status, 409);
 
-  // El endpoint de firma no necesita contactar con S3: permite probar
-  // reservas concurrentes con credenciales ficticias, sin subir bytes reales.
+  // Comprueba que la cuota bloquea reservas concurrentes que la superarían.
   const quotaRequests = await Promise.all(Array.from({ length: 42 }, (_, index) =>
     request("/v1/cloud/files", {
       method: "POST", token,
