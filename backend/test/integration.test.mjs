@@ -87,11 +87,12 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   });
   assert.equal(pending.status, 202);
 
+  const wrongCode = String((Number(pairing.data.pairingCode) + 1) % 100_000_000).padStart(8, "0");
   const badCode = await request("/v1/pairing/approve", {
     method: "POST", token,
-    body: { requestId: pairing.data.requestId, pairingCode: "00000000", approvedByDeviceId: firstDeviceId }
+    body: { requestId: pairing.data.requestId, pairingCode: wrongCode, approvedByDeviceId: firstDeviceId }
   });
-  if (pairing.data.pairingCode !== "00000000") assert.equal(badCode.status, 404);
+  assert.equal(badCode.status, 404);
 
   const approved = await request("/v1/pairing/approve", {
     method: "POST", token,
