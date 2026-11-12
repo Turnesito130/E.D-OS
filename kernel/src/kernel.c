@@ -1,5 +1,6 @@
 /* E.D-OS kernel 0.0.3 — memory discovery and first page allocation. */
 #include "memory.h"
+#include "idt.h"
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long long u64;
@@ -52,6 +53,12 @@ void kernel_main(void) {
         serial_write("MEMORY_ERROR: missing or invalid Limine memory map/HHDM response.\n");
         for (;;) __asm__ volatile ("cli; hlt");
     }
+    if (!idt_init()) {
+        serial_write("IDT_ERROR: could not install exception table.\\n");
+        for (;;) __asm__ volatile ("cli; hlt");
+    }
+    serial_write("IDT_READY entries=256 exceptions=32\\n");
+
     serial_write("MEMORY_MAP_OK usable_bytes=");
     serial_hex(memory_usable_bytes());
     serial_write(" hhdm=");
@@ -69,5 +76,16 @@ void kernel_main(void) {
     serial_hex(pmm_pages_allocated());
     serial_write("\nKERNEL_MEMORY_MILESTONE_OK\n");
 
+    for (;;) __asm__ volatile ("cli; hlt");
+}
+
+/* Called by the assembly exception stubs. No exception is resumed yet. */
+__attribute__((noreturn))
+void kernel_exception_panic(u64 vector, u64 error_code) {
+    serial_write("EXCEPTION vector=");
+    serial_hex(vector);
+    serial_write(" error=");
+    serial_hex(error_code);
+    serial_write("\\nKERNEL_HALTED_ON_EXCEPTION\\n");
     for (;;) __asm__ volatile ("cli; hlt");
 }
