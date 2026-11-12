@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f7f8fa"><title>E.D. Ecosystem</title>
+<style>
+:root{color-scheme:light;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:#252a32;background:#f7f8fa}
+*{box-sizing:border-box}body{margin:0;padding:22px;background:linear-gradient(145deg,#fff,#f3f5f8);min-height:100vh}
+main{max-width:760px;margin:auto}.brand{font-size:12px;letter-spacing:.16em;color:#89919c;font-weight:700}.hero{margin:22px 0 26px}.hero h1{font-size:clamp(30px,6vw,46px);letter-spacing:-.07em;margin:0 0 8px}.hero p,.muted{font-size:12px;line-height:1.6;color:#858d98}
+.card{background:#fff;border:1px solid #e7eaf0;border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 8px 28px #27364a0a}.card h2{font-size:14px;margin:0 0 6px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.field{display:grid;gap:6px;margin:10px 0;flex:1;min-width:150px}.field label{font-size:11px;color:#6f7884}.field input,.field select,.field textarea{width:100%;border:1px solid #e2e6ec;border-radius:10px;padding:10px;font:12px inherit;background:#fcfdff;color:#252a32}.field textarea{min-height:90px;resize:vertical}
+button{border:1px solid #e1e5eb;border-radius:10px;background:#fff;padding:10px 13px;font-size:11px;color:#38414d;cursor:pointer}button.primary{background:#252b34;color:#fff;border-color:#252b34}button:disabled{opacity:.45;cursor:not-allowed}
+.hidden{display:none!important}.status{font-size:11px;line-height:1.5;color:#697481;min-height:18px;margin-top:9px}.device{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid #f0f2f4;font-size:12px}.device small{display:block;color:#929aa4;margin-top:4px}.code{font-size:28px;letter-spacing:.18em;font-weight:750;margin:8px 0}.tag{font-size:10px;color:#728091;background:#f1f3f6;padding:5px 8px;border-radius:20px}
+footer{font-size:10px;color:#a1a8b1;text-align:center;padding:20px}
+</style></head>
+<body><main>
+<div class="brand">E.D. · ECOSYSTEM</div>
+<section class="hero"><h1>Todos tus dispositivos.<br>Una sola cuenta.</h1><p>Gestiona tu identidad E.D., incorpora nuevos dispositivos y prueba la sincronización experimental.</p></section>
+<section class="card" id="auth">
+<h2>Tu cuenta E.D.</h2><p class="muted">Prototipo conectado a una API que debe estar desplegada y configurada por el equipo.</p>
+<div class="field"><label>Dirección de la API (HTTPS)</label><input id="api" type="url" placeholder="https://api.tu-dominio-ed.com"></div>
+<div class="row"><div class="field"><label>Correo</label><input id="email" type="email" autocomplete="username"></div><div class="field"><label>Contraseña (mínimo 12 caracteres)</label><input id="password" type="password" autocomplete="current-password"></div></div>
+<div class="row"><button class="primary" id="login">Iniciar sesión</button><button id="register">Crear cuenta</button></div><div class="status" id="authStatus" aria-live="polite"></div>
+</section>
+<section class="card hidden" id="dashboard">
+<div class="row" style="justify-content:space-between"><div><h2>Tu ecosistema</h2><div class="muted" id="identity"></div></div><button id="logout">Cerrar sesión</button></div>
+<div class="row" style="justify-content:space-between;margin-top:16px"><h2>Dispositivos vinculados</h2><button id="refresh">Actualizar</button></div>
+<div id="devices" class="muted">No se han cargado dispositivos.</div>
+<div class="field"><label>Registrar primer dispositivo (solo para inicializar una cuenta sin dispositivos)</label><div class="row"><input id="deviceName" placeholder="Mi primer móvil E.D."><select id="deviceType"><option value="phone">Móvil</option><option value="tablet">Tablet</option><option value="computer">Ordenador</option><option value="watch">Reloj</option><option value="earbuds">Auriculares</option><option value="other">Otro</option></select><input id="platform" placeholder="android / web / linux"></div><button id="addDevice">Registrar dispositivo</button></div>
+</section>
+<section class="card hidden" id="pair">
+<h2>Vincular un dispositivo nuevo</h2><p class="muted">En el nuevo equipo crea una solicitud y conserva su secreto privado. En este equipo de confianza, introduce el ID de solicitud y el código que aparece en el nuevo equipo.</p>
+<div class="field"><label>ID de solicitud</label><input id="requestId" placeholder="UUID de la solicitud"></div><div class="row"><div class="field"><label>Código de 8 cifras</label><input id="pairCode" inputmode="numeric" maxlength="8" placeholder="00000000"></div><div class="field"><label>Dispositivo que aprueba</label><select id="approver"></select></div></div><button class="primary" id="approve">Aprobar nuevo dispositivo</button>
+<hr style="border:0;border-top:1px solid #eef0f3;margin:18px 0">
+<h2>Este es el dispositivo nuevo</h2><div class="row"><div class="field"><label>Nombre</label><input id="newName" placeholder="Mi segundo móvil"></div><div class="field"><label>Tipo</label><select id="newType"><option value="phone">Móvil</option><option value="tablet">Tablet</option><option value="computer">Ordenador</option><option value="watch">Reloj</option><option value="earbuds">Auriculares</option><option value="other">Otro</option></select></div><div class="field"><label>Plataforma</label><input id="newPlatform" placeholder="android"></div></div>
+<button id="createPair">Crear solicitud de emparejamiento</button><div id="pairResult" class="hidden"><div class="muted">Código temporal para introducir en el dispositivo de confianza:</div><div class="code" id="shownCode"></div><div class="muted" id="pairExpiry"></div><div class="field"><label>Guarda el secreto de consulta de este dispositivo (no lo compartas)</label><input id="pollSecret" readonly></div><div class="field"><label>ID de solicitud</label><input id="createdRequest" readonly></div><button class="primary" id="claim">Comprobar aprobación y completar</button></div><div class="status" id="pairStatus" aria-live="polite"></div>
+</section>
+<section class="card hidden" id="sync">
+<h2>Sincronización experimental</h2><p class="muted">Prueba con pequeños datos JSON. No es sincronización de archivos ni está cifrada de extremo a extremo.</p>
+<div class="row"><div class="field"><label>Clave del elemento</label><input id="syncKey" maxlength="100" placeholder="preferencias"></div><div class="field"><label>Versión esperada (0 para crear)</label><input id="syncVersion" type="number" min="0" value="0"></div></div>
+<div class="field"><label>Contenido JSON</label><textarea id="syncPayload">{ "tema": "claro" }</textarea></div><div class="row"><button class="primary" id="saveSync">Guardar / actualizar</button><button id="loadSync">Ver elementos sincronizados</button></div><pre id="syncResult" class="muted" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
+</section>
+<footer>Prototipo experimental · No usar con datos personales reales · La sesión solo vive en memoria de esta página.</footer>
+</main>
+<script>
+(() => {
+'use strict';
+let token = null, account = null, devices = [];
+const $ = id => document.getElementById(id);
+const api = () => $('api').value.trim().replace(/\/$/, '');
+const show = (id, visible) => $(id).classList.toggle('hidden', !visible);
+const status = (id, message) => { $(id).textContent = message; };
+async function call(path, options = {}, auth = true) {
+  if (!api() || !/^https:\/\//i.test(api())) throw new Error('Introduce la dirección HTTPS de la API.');
+  const headers = { 'content-type':'application/json', ...(options.headers || {}) };
+  if (auth && token) headers.authorization = 'Bearer ' + token;
+  const response = await fetch(api() + path, { ...options, headers, cache:'no-store' });
+  let data = {}; try { data = await response.json(); } catch {}
+  if (!response.ok && response.status !== 202) throw new Error(data.error || 'Error HTTP ' + response.status);
+  return { response, data };
+}
+function enter(data) {
+  token = data.session.token; account = data.account;
+  $('identity').textContent = account.email || account.id;
+  show('auth', false); show('dashboard', true); show('pair', true); show('sync', true);
+  refresh();
+}
+async function auth(mode) {
+  try {
+    status('authStatus','Conectando…');
+    const {data} = await call('/v1/auth/' + mode, {method:'POST',body:JSON.stringify({email:$('email').value,password:$('password').value})}, false);
+    enter(data); status('authStatus','Sesión iniciada.');
+  } catch(e) { status('authStatus',e.message); }
+}
+async function refresh() {
+  try {
+    const {data} = await call('/v1/devices');
+    devices = data.devices || [];
+    $('devices').replaceChildren();
+    $('approver').replaceChildren();
+    if (!devices.length) $('devices').textContent = 'Todavía no hay dispositivos vinculados. Registra el primero para activar la aprobación de nuevos equipos.';
+    devices.forEach(device => {
+      const row=document.createElement('div'); row.className='device';
+      const info=document.createElement('span'); info.textContent=device.device_name;
+      const meta=document.createElement('small'); meta.textContent=device.device_type+' · '+device.platform;
+      info.append(meta);
+      const revoke=document.createElement('button'); revoke.textContent='Revocar'; revoke.addEventListener('click',()=>revokeDevice(device.id));
+      row.append(info,revoke); $('devices').append(row);
+      const option=document.createElement('option'); option.value=device.id; option.textContent=device.device_name; $('approver').append(option);
+    });
+  } catch(e) { status('pairStatus',e.message); }
+}
+async function revokeDevice(id) {
+  if (!confirm('¿Revocar este dispositivo? Sus sesiones existentes no se invalidan automáticamente en esta versión.')) return;
+  try { await call('/v1/devices/'+id+'/revoke',{method:'POST'}); await refresh(); }
+  catch(e) { status('pairStatus',e.message); }
+}
+$('login').onclick=()=>auth('login');
+$('register').onclick=()=>auth('register');
+$('logout').onclick=async()=>{try{await call('/v1/auth/logout',{method:'POST'});}catch{} token=null;account=null;show('auth',true);show('dashboard',false);show('pair',false);show('sync',false);};
+$('refresh').onclick=refresh;
+$('addDevice').onclick=async()=>{
+  try {
+    const {data}=await call('/v1/devices',{method:'POST',body:JSON.stringify({deviceName:$('deviceName').value,deviceType:$('deviceType').value,platform:$('platform').value})});
+    status('pairStatus','Dispositivo registrado: '+data.device.device_name); await refresh();
+  } catch(e) { status('pairStatus',e.message); }
+};
+$('createPair').onclick=async()=>{
+  try {
+    const {data}=await call('/v1/pairing/requests',{method:'POST',body:JSON.stringify({deviceName:$('newName').value,deviceType:$('newType').value,platform:$('newPlatform').value})},false);
+    $('shownCode').textContent=data.pairingCode; $('pollSecret').value=data.pollSecret; $('createdRequest').value=data.requestId; $('pairExpiry').textContent='Caduca: '+new Date(data.expiresAt).toLocaleString();
+    show('pairResult',true); status('pairStatus','Solicitud creada. Apruébala desde tu otro dispositivo.');
+  } catch(e) { status('pairStatus',e.message); }
+};
+$('approve').onclick=async()=>{
+  try {
+    const {data}=await call('/v1/pairing/approve',{method:'POST',body:JSON.stringify({requestId:$('requestId').value.trim(),pairingCode:$('pairCode').value.trim(),approvedByDeviceId:$('approver').value})});
+    status('pairStatus',data.message || 'Dispositivo aprobado.');
+  } catch(e) { status('pairStatus',e.message); }
+};
+$('claim').onclick=async()=>{
+  try {
+    const {response,data}=await call('/v1/pairing/claim',{method:'POST',body:JSON.stringify({requestId:$('createdRequest').value,pollSecret:$('pollSecret').value})},false);
+    if(response.status===202){status('pairStatus','Todavía está pendiente de aprobación. Vuelve a comprobarlo.');return;}
+    enter(data); status('pairStatus','¡Dispositivo vinculado! Guarda tu sesión con seguridad antes de cerrar esta página.');
+  } catch(e) { status('pairStatus',e.message); }
+};
+$('saveSync').onclick=async()=>{
+  try {
+    const payload=JSON.parse($('syncPayload').value);
+    const {data}=await call('/v1/sync/items/'+encodeURIComponent($('syncKey').value.trim()),{method:'PUT',body:JSON.stringify({expectedVersion:Number($('syncVersion').value),payload})});
+    $('syncVersion').value=data.item.version; $('syncResult').textContent=JSON.stringify(data.item,null,2);
+  } catch(e) { $('syncResult').textContent=e.message; }
+};
+$('loadSync').onclick=async()=>{
+  try {const {data}=await call('/v1/sync/items');$('syncResult').textContent=JSON.stringify(data.items,null,2);}
+  catch(e){$('syncResult').textContent=e.message;}
+};
+})();
+</script></body></html>
