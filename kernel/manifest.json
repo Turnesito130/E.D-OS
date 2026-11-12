@@ -1,21 +1,25 @@
 {
-  "schema_version": 1,
-  "status": "unselected",
-  "upstream": {
+  "schema_version": 2,
+  "kernel_strategy": "independent_ed_os_kernel",
+  "linux_role": "study_reference_and_candidate_source_for_selective_components",
+  "runtime_dependency_on_linux": false,
+  "status": "research_only",
+  "linux_reference": {
     "repository": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
     "version_tag": null,
     "commit": null,
-    "source_archive_sha256": null,
-    "license": "GPL-2.0-only"
+    "license_note": "Review the exact SPDX license and notices for each file or component before reuse. Linux kernel code is generally GPL-2.0-only, with exceptions."
   },
-  "target": {
+  "ed_os_target": {
     "architecture": "x86_64",
     "virtual_machine": "QEMU",
-    "firmware": "UEFI/OVMF"
+    "firmware": "UEFI/OVMF",
+    "kernel_source_directory": "kernel/src"
   },
   "notes": [
-    "Do not build or distribute until version_tag, commit and source checksum are pinned.",
-    "Keep E.D-OS changes as reviewable patches separate from upstream source.",
-    "Confirm exact licensing and required notices for all imported components."
+    "E.D-OS must boot and run without the Linux kernel.",
+    "Linux is a study reference; compiling it in a separate lab does not make it an E.D-OS runtime dependency.",
+    "Do not import code until dependencies, provenance, exact license and redistribution obligations have been reviewed.",
+    "No E.D-OS kernel source has been implemented, compiled or boot-tested yet."
   ]
 }
