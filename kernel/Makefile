@@ -26,7 +26,7 @@ $(TARGET): $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o linker.ld
 
 iso: $(TARGET)
 	@test -n "$(LIMINE_DIR)" || (echo "Set LIMINE_DIR to a Limine binary release directory"; exit 1)
-	LIMINE_DIR="$(LIMINE_DIR)" ./scripts/build-iso.sh "$(TARGET)" "$(ISO)"
+	LIMINE_DIR="$(LIMINE_DIR)" bash ./scripts/build-iso.sh "$(TARGET)" "$(ISO)"
 
 clean:
 	rm -rf $(BUILD_DIR)
