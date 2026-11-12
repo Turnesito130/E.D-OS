@@ -3,7 +3,7 @@
   "kernel_strategy": "independent_ed_os_kernel",
   "linux_role": "study_reference_and_candidate_source_for_selective_components",
   "runtime_dependency_on_linux": false,
-  "status": "research_only",
+  "status": "source_prototype_not_bootable",
   "linux_reference": {
     "repository": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
     "version_tag": null,
@@ -13,13 +13,32 @@
   "ed_os_target": {
     "architecture": "x86_64",
     "virtual_machine": "QEMU",
-    "firmware": "UEFI/OVMF",
-    "kernel_source_directory": "kernel/src"
+    "firmware": "not_selected",
+    "kernel_source_directory": "kernel/src",
+    "entry_contract": "64-bit long mode hand-off; bootloader/protocol not implemented"
   },
+  "implemented": [
+    "x86_64 assembly entry stub",
+    "initial 16 KiB kernel stack",
+    "freestanding C kernel entry",
+    "COM1 serial diagnostic output",
+    "ELF64 linker layout",
+    "Clang/LLD build target"
+  ],
+  "verified": [
+    "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable."
+  ],
+  "not_yet_verified": [
+    "GitHub Actions build",
+    "bootloader hand-off",
+    "QEMU boot",
+    "serial output in an emulator",
+    "physical hardware compatibility"
+  ],
   "notes": [
     "E.D-OS must boot and run without the Linux kernel.",
     "Linux is a study reference; compiling it in a separate lab does not make it an E.D-OS runtime dependency.",
     "Do not import code until dependencies, provenance, exact license and redistribution obligations have been reviewed.",
-    "No E.D-OS kernel source has been implemented, compiled or boot-tested yet."
+    "A successfully linked ELF is not proof that the kernel can boot."
   ]
 }
