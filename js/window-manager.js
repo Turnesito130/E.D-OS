@@ -43,7 +43,7 @@
     'Ajustes': frame('Ajustes', './apps/ajustes.html'),
     'E.D. Connect': frame('E.D. Connect', './connect.html'),
     'E.D. Ecosystem': frame('E.D. Ecosystem', './apps/ecosystem.html'),
-    'Navegador': '<p class="window-note">Busca en Internet o abre una dirección. Las páginas se abrirán en una pestaña del navegador de tu dispositivo; esta aplicación no intenta imitar ni sustituir Chrome.</p><form data-browser-form class="freedom-form"><label>Buscar o escribir una dirección</label><input name="query" type="search" required maxlength="2048" placeholder="Ej.: TikTok, Wikipedia o ejemplo.com"><label>Buscador</label><select name="engine"><option value="https://duckduckgo.com/?q=">DuckDuckGo</option><option value="https://www.google.com/search?q=">Google</option><option value="https://www.bing.com/search?q=">Bing</option></select><button type="submit">Buscar / abrir</button></form><div class="freedom-shortcuts"><span class="window-note">Accesos rápidos</span><button type="button" data-browser-url="https://www.tiktok.com/">TikTok</button><button type="button" data-browser-url="https://www.youtube.com/">YouTube</button><button type="button" data-browser-url="https://www.instagram.com/">Instagram</button><button type="button" data-browser-url="https://www.wikipedia.org/">Wikipedia</button></div><p class="window-note" data-browser-status aria-live="polite">Los inicios de sesión se realizan únicamente en la web oficial.</p>',
+    'Navegador': '<p class="window-note">Busca en Internet como en un buscador normal. Escribe una pregunta, tema o dirección web y pulsa Enter. Los resultados se abrirán en una pestaña del navegador del dispositivo.</p><form data-browser-form class="freedom-form"><label>¿Qué quieres buscar?</label><input name="query" type="search" required maxlength="2048" autocomplete="off" placeholder="Busca en Internet o escribe una web…"><label>Motor de búsqueda</label><select name="engine"><option value="https://www.google.com/search?q=">Google</option><option value="https://www.bing.com/search?q=">Bing</option><option value="https://duckduckgo.com/?q=">DuckDuckGo</option></select><button type="submit">Buscar en Internet ↗</button></form><div class="freedom-shortcuts"><span class="window-note">Accesos rápidos</span><button type="button" data-browser-url="https://www.youtube.com/">YouTube</button><button type="button" data-browser-url="https://www.wikipedia.org/">Wikipedia</button><button type="button" data-browser-url="https://www.tiktok.com/">TikTok</button><button type="button" data-browser-url="https://www.instagram.com/">Instagram</button></div><p class="window-note" data-browser-status aria-live="polite">Google está seleccionado. Puedes cambiar el buscador cuando quieras.</p>',
     'E.D. Freedom': '<p class="window-note">Busca en Internet o abre directamente una dirección. Los sitios se abren en una pestaña del navegador; el inicio de sesión lo realiza el propio sitio.</p><form data-freedom-search class="freedom-form"><label>Buscar o escribir una dirección</label><input name="q" type="search" required maxlength="240" placeholder="Ej.: TikTok, noticias o tiktok.com"><label>Buscador para búsquedas de texto</label><select name="engine"><option value="duckduckgo">DuckDuckGo</option><option value="google">Google</option><option value="bing">Bing</option></select><button type="submit">Buscar / abrir</button></form><div class="freedom-shortcuts"><span class="window-note">Accesos directos</span><button type="button" data-freedom-site="https://www.tiktok.com/">TikTok</button><button type="button" data-freedom-site="https://www.youtube.com/">YouTube</button><button type="button" data-freedom-site="https://www.instagram.com/">Instagram</button><button type="button" data-freedom-site="https://www.wikipedia.org/">Wikipedia</button></div><form data-freedom-download class="freedom-form"><label>Abrir un enlace</label><input name="url" type="text" required maxlength="2048" placeholder="https://sitio.com"><button type="submit">Abrir sitio / archivo</button></form><p class="window-note">Escribe tu contraseña únicamente en la página oficial. E.D-OS nunca te la pedirá ni puede retirar bloqueos impuestos por el navegador, la red o el administrador del dispositivo.</p><p class="window-note" data-freedom-message aria-live="polite">Listo para abrir sitios y búsquedas.</p>',
     'Asistente E.D.': '<p class="window-note"><strong>El asistente E.D. aún no está conectado.</strong></p><p class="window-note">No voy a simular una inteligencia artificial ni afirmar que razona cuando todavía no existe un motor propio integrado. Esta ventana queda preparada para una futura integración.</p>',
     'Buscar': '<label class="search-label" for="edSearchInput">Buscar en E.D-OS</label><input class="system-search-input" id="edSearchInput" data-search-input type="search" placeholder="Aplicaciones, tareas y archivos…" autocomplete="off"><div data-search-results></div>',
@@ -93,26 +93,61 @@
     const form = root.querySelector('[data-browser-form]');
     const status = root.querySelector('[data-browser-status]');
     if (!form || !status) return;
-    const launch = (value) => {
-      const raw = String(value || '').trim();
-      if (!raw) { status.textContent = 'Escribe una búsqueda o una dirección.'; return; }
-      let url;
-      try {
-        const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : 'https://' + raw;
-        const parsed = new URL(candidate);
-        if (['http:', 'https:'].includes(parsed.protocol) && parsed.hostname.includes('.') && /^(https?:\/\/|www\.|[a-z0-9-]+\.[a-z]{2,})/i.test(raw)) url = parsed.href;
-      } catch (_) {}
-      if (!url && /^[a-z][a-z0-9+.-]*:\/\//i.test(raw)) { status.textContent = 'Solo se permiten direcciones HTTP o HTTPS.'; return; }
-      if (!url) {
-        const engine = form.querySelector('[name="engine"]').value;
-        url = engine + encodeURIComponent(raw);
+
+    function showStatus(message, href) {
+      status.replaceChildren(document.createTextNode(message));
+      if (href) {
+        const link = document.createElement('a');
+        link.href = href;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = ' Abrir resultados';
+        link.style.fontWeight = '650';
+        link.style.marginLeft = '5px';
+        status.append(link);
       }
-      const opened = window.open(url, '_blank');
-      if (opened) { try { opened.opener = null; } catch (_) {} }
-      status.textContent = opened ? 'Se ha solicitado abrir la página en otra pestaña.' : 'El navegador bloqueó la ventana. Permite las ventanas emergentes o copia la dirección: ' + url;
-    };
-    form.addEventListener('submit', event => { event.preventDefault(); launch(form.querySelector('[name="query"]').value); });
-    root.querySelectorAll('[data-browser-url]').forEach(button => button.addEventListener('click', () => launch(button.dataset.browserUrl)));
+    }
+
+    function launch(value) {
+      const raw = String(value || '').trim();
+      if (!raw) { showStatus('Escribe algo para buscar.'); return; }
+
+      let destination = '';
+      const looksLikeUrl = /^(https?:\/\/|www\.)/i.test(raw) ||
+        /^[a-z0-9-]+\.[a-z]{2,}([/:?#]|$)/i.test(raw);
+      if (looksLikeUrl) {
+        try {
+          const candidate = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+          const parsed = new URL(candidate);
+          if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.hostname.includes('.')) {
+            showStatus('La dirección no es válida.'); return;
+          }
+          destination = parsed.href;
+        } catch (_) { showStatus('No se reconoce esa dirección web.'); return; }
+      } else {
+        const engine = form.querySelector('[name="engine"]').value;
+        if (!['https://www.google.com/search?q=','https://www.bing.com/search?q=','https://duckduckgo.com/?q='].includes(engine)) {
+          showStatus('Buscador no válido.'); return;
+        }
+        destination = engine + encodeURIComponent(raw);
+      }
+
+      // Open synchronously inside the user's submit/click gesture to reduce popup blocking.
+      const opened = window.open(destination, '_blank', 'noopener,noreferrer');
+      if (opened) {
+        showStatus(looksLikeUrl ? 'Abriendo el sitio solicitado…' : 'Abriendo los resultados de búsqueda…');
+      } else {
+        showStatus('El navegador bloqueó la pestaña nueva. Usa este enlace:', destination);
+      }
+    }
+
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      launch(form.querySelector('[name="query"]').value);
+    });
+    root.querySelectorAll('[data-browser-url]').forEach(button => {
+      button.addEventListener('click', () => launch(button.dataset.browserUrl));
+    });
   }
 
   function open(name) {
