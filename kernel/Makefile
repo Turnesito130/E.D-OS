@@ -18,14 +18,20 @@ $(BUILD_DIR):
 $(BUILD_DIR)/entry.o: src/entry.S | $(BUILD_DIR)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/kernel.o: src/kernel.c include/memory.h | $(BUILD_DIR)
+$(BUILD_DIR)/kernel.o: src/kernel.c include/memory.h include/idt.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
 $(BUILD_DIR)/memory.o: src/memory.c include/memory.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
-$(TARGET): $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o linker.ld
-	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o
+$(BUILD_DIR)/idt.o: src/idt.c include/idt.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+$(BUILD_DIR)/interrupts.o: src/interrupts.S | $(BUILD_DIR)
+	$(CC) $(ASFLAGS) -c $< -o $@
+
+$(TARGET): $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/interrupts.o linker.ld
+	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/interrupts.o
 
 iso: $(TARGET)
 	@test -n "$(LIMINE_DIR)" || (echo "Set LIMINE_DIR to a Limine binary release directory"; exit 1)
