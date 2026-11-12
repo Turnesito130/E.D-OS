@@ -12,6 +12,7 @@ const PAIRING_TTL_MINUTES = 5;
 const MAX_BODY_BYTES = 16 * 1024;
 const pool = DATABASE_URL ? new Pool({ connectionString: DATABASE_URL, ssl: process.env.PGSSLMODE === "require" ? { rejectUnauthorized: true } : undefined }) : null;
 const attempts = new Map();
+const allowedOrigins = new Set((process.env.CORS_ORIGINS || "").split(",").map(value => value.trim()).filter(Boolean));
 
 function send(res, status, data) {
   const body = JSON.stringify(data);
@@ -123,6 +124,19 @@ async function authenticatedAccount(req) {
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost");
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.has(origin)) {
+    res.setHeader("access-control-allow-origin", origin);
+    res.setHeader("vary", "Origin");
+    res.setHeader("access-control-allow-methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader("access-control-allow-headers", "authorization, content-type");
+    res.setHeader("access-control-max-age", "600");
+  }
+  if (req.method === "OPTIONS") {
+    if (!origin || !allowedOrigins.has(origin)) return send(res, 403, { error: "Origen no autorizado." });
+    res.writeHead(204, { "cache-control": "no-store" });
+    return res.end();
+  }
   try {
     if (req.method === "GET" && url.pathname === "/health") {
       return send(res, 200, { service: "ed-ecosystem-api", status: "ok", version: "0.1.0" });
