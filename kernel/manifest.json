@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "status": "unselected",
+  "upstream": {
+    "repository": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
+    "version_tag": null,
+    "commit": null,
+    "source_archive_sha256": null,
+    "license": "GPL-2.0-only"
+  },
+  "target": {
+    "architecture": "x86_64",
+    "virtual_machine": "QEMU",
+    "firmware": "UEFI/OVMF"
+  },
+  "notes": [
+    "Do not build or distribute until version_tag, commit and source checksum are pinned.",
+    "Keep E.D-OS changes as reviewable patches separate from upstream source.",
+    "Confirm exact licensing and required notices for all imported components."
+  ]
+}
