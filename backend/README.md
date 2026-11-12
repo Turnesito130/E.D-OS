@@ -15,7 +15,6 @@ Este servicio es el primer backend ejecutable de E.D. ID y del inventario de dis
 ## No incluye todavía
 
 - Verificación de correo, recuperación de contraseña ni passkeys.
-- 
 - Sincronización de archivos/binarios, E.D. Cloud, TURN ni señalización WebRTC. La sincronización actual solo admite registros JSON de hasta 12 KB por elemento.
 - Rate limiting distribuido, MFA, auditoría completa ni recuperación segura de claves.
 - Despliegue, dominio, certificados TLS, copias de seguridad o monitorización.
@@ -78,12 +77,6 @@ Todas las respuestas son JSON. Las rutas privadas requieren `Authorization: Bear
 | POST | `/v1/pairing/approve` | Sesión | Aprobar solicitud desde una sesión de la cuenta |
 | POST | `/v1/pairing/claim` | Secreto temporal | Completar una vez el emparejamiento y obtener sesión |
 | GET | `/v1/sync/items` | Sesión | Listar hasta 500 registros JSON |
-| PUT | `/v1/sync/items/{key}` | Sesión | Crear/actualizar con control de versión |
-| DELETE | `/v1/sync/items/{key}` | Sesión | Borrado lógico con control de versión |
-| POST | `/v1/pairing/requests` | Público | Crear solicitud temporal en el nuevo dispositivo |
-| POST | `/v1/pairing/approve` | Sesión | Aprobar solicitud desde un dispositivo registrado |
-| POST | `/v1/pairing/claim` | Secreto temporal | Completar una vez el emparejamiento y obtener sesión |
-| GET | `/v1/sync/items` | Sesión | Listar registros JSON sincronizados |
 | PUT | `/v1/sync/items/{key}` | Sesión | Crear/actualizar con control de versión |
 | DELETE | `/v1/sync/items/{key}` | Sesión | Borrado lógico con control de versión |
 
