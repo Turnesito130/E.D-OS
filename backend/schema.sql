@@ -81,3 +81,18 @@ CREATE TABLE IF NOT EXISTS sync_items (
 );
 
 CREATE INDEX IF NOT EXISTS sync_items_updated_idx ON sync_items(account_id, updated_at DESC);
+
+
+-- E.D. Cloud file metadata. Binary content remains in S3-compatible object storage.
+CREATE TABLE IF NOT EXISTS cloud_files (
+  id TEXT PRIMARY KEY CHECK (id ~ '^[a-f0-9]{32}$'),
+  account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  object_key TEXT NOT NULL UNIQUE,
+  file_name TEXT NOT NULL CHECK (length(file_name) BETWEEN 1 AND 180),
+  content_type TEXT NOT NULL CHECK (length(content_type) BETWEEN 1 AND 150),
+  size_bytes BIGINT NOT NULL CHECK (size_bytes BETWEEN 1 AND 52428800),
+  status TEXT NOT NULL DEFAULT 'uploading' CHECK (status IN ('uploading', 'completed')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  completed_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS cloud_files_account_idx ON cloud_files(account_id, created_at DESC);
