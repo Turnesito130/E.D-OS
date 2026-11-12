@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Prototipo inicial de API para identidad y dispositivos E.D.",
+  "description": "API experimental E.D. ID, dispositivos, sincronización y E.D. Cloud",
   "scripts": {
     "start": "node server.mjs",
     "check": "node --check server.mjs",
@@ -13,6 +13,8 @@
     "node": ">=20"
   },
   "dependencies": {
-    "pg": "^8.13.1"
+    "pg": "^8.13.1",
+    "@aws-sdk/client-s3": "^3.850.0",
+    "@aws-sdk/s3-request-presigner": "^3.850.0"
   }
 }
