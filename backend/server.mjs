@@ -436,24 +436,45 @@ const server = createServer(async (req, res) => {
           sizeBytes < 1 || sizeBytes > CLOUD_MAX_FILE_BYTES) {
         return send(res, 400, { error: "Archivo no válido. Máximo 50 MB; nombre y tipo MIME obligatorios." });
       }
-      const usage = await pool.query(
-        "SELECT COALESCE(sum(size_bytes), 0)::bigint AS used FROM cloud_files WHERE account_id = $1 AND status IN ('uploading', 'completed')",
-        [account.id]
-      );
-      if (Number(usage.rows[0].used) + sizeBytes > CLOUD_QUOTA_BYTES) {
-        return send(res, 413, { error: "Superarías la cuota experimental de 2 GB de E.D. Cloud." });
-      }
       const id = randomBytes(16).toString("hex");
       const objectKey = `${account.id}/${id}`;
-      await pool.query(
-        `INSERT INTO cloud_files (id, account_id, object_key, file_name, content_type, size_bytes, status)
-         VALUES ($1, $2, $3, $4, $5, $6, 'uploading')`,
-        [id, account.id, objectKey, fileName, contentType, sizeBytes]
-      );
-      const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({
-        Bucket: cloudConfig.bucket, Key: objectKey, ContentType: contentType
-      }), { expiresIn: 300 });
-      return send(res, 201, { file: { id, fileName, contentType, sizeBytes, status: "uploading" }, uploadUrl, uploadMethod: "PUT", requiredHeaders: { "content-type": contentType }, expiresInSeconds: 300 });
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Serializa reservas de cuota por cuenta para evitar que cargas
+        // concurrentes reserven simultáneamente el mismo espacio disponible.
+        await client.query(
+          "SELECT pg_advisory_xact_lock(hashtext($1), hashtext('ed-cloud-quota'))",
+          [account.id]
+        );
+        const usage = await client.query(
+          "SELECT COALESCE(sum(size_bytes), 0)::bigint AS used FROM cloud_files WHERE account_id = $1 AND status IN ('uploading', 'completed')",
+          [account.id]
+        );
+        if (Number(usage.rows[0].used) + sizeBytes > CLOUD_QUOTA_BYTES) {
+          await client.query("ROLLBACK");
+          return send(res, 413, { error: "Superarías la cuota experimental de 2 GB de E.D. Cloud." });
+        }
+        await client.query(
+          `INSERT INTO cloud_files (id, account_id, object_key, file_name, content_type, size_bytes, status)
+           VALUES ($1, $2, $3, $4, $5, $6, 'uploading')`,
+          [id, account.id, objectKey, fileName, contentType, sizeBytes]
+        );
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally { client.release(); }
+
+      try {
+        const uploadUrl = await getSignedUrl(s3, new PutObjectCommand({
+          Bucket: cloudConfig.bucket, Key: objectKey, ContentType: contentType
+        }), { expiresIn: 300 });
+        return send(res, 201, { file: { id, fileName, contentType, sizeBytes, status: "uploading" }, uploadUrl, uploadMethod: "PUT", requiredHeaders: { "content-type": contentType }, expiresInSeconds: 300 });
+      } catch (error) {
+        await pool.query("DELETE FROM cloud_files WHERE id = $1 AND account_id = $2 AND status = 'uploading'", [id, account.id]);
+        throw error;
+      }
     }
 
     const cloudFileMatch = url.pathname.match(/^\/v1\/cloud\/files\/([a-f0-9]{32})(?:\/(complete|download))?$/);
