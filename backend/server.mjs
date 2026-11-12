@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual, createHash } from "node:crypto";
+import { randomBytes, randomInt, scrypt as scryptCallback, timingSafeEqual, createHash } from "node:crypto";
 import { promisify } from "node:util";
 import pg from "pg";
 
@@ -7,7 +7,7 @@ const scrypt = promisify(scryptCallback);
 const { Pool } = pg;
 const PORT = Number(process.env.PORT || 8787);
 const DATABASE_URL = process.env.DATABASE_URL;
-const TOKEN_TTL_HOURS = 12;
+const TOKEN_TTL_HOURS = 12;\nconst PAIRING_TTL_MINUTES = 5;
 const MAX_BODY_BYTES = 16 * 1024;
 const pool = DATABASE_URL ? new Pool({ connectionString: DATABASE_URL, ssl: process.env.PGSSLMODE === "require" ? { rejectUnauthorized: true } : undefined }) : null;
 const attempts = new Map();
@@ -80,6 +80,21 @@ async function verifyPassword(password, stored) {
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
+
+function safeHashEqual(value, expectedHex) {
+  const actual = Buffer.from(tokenDigest(value), "hex");
+  const expected = Buffer.from(expectedHex, "hex");
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
+}
+
+function validDeviceInput(body) {
+  const allowedTypes = ["phone", "tablet", "computer", "watch", "earbuds", "other"];
+  return typeof body.deviceName === "string" && body.deviceName.trim().length >= 1 &&
+    body.deviceName.trim().length <= 60 && allowedTypes.includes(body.deviceType) &&
+    typeof body.platform === "string" && body.platform.trim().length >= 1 &&
+    body.platform.trim().length <= 40;
+}
+
 async function issueSession(client, accountId) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + TOKEN_TTL_HOURS * 3600_000);
@@ -148,6 +163,140 @@ const server = createServer(async (req, res) => {
           account: { id: account.id, email: account.email },
           session
         });
+      } finally { client.release(); }
+    }
+
+
+    // A new device creates a short-lived pairing request. Its poll secret is
+    // separate from the eight-digit code shown to the user.
+    if (req.method === "POST" && url.pathname === "/v1/pairing/requests") {
+      if (!rateLimit(req, res)) return;
+      const body = await readJson(req);
+      if (!validDeviceInput(body)) return send(res, 400, { error: "Datos del dispositivo no válidos." });
+      const code = String(randomInt(0, 100_000_000)).padStart(8, "0");
+      const pollSecret = randomBytes(32).toString("base64url");
+      const expiresAt = new Date(Date.now() + PAIRING_TTL_MINUTES * 60_000);
+      const result = await pool.query(
+        `INSERT INTO pairing_requests
+          (code_hash, poll_secret_hash, device_name, device_type, platform, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id, expires_at`,
+        [tokenDigest(code), tokenDigest(pollSecret), body.deviceName.trim(), body.deviceType, body.platform.trim(), expiresAt]
+      );
+      return send(res, 201, {
+        requestId: result.rows[0].id,
+        pairingCode: code,
+        pollSecret,
+        expiresAt: result.rows[0].expires_at,
+        instructions: "Muestra el código en el nuevo dispositivo e introdúcelo desde un dispositivo E.D. ya autorizado."
+      });
+    }
+
+    // An already authenticated account member approves a pairing request.
+    if (req.method === "POST" && url.pathname === "/v1/pairing/approve") {
+      if (!rateLimit(req, res)) return;
+      const account = await authenticatedAccount(req);
+      if (!account) return send(res, 401, { error: "Necesitas una sesión válida para aprobar dispositivos." });
+      const body = await readJson(req);
+      if (typeof body.requestId !== "string" || typeof body.pairingCode !== "string" ||
+          !/^\\d{8}$/.test(body.pairingCode) || typeof body.approvedByDeviceId !== "string") {
+        return send(res, 400, { error: "Solicitud de aprobación no válida." });
+      }
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const trusted = await client.query(
+          "SELECT id FROM devices WHERE id = $1 AND account_id = $2 AND revoked_at IS NULL FOR UPDATE",
+          [body.approvedByDeviceId, account.id]
+        );
+        if (!trusted.rowCount) {
+          await client.query("ROLLBACK");
+          return send(res, 403, { error: "El dispositivo aprobador no pertenece a esta cuenta o está revocado." });
+        }
+        const pending = await client.query(
+          "SELECT * FROM pairing_requests WHERE id = $1 AND status = 'pending' AND expires_at > now() FOR UPDATE",
+          [body.requestId]
+        );
+        if (!pending.rowCount || !safeHashEqual(body.pairingCode, pending.rows[0].code_hash)) {
+          await client.query("ROLLBACK");
+          return send(res, 404, { error: "Solicitud inexistente, código incorrecto o solicitud caducada." });
+        }
+        const request = pending.rows[0];
+        const device = await client.query(
+          `INSERT INTO devices (account_id, device_name, device_type, platform)
+           VALUES ($1, $2, $3, $4)
+           RETURNING id, device_name, device_type, platform`,
+          [account.id, request.device_name, request.device_type, request.platform]
+        );
+        await client.query(
+          `UPDATE pairing_requests
+              SET status = 'approved', account_id = $2, device_id = $3, approved_by_device_id = $4
+            WHERE id = $1`,
+          [request.id, account.id, device.rows[0].id, body.approvedByDeviceId]
+        );
+        await client.query("COMMIT");
+        return send(res, 200, { success: true, device: device.rows[0], message: "Dispositivo aprobado. El nuevo equipo puede completar el emparejamiento." });
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally { client.release(); }
+    }
+
+    // The new device exchanges its private poll secret for one session exactly once.
+    if (req.method === "POST" && url.pathname === "/v1/pairing/claim") {
+      if (!rateLimit(req, res)) return;
+      const body = await readJson(req);
+      if (typeof body.requestId !== "string" || typeof body.pollSecret !== "string" ||
+          body.pollSecret.length < 40 || body.pollSecret.length > 100) {
+        return send(res, 400, { error: "Datos de emparejamiento no válidos." });
+      }
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const result = await client.query(
+          "SELECT * FROM pairing_requests WHERE id = $1 FOR UPDATE",
+          [body.requestId]
+        );
+        if (!result.rowCount || !safeHashEqual(body.pollSecret, result.rows[0].poll_secret_hash)) {
+          await client.query("ROLLBACK");
+          return send(res, 404, { error: "Solicitud no encontrada." });
+        }
+        const pairing = result.rows[0];
+        if (pairing.expires_at <= new Date() || pairing.status === "rejected") {
+          await client.query("ROLLBACK");
+          return send(res, 410, { error: "La solicitud ha caducado o fue rechazada." });
+        }
+        if (pairing.status === "pending") {
+          await client.query("ROLLBACK");
+          return send(res, 202, { status: "pending", message: "Esperando aprobación desde tu otro dispositivo." });
+        }
+        if (pairing.status !== "approved" || !pairing.account_id || !pairing.device_id) {
+          await client.query("ROLLBACK");
+          return send(res, 409, { error: "Esta solicitud ya fue utilizada." });
+        }
+        const session = await issueSession(client, pairing.account_id);
+        await client.query(
+          "UPDATE pairing_requests SET status = 'claimed', claimed_at = now() WHERE id = $1",
+          [pairing.id]
+        );
+        const device = await client.query(
+          "SELECT id, device_name, device_type, platform FROM devices WHERE id = $1 AND account_id = $2 AND revoked_at IS NULL",
+          [pairing.device_id, pairing.account_id]
+        );
+        if (!device.rowCount) {
+          await client.query("ROLLBACK");
+          return send(res, 410, { error: "El dispositivo fue revocado antes de completar el emparejamiento." });
+        }
+        await client.query("COMMIT");
+        return send(res, 200, {
+          status: "claimed",
+          account: { id: pairing.account_id },
+          device: device.rows[0],
+          session
+        });
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
       } finally { client.release(); }
     }
 
