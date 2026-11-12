@@ -13,7 +13,7 @@ const port = 19000 + Math.floor(Math.random() * 1000);
 const base = `http://127.0.0.1:${port}`;
 const pool = new Pool({ connectionString: databaseUrl });
 const s3 = new S3Client({
-  region: "us-east-1", endpoint: "http://127.0.0.1:9000", forcePathStyle: true,
+  region: "us-east-1", endpoint: "http://127.0.0.1:4566", forcePathStyle: true,
   credentials: { accessKeyId: "edtest", secretAccessKey: "ed_test_password_123" }
 });
 let child;
@@ -50,7 +50,7 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
     cwd: new URL("..", import.meta.url),
     env: {
       ...process.env, PORT: String(port), DATABASE_URL: databaseUrl, CORS_ORIGINS: "https://example.test",
-      S3_ENDPOINT: "http://127.0.0.1:9000", S3_BUCKET: "ed-test",
+      S3_ENDPOINT: "http://127.0.0.1:4566", S3_BUCKET: "ed-test",
       S3_ACCESS_KEY_ID: "test-access-key", S3_SECRET_ACCESS_KEY: "test-secret-key",
       S3_REGION: "us-east-1"
     },
@@ -165,7 +165,7 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   assert.equal(otherItems.status, 200);
   assert.equal(otherItems.data.items.length, 0);
 
-  // End-to-end Cloud upload, completion, signed download and deletion on MinIO.
+  // End-to-end Cloud upload, completion, signed download and deletion on LocalStack S3.
   const cloudToken = other.data.session.token;
   const payload = Buffer.from("E.D. Cloud integration test payload");
   const upload = await request("/v1/cloud/files", {
@@ -192,7 +192,7 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   })).status, 200);
 
   // An abandoned upload is marked deleting, retried after a storage error,
-  // and removed from both MinIO and PostgreSQL on the next cleanup pass.
+  // and removed from both LocalStack S3 and PostgreSQL on the next cleanup pass.
   const abandoned = await request("/v1/cloud/files", {
     method: "POST", token: cloudToken,
     body: { fileName: "abandoned.bin", contentType: "application/octet-stream", sizeBytes: payload.length }
