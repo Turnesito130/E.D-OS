@@ -41,7 +41,12 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   await pool.query(await readFile(new URL("../schema.sql", import.meta.url), "utf8"));
   child = spawn(process.execPath, ["server.mjs"], {
     cwd: new URL("..", import.meta.url),
-    env: { ...process.env, PORT: String(port), DATABASE_URL: databaseUrl, CORS_ORIGINS: "https://example.test" },
+    env: {
+      ...process.env, PORT: String(port), DATABASE_URL: databaseUrl, CORS_ORIGINS: "https://example.test",
+      S3_ENDPOINT: "http://127.0.0.1:9000", S3_BUCKET: "ed-test",
+      S3_ACCESS_KEY_ID: "test-access-key", S3_SECRET_ACCESS_KEY: "test-secret-key",
+      S3_REGION: "us-east-1"
+    },
     stdio: ["ignore", "pipe", "pipe"]
   });
   let logs = "";
@@ -111,7 +116,26 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
     body: { requestId: pairing.data.requestId, pollSecret: pairing.data.pollSecret }
   })).status, 409);
 
-  assert.equal((await request("/v1/cloud/files", { token })).status, 503);
+  // El endpoint de firma no necesita contactar con S3: permite probar
+  // reservas concurrentes con credenciales ficticias, sin subir bytes reales.
+  const quotaRequests = await Promise.all(Array.from({ length: 41 }, (_, index) =>
+    request("/v1/cloud/files", {
+      method: "POST", token,
+      body: {
+        fileName: `quota-${index}.bin`,
+        contentType: "application/octet-stream",
+        sizeBytes: 50 * 1024 * 1024
+      }
+    })
+  ));
+  assert.equal(quotaRequests.filter(result => result.status === 201).length, 40);
+  assert.equal(quotaRequests.filter(result => result.status === 413).length, 1);
+  const reserved = await pool.query(
+    "SELECT COALESCE(sum(size_bytes), 0)::bigint AS used, count(*)::int AS files FROM cloud_files WHERE account_id = (SELECT id FROM accounts WHERE email = $1)",
+    [email]
+  );
+  assert.equal(Number(reserved.rows[0].used), 2 * 1024 * 1024 * 1024);
+  assert.equal(reserved.rows[0].files, 40);
 
   const created = await request("/v1/sync/items/preferences", {
     method: "PUT", token, body: { expectedVersion: 0, payload: { theme: "light" } }
