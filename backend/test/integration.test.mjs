@@ -135,7 +135,7 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
       }
     })
   ));
-  assert.equal(quotaRequests.filter(result => result.status === 201).length, 40);
+  assert.equal(quotaRequests.filter(result => result.status === 201).length, 40, JSON.stringify(quotaRequests.slice(0, 5)));
   assert.equal(quotaRequests.filter(result => result.status === 413).length, 1);
   const reserved = await pool.query(
     "SELECT COALESCE(sum(size_bytes), 0)::bigint AS used, count(*)::int AS files FROM cloud_files WHERE account_id = (SELECT id FROM accounts WHERE email = $1)",
