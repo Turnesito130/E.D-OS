@@ -29,6 +29,9 @@ jobs:
           mkdir -p limine-bin
           tar -xzf limine-binary.tar.gz -C limine-bin
           LIMINE_DIR="$(dirname "$(find "$PWD/limine-bin" -name limine-bios.sys -print -quit)")"
+          test -f "$LIMINE_DIR/limine-bios.sys"
+          # The pinned binary release ships the host installer as portable source.
+          make -C "$LIMINE_DIR"
           test -x "$LIMINE_DIR/limine"
           echo "LIMINE_DIR=$LIMINE_DIR" >> "$GITHUB_ENV"
       - name: Build E.D-OS ELF and hybrid boot ISO
