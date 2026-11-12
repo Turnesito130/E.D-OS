@@ -72,19 +72,20 @@ Una cuenta no debe dar permiso automático para acceder a todos los dispositivos
 - [ ] Evaluar aislamiento de aplicaciones, servicios del sistema y compatibilidad.
 
 
-### Fase E — Núcleo nativo E.D-OS (prioridad 10/10)
-- [x] Definir estrategia de reutilización y adaptación del kernel Linux.
-- [x] Crear el espacio de integración y documentar separación upstream/parches.
-- [x] Definir primer objetivo x86_64 en QEMU y criterios de evidencia.
-- [ ] Seleccionar y fijar una versión estable/LTS mantenida con commit y checksum.
-- [ ] Preparar toolchain reproducible y configuración mínima.
-- [ ] Compilar kernel upstream sin modificaciones.
-- [ ] Arrancar kernel de referencia en QEMU y conservar logs.
-- [ ] Añadir la primera personalización específica de E.D-OS como parche pequeño.
-- [ ] Recompilar y repetir pruebas tras cada modificación.
-- [ ] Crear root filesystem y prototipo instalable.
+### Fase E — Núcleo propio E.D-OS (prioridad 10/10)
+- [x] Decidir que E.D-OS tendrá un kernel propio y no dependerá de Linux para arrancar.
+- [x] Definir Linux como referencia de estudio y posible fuente de componentes selectivos.
+- [x] Crear el espacio documental para investigación, diseño y procedencia.
+- [ ] Analizar subsistemas Linux y documentar dependencias, interfaces y licencias.
+- [ ] Definir la arquitectura y las interfaces del kernel E.D-OS.
+- [ ] Preparar toolchain reproducible para x86_64/QEMU/UEFI.
+- [ ] Crear el proyecto fuente del kernel propio.
+- [ ] Arrancar el primer kernel E.D-OS mínimo en QEMU.
+- [ ] Implementar memoria, interrupciones, planificación e IPC por etapas.
+- [ ] Evaluar e incorporar solo componentes externos cuya adaptación y licencia estén revisadas.
+- [ ] Crear servicios mínimos, sistema de archivos y prototipo instalable.
 
-**Estado honesto:** en esta entrega se ha añadido arquitectura y estructura documental. Todavía no se ha descargado, compilado, modificado ni arrancado el kernel Linux.
+**Estado honesto:** en esta entrega se ha corregido la estrategia documental. Todavía no existe código de kernel propio, ni se ha compilado o arrancado E.D-OS. Tampoco se ha importado código Linux.
 
 ## Criterios de calidad
 
