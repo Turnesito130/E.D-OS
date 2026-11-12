@@ -16,7 +16,7 @@ Este servicio es el primer backend ejecutable de E.D. ID y del inventario de dis
 
 - Verificación de correo, recuperación de contraseña ni passkeys.
 - 
-- Sincronización de archivos, E.D. Cloud, TURN ni señalización WebRTC. La API solo sincroniza registros JSON pequeños.
+- Sincronización de archivos/binarios, E.D. Cloud, TURN ni señalización WebRTC. La sincronización actual solo admite registros JSON de hasta 12 KB por elemento.
 - Rate limiting distribuido, MFA, auditoría completa ni recuperación segura de claves.
 - Despliegue, dominio, certificados TLS, copias de seguridad o monitorización.
 
@@ -71,7 +71,7 @@ Todas las respuestas son JSON. Las rutas privadas requieren `Authorization: Bear
 | GET | `/v1/account/me` | Sesión | Consultar identidad |
 | GET | `/v1/devices` | Sesión | Listar dispositivos activos |
 | POST | `/v1/devices` | Sesión | Registrar dispositivo |
-| POST | `/v1/devices/{id}/revoke` | Sesión | Revocar un dispositivo propio |\n| POST | `/v1/pairing/requests` | Público | Crear solicitud temporal en el nuevo dispositivo |\n| POST | `/v1/pairing/approve` | Sesión | Aprobar solicitud desde un dispositivo registrado |\n| POST | `/v1/pairing/claim` | Secreto temporal | Completar una vez el emparejamiento y obtener sesión |\n| GET | `/v1/sync/items` | Sesión | Listar registros JSON sincronizados |\n| PUT | `/v1/sync/items/{key}` | Sesión | Crear/actualizar con control de versión |\n| DELETE | `/v1/sync/items/{key}` | Sesión | Borrado lógico con control de versión |
+| POST | `/v1/devices/{id}/revoke` | Sesión | Revocar un dispositivo propio |\n| POST | `/v1/pairing/requests` | Público | Crear solicitud temporal en el nuevo dispositivo |\n| POST | `/v1/pairing/approve` | Sesión | Aprobar solicitud desde una sesión de la cuenta |\n| POST | `/v1/pairing/claim` | Secreto temporal | Completar una vez el emparejamiento y obtener sesión |\n| GET | `/v1/sync/items` | Sesión | Listar hasta 500 registros JSON |\n| PUT | `/v1/sync/items/{key}` | Sesión | Crear/actualizar con control de versión |\n| DELETE | `/v1/sync/items/{key}` | Sesión | Borrado lógico con control de versión |\n| POST | `/v1/pairing/requests` | Público | Crear solicitud temporal en el nuevo dispositivo |\n| POST | `/v1/pairing/approve` | Sesión | Aprobar solicitud desde un dispositivo registrado |\n| POST | `/v1/pairing/claim` | Secreto temporal | Completar una vez el emparejamiento y obtener sesión |\n| GET | `/v1/sync/items` | Sesión | Listar registros JSON sincronizados |\n| PUT | `/v1/sync/items/{key}` | Sesión | Crear/actualizar con control de versión |\n| DELETE | `/v1/sync/items/{key}` | Sesión | Borrado lógico con control de versión |
 
 Ejemplo de registro:
 
@@ -102,3 +102,40 @@ Tipos admitidos: `phone`, `tablet`, `computer`, `watch`, `earbuds`, `other`.
 - Configurar HTTPS, secretos fuera del repositorio, copias de seguridad cifradas y monitorización.
 - Añadir pruebas automatizadas de aislamiento entre cuentas, caducidad, conflictos de sincronización y revocación.
 - Realizar revisión de seguridad independiente.
+
+## Flujo de emparejamiento
+
+1. El nuevo equipo envía `POST /v1/pairing/requests` con `deviceName`, `deviceType` y `platform`.
+2. La respuesta contiene `requestId`, `pairingCode` (8 cifras), `pollSecret` (secreto privado) y caducidad de cinco minutos. Mostrar el código en el nuevo equipo; guardar el secreto solo en memoria segura del cliente.
+3. En una sesión autenticada de la cuenta, el dispositivo de confianza envía `POST /v1/pairing/approve` con `requestId`, `pairingCode` y `approvedByDeviceId`.
+4. El nuevo equipo envía `POST /v1/pairing/claim` con `requestId` y `pollSecret`. Mientras espera, recibe HTTP 202. Tras aprobarse, recibe una sesión una sola vez.
+
+Ejemplo de creación:
+
+```json
+{
+  "deviceName": "Móvil E.D.",
+  "deviceType": "phone",
+  "platform": "android"
+}
+```
+
+Ejemplo de aprobación:
+
+```json
+{
+  "requestId": "UUID-devuelto-al-crear",
+  "pairingCode": "12345678",
+  "approvedByDeviceId": "UUID-de-un-dispositivo-de-la-cuenta"
+}
+```
+
+El código de ocho cifras caduca en cinco minutos y solo se guarda su hash. El secreto de consulta es independiente del código. La aprobación exige una sesión válida de la cuenta y un ID de dispositivo activo de esa misma cuenta. El backend no implementa todavía escaneo QR, interfaz cliente de emparejamiento ni límites de intentos distribuidos. Por tanto, esta es una API experimental y no una garantía de seguridad de producción.
+
+## Sincronización JSON experimental
+
+- `PUT /v1/sync/items/{key}` requiere `expectedVersion: 0` al crear y la versión devuelta para actualizar.
+- Si otro dispositivo ya modificó el elemento, responde HTTP 409; el cliente debe descargar el estado actual y resolver el conflicto explícitamente.
+- `DELETE` requiere la versión actual y crea un tombstone versionado.
+- `GET` devuelve como máximo 500 elementos recientes.
+- No se sincronizan archivos, fotos ni secretos; el contenido se almacena como JSONB en el servidor y **no tiene cifrado de extremo a extremo**.
