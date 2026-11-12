@@ -71,7 +71,19 @@ Todas las respuestas son JSON. Las rutas privadas requieren `Authorization: Bear
 | GET | `/v1/account/me` | Sesión | Consultar identidad |
 | GET | `/v1/devices` | Sesión | Listar dispositivos activos |
 | POST | `/v1/devices` | Sesión | Registrar dispositivo |
-| POST | `/v1/devices/{id}/revoke` | Sesión | Revocar un dispositivo propio |\n| POST | `/v1/pairing/requests` | Público | Crear solicitud temporal en el nuevo dispositivo |\n| POST | `/v1/pairing/approve` | Sesión | Aprobar solicitud desde una sesión de la cuenta |\n| POST | `/v1/pairing/claim` | Secreto temporal | Completar una vez el emparejamiento y obtener sesión |\n| GET | `/v1/sync/items` | Sesión | Listar hasta 500 registros JSON |\n| PUT | `/v1/sync/items/{key}` | Sesión | Crear/actualizar con control de versión |\n| DELETE | `/v1/sync/items/{key}` | Sesión | Borrado lógico con control de versión |\n| POST | `/v1/pairing/requests` | Público | Crear solicitud temporal en el nuevo dispositivo |\n| POST | `/v1/pairing/approve` | Sesión | Aprobar solicitud desde un dispositivo registrado |\n| POST | `/v1/pairing/claim` | Secreto temporal | Completar una vez el emparejamiento y obtener sesión |\n| GET | `/v1/sync/items` | Sesión | Listar registros JSON sincronizados |\n| PUT | `/v1/sync/items/{key}` | Sesión | Crear/actualizar con control de versión |\n| DELETE | `/v1/sync/items/{key}` | Sesión | Borrado lógico con control de versión |
+| POST | `/v1/devices/{id}/revoke` | Sesión | Revocar un dispositivo propio |
+| POST | `/v1/pairing/requests` | Público | Crear solicitud temporal en el nuevo dispositivo |
+| POST | `/v1/pairing/approve` | Sesión | Aprobar solicitud desde una sesión de la cuenta |
+| POST | `/v1/pairing/claim` | Secreto temporal | Completar una vez el emparejamiento y obtener sesión |
+| GET | `/v1/sync/items` | Sesión | Listar hasta 500 registros JSON |
+| PUT | `/v1/sync/items/{key}` | Sesión | Crear/actualizar con control de versión |
+| DELETE | `/v1/sync/items/{key}` | Sesión | Borrado lógico con control de versión |
+| POST | `/v1/pairing/requests` | Público | Crear solicitud temporal en el nuevo dispositivo |
+| POST | `/v1/pairing/approve` | Sesión | Aprobar solicitud desde un dispositivo registrado |
+| POST | `/v1/pairing/claim` | Secreto temporal | Completar una vez el emparejamiento y obtener sesión |
+| GET | `/v1/sync/items` | Sesión | Listar registros JSON sincronizados |
+| PUT | `/v1/sync/items/{key}` | Sesión | Crear/actualizar con control de versión |
+| DELETE | `/v1/sync/items/{key}` | Sesión | Borrado lógico con control de versión |
 
 Ejemplo de registro:
 
