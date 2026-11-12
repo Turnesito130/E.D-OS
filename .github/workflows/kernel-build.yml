@@ -1,4 +1,4 @@
-name: E.D-OS kernel build
+name: E.D-OS kernel build and boot test
 
 on:
   push:
@@ -15,26 +15,63 @@ on:
       - ".github/workflows/kernel-build.yml"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  build-and-boot:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install toolchain
+
+      - name: Install build and emulator tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang lld make binutils
-      - name: Build freestanding kernel
-        run: make -C kernel clean all
-      - name: Verify ELF architecture and entry point
+          sudo apt-get install -y clang lld make binutils xorriso qemu-system-x86
+
+      - name: Download pinned Limine binary release
         run: |
+          curl -fL --retry 3 \
+            https://github.com/Limine-Bootloader/Limine/releases/download/v12.9.6/limine-binary.tar.gz \
+            -o limine-binary.tar.gz
+          echo "b38aabb042b0c0f9f562b7741be3c1204838d7bbacfa78bb411c674bd5b984ee  limine-binary.tar.gz" | sha256sum -c -
+          mkdir -p limine-bin
+          tar -xzf limine-binary.tar.gz -C limine-bin
+          LIMINE_DIR="$(dirname "$(find "$PWD/limine-bin" -name limine-bios.sys -print -quit)")"
+          test -x "$LIMINE_DIR/limine"
+          echo "LIMINE_DIR=$LIMINE_DIR" >> "$GITHUB_ENV"
+
+      - name: Build E.D-OS ELF and hybrid boot ISO
+        run: |
+          make -C kernel clean all
+          make -C kernel iso LIMINE_DIR="$LIMINE_DIR"
           file kernel/build/ed-os-kernel.elf
           readelf -h kernel/build/ed-os-kernel.elf
-          readelf -h kernel/build/ed-os-kernel.elf | grep -q "Advanced Micro Devices X86-64"
-          readelf -h kernel/build/ed-os-kernel.elf | grep -q "Entry point address"
-      - name: Upload kernel ELF
+          readelf -l kernel/build/ed-os-kernel.elf
+
+      - name: Boot the independent kernel in QEMU (BIOS)
+        run: |
+          set +e
+          timeout 20s qemu-system-x86_64 \
+            -machine q35 -m 256M -boot d \
+            -cdrom kernel/build/ed-os.iso \
+            -display none -serial file:kernel/build/qemu-serial.log \
+            -monitor none -no-reboot -no-shutdown
+          status=$?
+          set -e
+          if [ "$status" -ne 124 ] && [ "$status" -ne 0 ]; then
+            echo "QEMU exited unexpectedly: $status"
+            exit "$status"
+          fi
+          cat kernel/build/qemu-serial.log
+          grep -q "KERNEL_BOOT_OK" kernel/build/qemu-serial.log
+
+      - name: Upload kernel and bootable ISO
         uses: actions/upload-artifact@v4
         with:
-          name: ed-os-kernel-elf
-          path: kernel/build/ed-os-kernel.elf
+          name: ed-os-kernel-boot-test
+          path: |
+            kernel/build/ed-os-kernel.elf
+            kernel/build/ed-os.iso
+            kernel/build/qemu-serial.log
