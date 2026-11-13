@@ -64,7 +64,7 @@ jobs:
           ROOT="$PWD/rootfs"
           mkdir -p "$ROOT"/{bin,dev,proc,sys}
           cp /bin/busybox "$ROOT/bin/busybox"
-          chroot "$ROOT" /bin/busybox --install -s /bin
+          /bin/busybox --install -s "$ROOT/bin"
           cat > "$ROOT/init" <<'INIT'
           #!/bin/sh
           mount -t devtmpfs devtmpfs /dev 2>/dev/null || true
