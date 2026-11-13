@@ -54,7 +54,10 @@ jobs:
           cat kernel/build/qemu-serial.log
           grep -q "MEMORY_MAP_OK" kernel/build/qemu-serial.log
           grep -q "IDT_READY entries=256 exceptions=32" kernel/build/qemu-serial.log
-          grep -q "PMM_FIRST_PAGE_ZEROED" kernel/build/qemu-serial.log
+          grep -q "PMM_ALLOC_ZEROED_OK" kernel/build/qemu-serial.log
+          grep -q "PMM_FREE_OK" kernel/build/qemu-serial.log
+          grep -q "PMM_DOUBLE_FREE_GUARD_OK" kernel/build/qemu-serial.log
+          grep -q "PMM_REUSE_AND_ZERO_OK" kernel/build/qemu-serial.log
           grep -q "KERNEL_MEMORY_MILESTONE_OK" kernel/build/qemu-serial.log
           grep -q "EXCEPTION vector=0x0000000000000003" kernel/build/qemu-serial.log
           grep -q "KERNEL_HALTED_ON_EXCEPTION" kernel/build/qemu-serial.log
