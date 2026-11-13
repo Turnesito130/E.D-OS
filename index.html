@@ -76,6 +76,51 @@ main{display:grid;grid-template-columns:270px 1fr;gap:22px;padding:20px 30px 105
 /* Contenido de aplicaciones reales dentro de sus ventanas */
 .window-content:has(> .app-frame){padding:0;overflow:hidden;display:flex;min-height:0}
 .app-frame{display:block;flex:1 1 auto;width:100%;height:100%;min-height:0;border:0;background:#f5f6f8}
+
+/* E.D-OS visual refresh 0.2 — presentation only; app behavior remains unchanged */
+:root{--ink:#20283a;--muted:#78849a;--line:rgba(130,148,180,.2);--panel:rgba(255,255,255,.76);--shadow:0 18px 55px rgba(43,61,96,.10)}
+body{background:radial-gradient(ellipse at 74% 28%,rgba(191,211,255,.58),transparent 34%),radial-gradient(ellipse at 48% 90%,rgba(218,207,255,.42),transparent 38%),linear-gradient(135deg,#f4f7fc 0%,#e9eef8 52%,#f5f3fb 100%);color:#20283a}
+.top{height:70px;padding:0 38px;border-bottom:1px solid rgba(150,165,192,.16);background:rgba(255,255,255,.28);backdrop-filter:blur(18px)}
+.brand{font-size:23px;letter-spacing:-.075em;color:#202b43}.version{color:#8a96ad;font-weight:700}
+main{grid-template-columns:286px minmax(0,1fr);gap:24px;padding:24px 34px 112px;height:calc(100vh - 70px)}
+.sidebar{gap:18px}
+.panel{background:rgba(255,255,255,.68);border:1px solid rgba(255,255,255,.86);border-radius:22px;padding:21px;box-shadow:0 14px 40px rgba(55,75,115,.075);backdrop-filter:blur(22px)}
+.panel h2{font-size:14px;color:#27334b;letter-spacing:-.02em}.sub{color:#8793a9}
+.task{border-top-color:rgba(145,160,188,.16);font-size:12px;color:#53617a}.task input{accent-color:#637de5}
+.add{background:#edf1fb;color:#5369b0;border:1px solid rgba(105,130,205,.12);border-radius:11px;font-weight:650;padding:10px 12px}.add:hover{background:#e4eafd}
+.device{padding:11px 0}.device-icon{width:38px;height:38px;border-radius:13px;background:linear-gradient(145deg,#edf2ff,#e6e9fb);color:#667dd0}.device strong{font-size:11px;color:#394761}.device small{color:#98a3b6}.status{background:#55bd91;box-shadow:0 0 0 4px rgba(85,189,145,.12)}
+.workspace{border:1px solid rgba(255,255,255,.62);background:radial-gradient(ellipse at 50% 45%,rgba(255,255,255,.55),rgba(255,255,255,.14) 58%,transparent 75%);border-radius:30px}
+.orb{width:min(43vw,480px);background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.98) 0%,rgba(220,230,255,.72) 31%,rgba(166,183,245,.38) 54%,rgba(190,171,239,.14) 70%,transparent 73%);filter:drop-shadow(0 30px 65px rgba(90,110,180,.18))}
+.welcome{top:43%}.welcome h1{font-size:clamp(34px,4.4vw,56px);font-weight:680;letter-spacing:-.075em;color:#293650}.welcome p{font-size:13px;color:#8491aa;letter-spacing:.015em}
+.dock-wrap{bottom:22px}.dock{gap:9px;padding:10px 15px;background:rgba(255,255,255,.76);border:1px solid rgba(255,255,255,.95);border-radius:21px;box-shadow:0 16px 48px rgba(51,69,110,.16);backdrop-filter:blur(26px)}
+.app{width:44px;height:44px;border-radius:14px;background:linear-gradient(145deg,#f4f6fc,#e9edf7);color:#596985;border:1px solid rgba(120,140,180,.08);font-size:18px;box-shadow:0 3px 8px rgba(54,72,110,.05)}
+.app:hover{transform:translateY(-5px);background:linear-gradient(145deg,#fff,#e6ebfb);color:#536bd0;box-shadow:0 8px 18px rgba(82,105,180,.14)}
+.sep{background:#dce2ee}.ed{width:39px;height:39px;background:linear-gradient(145deg,#fff,#e9edfa);border:1px solid #dfe5f4;color:#586fc4;box-shadow:0 3px 10px rgba(75,95,155,.1)}
+.clock{color:#697792;font-weight:650}
+.window{background:rgba(250,252,255,.97);border:1px solid rgba(255,255,255,.95);border-radius:22px;box-shadow:0 28px 90px rgba(34,48,78,.24)}
+.window-head h2{color:#293650}.close{background:#edf1f8;color:#65738c}
+.toast{background:#27334b;box-shadow:0 10px 28px rgba(32,46,76,.2)}
+#accessGate{background:radial-gradient(ellipse at 50% 22%,#dce6ff 0%,transparent 42%),linear-gradient(145deg,#f4f7fc,#e7edf8)}
+.access-card{border:1px solid rgba(255,255,255,.95);border-radius:28px;background:rgba(255,255,255,.78);box-shadow:0 28px 90px rgba(53,72,116,.18);backdrop-filter:blur(24px)}
+.access-mark{color:#536cc6;font-size:28px}
+#accessSubmit{background:linear-gradient(110deg,#536fcf,#796bd0);border-radius:12px;box-shadow:0 8px 20px rgba(91,109,202,.2)}
+#accessPin{border-color:#dce4f4;background:rgba(248,250,255,.9)}
+:root[data-theme="dark"] body{background:radial-gradient(ellipse at 74% 28%,rgba(73,91,151,.35),transparent 34%),radial-gradient(ellipse at 48% 90%,rgba(94,73,140,.22),transparent 38%),linear-gradient(135deg,#171e2d,#20283a 56%,#191e2c);color:#edf1fb}
+:root[data-theme="dark"] .top{background:rgba(22,29,44,.38);border-color:rgba(150,165,192,.1)}
+:root[data-theme="dark"] .brand,:root[data-theme="dark"] .panel h2,:root[data-theme="dark"] .device strong,:root[data-theme="dark"] .welcome h1{color:#edf1fb}
+:root[data-theme="dark"] .panel,:root[data-theme="dark"] .dock,:root[data-theme="dark"] .window{background:rgba(34,43,62,.78);border-color:rgba(150,165,192,.16);color:#edf1fb}
+:root[data-theme="dark"] .workspace{background:radial-gradient(ellipse at 50% 45%,rgba(115,133,190,.13),transparent 72%);border-color:rgba(150,165,192,.12)}
+:root[data-theme="dark"] .orb{background:radial-gradient(circle at 35% 28%,rgba(194,207,255,.8),rgba(113,133,207,.36) 42%,rgba(120,93,174,.12) 70%,transparent 73%);opacity:.7}
+:root[data-theme="dark"] .task,:root[data-theme="dark"] .file-row,:root[data-theme="dark"] .setting-row{color:#d5dced;border-color:rgba(150,165,192,.13)}
+:root[data-theme="dark"] .device-icon,:root[data-theme="dark"] .app,:root[data-theme="dark"] .add,:root[data-theme="dark"] .close,:root[data-theme="dark"] .window-control{background:#303b56;color:#dce5ff;border-color:rgba(160,180,230,.12)}
+:root[data-theme="dark"] .ed{background:#303b56;color:#cbd6ff;border-color:#465477}
+:root[data-theme="dark"] .clock,:root[data-theme="dark"] .welcome p{color:#aab6d0}
+:root[data-theme="dark"] #accessGate{background:radial-gradient(ellipse at 50% 22%,#34446d 0%,transparent 42%),linear-gradient(145deg,#171e2d,#20283a)}
+:root[data-theme="dark"] .access-card{background:rgba(34,43,62,.9);border-color:rgba(150,165,192,.2)}
+:root[data-theme="dark"] .access-card h1,:root[data-theme="dark"] .access-mark{color:#edf1fb}
+:root[data-theme="dark"] #accessSubmit{background:linear-gradient(110deg,#536fcf,#796bd0);color:white}
+@media(max-width:700px){.top{height:62px;padding:0 18px}main{height:auto;min-height:calc(100vh - 62px);padding:12px 14px 112px;gap:14px}.workspace{min-height:260px}.sidebar{gap:12px}.panel{padding:14px}.dock-wrap{bottom:14px}.dock{gap:5px;padding:7px 9px}.app{width:36px;height:36px}.ed{width:34px;height:34px}}
+
 </style>
 </head>
 <body>
