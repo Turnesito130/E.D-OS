@@ -1,4 +1,4 @@
-# E.D-OS — Arquitectura del núcleo propio (borrador 0.4)
+# E.D-OS — Arquitectura del núcleo propio (borrador 0.5)
 
 ## Objetivo y decisión
 
@@ -19,54 +19,76 @@ No podemos copiar subsistemas completos y pegarlos sin más: Linux está fuertem
 7. Ecosistema: E.D. Connect, cuentas, sincronización y E.D. Cloud. La nube no será requisito para arrancar.
 8. E.D.: IA integrada con permisos explícitos; sin acceso implícito a todos los datos o dispositivos.
 
-## Primer contrato de arranque
+## Contrato de arranque actual
 
-Para evitar escribir un bootloader y un kernel a la vez, el primer prototipo usa **Limine v12.9.6** como cargador externo y su protocolo como contrato de hand-off. Esto NO significa usar Linux: Limine carga nuestro ELF y transfiere el control a nuestro propio punto de entrada.
+Para evitar escribir un bootloader y un kernel a la vez, el prototipo usa **Limine v12.9.6** como cargador externo y su protocolo como contrato de hand-off. Esto NO significa usar Linux: Limine carga nuestro ELF y transfiere el control a nuestro propio punto de entrada.
 
-El kernel solicita la revisión base 3 del protocolo, está enlazado en el espacio virtual higher-half x86_64 y configura una pila propia de 16 KiB antes de entrar en C. La inicialización escribe el marcador KERNEL_BOOT_OK por COM1.
+El kernel solicita la revisión base 3 del protocolo, está enlazado en el espacio virtual higher-half x86_64 y configura una pila propia de 16 KiB antes de entrar en C. La inicialización escribe diagnósticos por COM1.
 
-La imagen ISO se prepara como híbrida BIOS/UEFI. La automatización pretende arrancar la imagen en QEMU por BIOS y comprobar el marcador serie. Limine es BSD-2-Clause; se fija la release y se verifica el SHA-256 de su archivo binario antes de usarlo.
+La ISO híbrida BIOS/UEFI y la prueba de arranque BIOS en QEMU están automatizadas en GitHub Actions. El criterio de éxito no es que el ELF compile: el log serie de QEMU debe contener todos los marcadores esperados, incluida la prueba de excepción.
 
-## Estado de implementación — 12 de noviembre de 2026
+Limine es BSD-2-Clause; se fija la release y se verifica el SHA-256 del archivo binario antes de usarlo.
 
-Implementado en código:
-- kernel/src/entry.S: entrada x86_64, pila y salto a kernel_main.
-- kernel/src/kernel.c: inicialización COM1 y mensaje KERNEL_BOOT_OK.
-- kernel/linker.ld: segmentos ELF higher-half RX/R/RW.
-- kernel/Makefile: compilación Clang/LLD y objetivo ISO.
-- kernel/limine.conf: entrada de arranque.
-- kernel/scripts/build-iso.sh: construcción de ISO híbrida.
-- .github/workflows/kernel-build.yml: pipeline de build y prueba en QEMU.
+## Estado de implementación — rama `arquitectura/0.1`
 
-Verificación local: Clang/LLD generaron un ELF64 x86-64 estático con entry point 0xffffffff80000000. La construcción de ISO y el arranque QEMU están pendientes del resultado de GitHub Actions.
+El código actual identifica el kernel como **0.0.4**. Hay más que una entrada mínima:
 
-**No declarar todavía el arranque como conseguido.** El marcador KERNEL_BOOT_OK solo contará como éxito cuando aparezca en el log serie producido por QEMU en CI.
+- `kernel/src/entry.S`: entrada x86_64, pila inicial y salto a `kernel_main`.
+- `kernel/src/kernel.c`: inicialización COM1, validación del protocolo, secuencia de pruebas y parada controlada ante errores.
+- `kernel/src/memory.c`: lectura del mapa de memoria Limine y HHDM; asignador físico bootstrap de páginas de 4 KiB; puesta a cero al asignar; lista enlazada de páginas liberadas y reutilización.
+- `kernel/src/idt.c` y `kernel/src/interrupts.S`: IDT de 256 entradas y stubs para las primeras 32 excepciones.
+- `kernel/linker.ld`: segmentos ELF higher-half RX/R/RW.
+- `kernel/Makefile`: compilación freestanding con Clang/LLD.
+- `kernel/scripts/build-iso.sh`: construcción de ISO híbrida.
+- `.github/workflows/kernel-build.yml`: compilación, arranque BIOS en QEMU y comprobación de marcadores por puerto serie.
+
+### Pruebas que el workflow exige
+
+- Mapa de memoria disponible y tabla IDT instalada.
+- Asignación de una página inicializada a cero.
+- Liberación y rechazo de doble liberación.
+- Reutilización de la misma página y comprobación de puesta a cero.
+- Excepción breakpoint (vector 3) capturada y parada controlada.
+
+**Estado de verificación:** el repositorio contiene el workflow que ejecuta estas pruebas, pero en esta revisión no he confirmado un resultado verde reciente de GitHub Actions ni he inspeccionado un log de QEMU satisfactorio. Por tanto, el arranque todavía no se declara verificado.
+
+## Límites técnicos conocidos
+
+- El asignador no mantiene todavía un bitmap/tabla de propiedad por página. `pmm_free_page` comprueba alineación, región usable y doble liberación dentro de su lista, pero depende del contrato del llamador de liberar solo páginas obtenidas mediante `pmm_alloc_page`.
+- No hay bloqueo para concurrencia ni soporte SMP.
+- La IDT instala stubs para excepciones; todavía no hay GDT/TSS/IST propios ni controladores de IRQ externos.
+- No existe aún gestor de memoria virtual propio, manejo completo de page faults, heap del kernel, planificador, procesos, hilos, syscalls ni modo usuario.
+- El prototipo sigue en ring 0 y no es un sistema operativo de uso diario ni seguro para datos personales.
 
 ## Siguientes hitos técnicos
 
 ### N1 — Arranque mínimo independiente
-- [x] Crear kernel propio separado de Linux.
-- [x] Crear entrada x86_64 y pila inicial.
-- [x] Compilar ELF higher-half.
-- [x] Integrar cargador externo Limine y protocolo de hand-off.
-- [x] Preparar construcción de ISO híbrida BIOS/UEFI.
-- [ ] Confirmar construcción de ISO en CI.
-- [ ] Confirmar arranque BIOS en QEMU mediante KERNEL_BOOT_OK.
-- [ ] Confirmar arranque UEFI en QEMU.
-- [ ] Añadir salida de diagnóstico y tratamiento de fallos de arranque.
+- [x] Kernel propio separado de Linux.
+- [x] Entrada x86_64 y pila inicial.
+- [x] ELF higher-half y compilación freestanding.
+- [x] Cargador externo Limine y protocolo de hand-off.
+- [x] Construcción automatizada de ISO híbrida.
+- [ ] Confirmar build de ISO en CI.
+- [ ] Confirmar arranque BIOS en QEMU con todos los marcadores.
+- [ ] Añadir y confirmar arranque UEFI en QEMU.
+- [ ] Diagnóstico y tratamiento de fallos de arranque.
 
-### N2 — Control del hardware básico
-- [ ] Solicitar y leer el mapa de memoria Limine.
-- [ ] Crear gestor de memoria física (bitmap o estructura equivalente).
-- [ ] Construir y cargar una IDT propia.
-- [ ] Implementar excepciones de CPU y diagnóstico de fallos.
-- [ ] Preparar asignador de memoria de kernel.
-- [ ] Diseñar paginación propia y transición controlada desde las tablas del cargador.
+### N2 — Memoria e interrupciones robustas
+- [x] Leer mapa de memoria y HHDM.
+- [x] Asignador físico bootstrap de páginas de 4 KiB.
+- [x] IDT básica y stubs de excepciones CPU.
+- [ ] Añadir bitmap/tabla de propiedad para validar cada página liberada.
+- [ ] Proteger el asignador ante concurrencia antes de habilitar SMP.
+- [ ] GDT/TSS/IST propios y pilas de excepción seguras.
+- [ ] Manejo de page faults y diagnóstico de direcciones inválidas.
+- [ ] Gestor de memoria virtual y mapeos propios.
+- [ ] Heap del kernel y pruebas de estrés del gestor de memoria.
 
 ### N3 — Ejecución
+- [ ] Temporizador e interrupciones externas.
 - [ ] Planificador y cambios de contexto.
-- [ ] Procesos, aislamiento, syscalls e IPC.
-- [ ] Temporizadores y gestión de interrupciones externas.
+- [ ] Procesos, hilos, aislamiento, syscalls e IPC.
+- [ ] Entrada a modo usuario y retorno seguro al kernel.
 
 ### N4 — Plataforma
 - [ ] Drivers y sistema de archivos iniciales.
