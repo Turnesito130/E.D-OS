@@ -1,32 +1,30 @@
 # E.D-OS — desarrollo del núcleo propio
 
-E.D-OS tendrá un **kernel propio e independiente**. No utilizará el kernel Linux para arrancar ni para funcionar. Linux se estudia como referencia de ingeniería; cualquier reutilización de código requiere revisar procedencia, dependencias y licencia.
+E.D-OS tendrá un kernel propio e independiente. Linux se estudia como referencia; cualquier reutilización exige revisar procedencia, dependencias y licencia.
 
-## Kernel 0.0.3 — descubrimiento de memoria y asignación inicial
+## Kernel 0.0.4 — liberar y reutilizar páginas
 
-Código propio:
-- `src/entry.S`: entrada x86_64 y pila inicial de 16 KiB.
-- `src/kernel.c`: comprobación del protocolo, diagnóstico serie y prueba real de asignación de una página.
-- `src/memory.c`: solicitudes Limine para mapa de memoria y HHDM; validación básica de respuestas; suma de RAM utilizable; asignador físico bootstrap de páginas de 4 KiB.
-- `include/memory.h`: interfaz del subsistema de memoria.
-- `linker.ld`: ELF64 higher-half.
-- `scripts/build-iso.sh`: imagen híbrida BIOS/UEFI con Limine externo.
+- Entrada x86_64, pila inicial y arranque mediante Limine.
+- Mapa de memoria Limine y HHDM.
+- Asignador físico bootstrap de páginas de 4 KiB.
+- Lista enlazada de páginas liberadas para reutilización.
+- Rechazo de direcciones desalineadas/no utilizables y doble liberación detectada.
+- IDT de 256 entradas y stubs para excepciones.
+- Pruebas QEMU previstas: asignar, liberar, rechazar doble liberación, reutilizar la misma página y comprobar que vuelve a cero.
 
-El asignador actual es deliberadamente **monotónico**: entrega páginas utilizables, las pone a cero y no las libera ni reutiliza. Evita los primeros 1 MiB y no toca regiones reservadas, ACPI, framebuffer, kernel/módulos ni memoria recuperable del cargador. Es una base de arranque, no un gestor de memoria completo.
+## Límites conocidos
 
-## Cargador y protocolo
+pmm_free_page exige que el llamador entregue una página obtenida previamente mediante pmm_alloc_page; todavía no existe un mapa de propiedad por página que pueda demostrar esa procedencia. No hay bloqueo para concurrencia, coalescencia, memoria virtual propia, gestor de bloques de tamaño variable ni recuperación de excepciones. Esto sigue siendo un asignador bootstrap, no uno de producción.
 
-Limine v12.9.6 se utiliza solo como cargador externo/protocolo. El kernel solicita revisión base 3, mapa de memoria y HHDM; no presupone un offset HHDM fijo. Referencia: https://github.com/limine-bootloader/limine-protocol/blob/trunk/PROTOCOL.md
+## Construcción y verificación
 
-## Construcción y prueba
-
-```sh
+\`\`\`sh
 make -C kernel clean all
 make -C kernel iso LIMINE_DIR=/ruta/a/limine
-```
+\`\`\`
 
-GitHub Actions compila la imagen y debe arrancarla en QEMU para comprobar `KERNEL_MEMORY_MILESTONE_OK`. Hasta que exista un resultado verde y un log serial de esa ejecución, el arranque no se considera verificado.
+El workflow debe compilar y arrancar QEMU. El hito solo se considera verificado cuando el log serial muestra todos los marcadores de memoria y la excepción de breakpoint.
 
-## Límites actuales
+## Pendiente
 
-Todavía faltan: liberación/coalescencia de páginas, bitmap o buddy allocator, protección de memoria, GDT/IDT y excepciones, paginación propia, interrupciones, planificador, procesos, syscalls, drivers, sistema de archivos, red y soporte ARM64/móvil. La prueba QEMU no demuestra compatibilidad con hardware físico.
+Propiedad/bitmap de páginas, paginación y page faults, GDT/TSS/IST, temporizador e IRQ, planificador, cambio de contexto, procesos/hilos, syscalls y modo usuario, drivers, sistema de archivos, red, SMP, pruebas de estrés y hardware físico.
