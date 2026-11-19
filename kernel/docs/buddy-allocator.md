@@ -24,3 +24,7 @@ Linux reference material:
 ## Current limitations
 
 This first implementation is a foundation, not Linux's complete page allocator. It does not yet implement NUMA, zones, per-CPU page lists, watermarks, reclaim, compaction, page migration, hotplug, or GFP-style policies. It must pass dedicated unit tests and be integrated with the physical-frame ownership metadata before replacing the current PMM.
+
+## Automated verification
+
+The repository CI compiles this component with strict warnings and runs the Buddy unit-test suite before building and booting the kernel. Passing those tests validates the allocator's isolated algorithms only; it does not mean the allocator is yet wired into the live physical-memory manager.
