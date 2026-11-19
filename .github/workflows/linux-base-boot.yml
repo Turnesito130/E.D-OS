@@ -33,7 +33,7 @@ jobs:
           mkdir linux-src
           tar -xJf linux.tar.xz --strip-components=1 -C linux-src
           test -f linux-src/Makefile
-          grep -m1 '^VERSION\|^PATCHLEVEL\|^SUBLEVEL' linux-src/Makefile
+          grep -m1 '^VERSION\\|^PATCHLEVEL\\|^SUBLEVEL' linux-src/Makefile
 
       - name: Configure and build x86_64 kernel
         run: |
@@ -73,9 +73,7 @@ jobs:
           echo "EDOS_LINUX_BASE_INIT_REACHED"
           echo "E.D-OS Linux-base experiment: userspace init is running."
           echo "This is a Linux-kernel proof of concept, not yet a complete OS."
-          /bin/busybox poweroff -f
-          echo "EDOS_TEST_INIT_FINISHED"
-          while true; do sleep 1; done
+          exec /bin/busybox poweroff -f
           INIT
           chmod +x "$ROOT/init"
           (cd "$ROOT" && find . -print0 | cpio --null -o --format=newc | gzip -9) > initramfs.cpio.gz
@@ -85,12 +83,12 @@ jobs:
         run: |
           set -euo pipefail
           set +e
-          timeout 60s qemu-system-x86_64 \
-            -machine q35 -m 1G \
-            -kernel linux-src/arch/x86/boot/bzImage \
-            -initrd initramfs.cpio.gz \
-            -append "console=ttyS0 rdinit=/init panic=-1" \
-            -display none -serial file:qemu-serial.log -monitor none \
+          timeout 60s qemu-system-x86_64 \\
+            -machine pc -cpu max -m 1G \\
+            -kernel linux-src/arch/x86/boot/bzImage \\
+            -initrd initramfs.cpio.gz \\
+            -append "console=ttyS0,115200n8 earlycon=uart,io,0x3f8,115200 rdinit=/init loglevel=8 ignore_loglevel panic=-1" \\
+            -display none -serial file:qemu-serial.log -monitor none \\
             -no-reboot -no-shutdown
           status=$?
           set -e
