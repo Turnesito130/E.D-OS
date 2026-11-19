@@ -88,9 +88,14 @@ int buddy_add_range(buddy_allocator_t *a, ed_u64 first_page,
         page_count > a->page_count - first_page)
         return 0;
 
-    ed_u64 cursor = first_page;
     ed_u64 end = first_page + page_count;
+    /* Reject overlap before mutating any allocator state. */
+    for (ed_u64 i = first_page; i < end; ++i) {
+        if (a->pages[i].state != PAGE_RESERVED)
+            return 0;
+    }
 
+    ed_u64 cursor = first_page;
     while (cursor < end) {
         unsigned int order = a->max_order;
         while (order > 0U) {
