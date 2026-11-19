@@ -22,6 +22,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang lld make binutils xorriso qemu-system-x86
+      - name: Unit-test Buddy allocator
+        run: |
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/buddy.c kernel/tests/buddy_test.c -o /tmp/ed-os-buddy-test
+          /tmp/ed-os-buddy-test
       - name: Download pinned Limine binary release
         run: |
           curl -fL --retry 3 https://github.com/Limine-Bootloader/Limine/releases/download/v12.9.6/limine-binary.tar.gz -o limine-binary.tar.gz
