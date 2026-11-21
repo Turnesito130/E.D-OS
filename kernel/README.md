@@ -34,8 +34,15 @@ El workflow debe compilar y arrancar QEMU. El hito solo se considera verificado 
 
 ## Pendiente
 
-Propiedad/bitmap de páginas, activación de CR3 y page faults, GDT/TSS/IST, temporizador e IRQ, cambio de contexto real, procesos/hilos, entrada de syscalls desde ring 3, drivers de teclado/almacenamiento/red, VFS y sistema de archivos persistente, SMP, pruebas de estrés y hardware físico.
+Propiedad/bitmap de páginas, activación de CR3 y page faults, GDT/TSS/IST, temporizador e IRQ, cambio de contexto real, procesos/hilos, entrada de syscalls desde ring 3, drivers de almacenamiento/red, VFS y sistema de archivos persistente, SMP, pruebas de estrés y hardware físico.
 
+
+## Drivers básicos: COM1 y teclado PS/2
+
+- COM1: detección por registro scratch, inicialización UART y escritura con espera acotada; usado para logs de arranque.
+- Teclado PS/2: lectura por sondeo del puerto 0x60/0x64 y traducción básica de scancodes set 1; incluye Shift, Caps Lock, letras, números y teclas comunes. Su decodificador se prueba en host y QEMU comprueba la disponibilidad del controlador.
+
+**Límites:** el teclado todavía no usa IRQ, no hay cola de eventos de entrada ni distribución a aplicaciones; la tabla de caracteres es básica y no cubre todos los teclados/idiomas.
 
 ## Paginación x86-64 (fase inicial)
 
