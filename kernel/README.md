@@ -58,9 +58,9 @@ Propiedad/bitmap de páginas, activación de CR3 y page faults, GDT/TSS/IST, tem
 
 - Construcción de tablas de cuatro niveles (PML4, PDPT, PD y PT) con páginas asignadas por un callback.
 - Mapeo, traducción y desmapeo de páginas de 4 KiB; comprueba canonicalidad de direcciones, alineación, flags admitidos, entradas duplicadas y páginas enormes no soportadas.
-- Pruebas host para direcciones altas, offsets, flags, errores y desmapeo. El arranque QEMU prueba además la creación de tablas y una traducción usando páginas del PMM.
+- Pruebas host para direcciones altas, offsets, flags, errores, adopción y desmapeo. El arranque QEMU crea una raíz de pruebas y, además, adopta el CR3 activo de Limine: busca un slot PML4 libre, mapea una página física en una dirección virtual nueva, verifica la escritura/lectura del alias, la desmapea y ejecuta `invlpg`.
 
-**Límites:** las tablas creadas todavía no sustituyen CR3 ni se activan; no hay TLB shootdown/invalidation, páginas enormes, copy-on-write, protección real de espacios de usuario ni recuperación de fallos de página. El mapeo se prueba como estructura de datos, no como memoria virtual activa del sistema.
+**Límites:** todavía no se cambia a una raíz CR3 propia ni se crean espacios de direcciones aislados. `invlpg` se ejecuta explícitamente en la prueba, pero no hay invalidación automática ni TLB shootdown SMP, páginas enormes, copy-on-write, protección real de espacios de usuario ni recuperación de fallos de página.
 
 ## Driver serie y ABI de syscalls (fase experimental)
 
