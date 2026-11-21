@@ -30,6 +30,10 @@ jobs:
         run: |
           gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/paging.c kernel/tests/paging_test.c -o /tmp/ed-os-paging-test
           /tmp/ed-os-paging-test
+      - name: Unit-test physical page ownership tracking
+        run: |
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/page_ownership.c kernel/tests/page_ownership_test.c -o /tmp/ed-os-page-ownership-test
+          /tmp/ed-os-page-ownership-test
       - name: Unit-test Buddy allocator
         run: |
           gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/buddy.c kernel/tests/buddy_test.c -o /tmp/ed-os-buddy-test
