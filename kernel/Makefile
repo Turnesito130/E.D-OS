@@ -18,7 +18,10 @@ $(BUILD_DIR):
 $(BUILD_DIR)/entry.o: src/entry.S | $(BUILD_DIR)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/kernel.o: src/kernel.c include/memory.h include/idt.h include/serial.h include/paging.h include/keyboard.h | $(BUILD_DIR)
+$(BUILD_DIR)/kernel.o: src/kernel.c include/memory.h include/idt.h include/serial.h include/paging.h include/keyboard.h include/irq.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+$(BUILD_DIR)/irq.o: src/irq.c include/irq.h include/memory.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
 $(BUILD_DIR)/keyboard.o: src/keyboard.c include/keyboard.h | $(BUILD_DIR)
@@ -55,8 +58,8 @@ $(BUILD_DIR)/syscall.o: src/syscall.c include/syscall.h include/scheduler.h incl
 $(BUILD_DIR)/interrupts.o: src/interrupts.S | $(BUILD_DIR)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
-$(TARGET): $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/paging.o $(BUILD_DIR)/keyboard.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/ramfs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/serial.o $(BUILD_DIR)/syscall.o $(BUILD_DIR)/interrupts.o linker.ld
-	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/paging.o $(BUILD_DIR)/keyboard.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/ramfs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/serial.o $(BUILD_DIR)/syscall.o $(BUILD_DIR)/interrupts.o
+$(TARGET): $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/paging.o $(BUILD_DIR)/keyboard.o $(BUILD_DIR)/irq.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/ramfs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/serial.o $(BUILD_DIR)/syscall.o $(BUILD_DIR)/interrupts.o linker.ld
+	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/paging.o $(BUILD_DIR)/keyboard.o $(BUILD_DIR)/irq.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/ramfs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/serial.o $(BUILD_DIR)/syscall.o $(BUILD_DIR)/interrupts.o
 
 iso: $(TARGET)
 	@test -n "$(LIMINE_DIR)" || (echo "Set LIMINE_DIR to a Limine binary release directory"; exit 1)
