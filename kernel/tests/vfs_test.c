@@ -31,9 +31,18 @@ int main(void) {
     assert(read_only >= EDOS_VFS_FD_BASE);
     assert(!edos_vfs_write(&vfs, read_only, "x", 1));
     assert(edos_vfs_close(&vfs, read_only));
+    assert(edos_vfs_open(&vfs, "/notes.txt", EDOS_VFS_READ | EDOS_VFS_TRUNC) == -1);
     int truncated = edos_vfs_open(&vfs, "/notes.txt", EDOS_VFS_WRITE | EDOS_VFS_TRUNC);
     assert(truncated >= EDOS_VFS_FD_BASE);
     assert(edos_vfs_stat(&vfs, "/notes.txt", &info) && info.size == 0);
+    assert(edos_vfs_close(&vfs, truncated));
+    int open_fds[EDOS_VFS_MAX_FDS];
+    for (unsigned int i = 0; i < EDOS_VFS_MAX_FDS; ++i) {
+        open_fds[i] = edos_vfs_open(&vfs, "/notes.txt", EDOS_VFS_READ);
+        assert(open_fds[i] >= EDOS_VFS_FD_BASE);
+    }
+    assert(edos_vfs_open(&vfs, "/notes.txt", EDOS_VFS_READ) == -1);
+    for (unsigned int i = 0; i < EDOS_VFS_MAX_FDS; ++i) assert(edos_vfs_close(&vfs, open_fds[i]));
     puts("VFS_TESTS_OK");
     return 0;
 }
