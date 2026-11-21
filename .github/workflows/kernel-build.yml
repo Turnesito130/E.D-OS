@@ -58,7 +58,7 @@ jobs:
           /tmp/ed-os-ramfs-test
       - name: Unit-test VFS over RAMFS
         run: |
-          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/ramfs.c kernel/src/vfs.c kernel/tests/vfs_test.c -o /tmp/ed-os-vfs-test
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/block.c kernel/src/edfs.c kernel/src/ramfs.c kernel/src/vfs.c kernel/tests/vfs_test.c -o /tmp/ed-os-vfs-test
           /tmp/ed-os-vfs-test
       - name: Unit-test block devices and RAM disk
         run: |
