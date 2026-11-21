@@ -106,7 +106,8 @@ jobs:
           grep -q "VFS_RUNTIME_OK" kernel/build/qemu-serial.log
           grep -q "BLOCK_RAMDISK_RUNTIME_OK" kernel/build/qemu-serial.log
           grep -q "KERNEL_MEMORY_MILESTONE_OK" kernel/build/qemu-serial.log
-          grep -q "EXCEPTION vector=0x0000000000000003" kernel/build/qemu-serial.log
+          grep -q "EXCEPTION vector=0x000000000000000e" kernel/build/qemu-serial.log
+          grep -q "PAGE_FAULT_ADDRESS=" kernel/build/qemu-serial.log
           grep -q "KERNEL_HALTED_ON_EXCEPTION" kernel/build/qemu-serial.log
       - name: Upload kernel and boot diagnostics
         uses: actions/upload-artifact@v4
