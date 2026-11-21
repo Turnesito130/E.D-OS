@@ -27,6 +27,9 @@ static edos_block_device_t boot_block_device;
 static edos_block_device_t boot_ata_block;
 static edos_ata_pio_t boot_ata;
 static unsigned char boot_ata_sector[512];
+static unsigned char boot_ata_marker_sector[512];
+static unsigned char boot_ata_write_sector[512];
+static unsigned char boot_ata_verify_sector[512];
 static edos_ramdisk_t boot_ramdisk;
 static unsigned char boot_disk_storage[18U * 512U];
 static unsigned char boot_disk_write[512];
@@ -92,6 +95,23 @@ if(edos_ata_pio_init(&boot_ata_block,&boot_ata,0U)){
     if(!edos_block_read(&boot_ata_block,0,1,boot_ata_sector)||
        boot_ata_sector[510]!=0x55U||boot_ata_sector[511]!=0xaaU){
         serial("ATA_PIO_READ_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
+    }
+    if(!edos_block_read(&boot_ata_block,1,1,boot_ata_marker_sector)){
+        serial("ATA_PIO_READ_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
+    }
+    static const char ata_test_magic[8]={'E','D','O','S','A','T','A','1'};
+    int ata_test_mode=1;
+    for(unsigned int i=0;i<8U;++i)if(boot_ata_marker_sector[i]!=(unsigned char)ata_test_magic[i])ata_test_mode=0;
+    if(ata_test_mode){
+        for(unsigned int i=0;i<512U;++i)boot_ata_write_sector[i]=(unsigned char)(i^0xa5U);
+        if(!edos_block_write(&boot_ata_block,2,1,boot_ata_write_sector)||
+           !edos_block_read(&boot_ata_block,2,1,boot_ata_verify_sector)){
+            serial("ATA_PIO_WRITE_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
+        }
+        for(unsigned int i=0;i<512U;++i)if(boot_ata_write_sector[i]!=boot_ata_verify_sector[i]){
+            serial("ATA_PIO_VERIFY_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
+        }
+        serial("ATA_PIO_WRITE_OK\n");
     }
     serial("ATA_PIO_READ_OK sectors=");hex(boot_ata.sector_count);serial("\n");
 }else{
