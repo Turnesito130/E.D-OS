@@ -93,12 +93,12 @@ function validDeviceInput(body) {
     body.platform.trim().length <= 40;
 }
 
-async function issueSession(client, accountId) {
+async function issueSession(client, accountId, deviceId = null) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + TOKEN_TTL_HOURS * 3600_000);
   const saved = await client.query(
-    "INSERT INTO sessions (account_id, token_hash, expires_at) VALUES ($1, $2, $3) RETURNING id",
-    [accountId, tokenDigest(token), expiresAt]
+    "INSERT INTO sessions (account_id, device_id, token_hash, expires_at) VALUES ($1, $2, $3, $4) RETURNING id",
+    [accountId, deviceId, tokenDigest(token), expiresAt]
   );
   return { id: saved.rows[0].id, token, expiresAt: expiresAt.toISOString() };
 }
@@ -118,7 +118,7 @@ async function authenticatedAccount(req) {
   const token = header.slice(7);
   if (token.length < 40 || token.length > 100) return null;
   const result = await pool.query(
-    `SELECT a.id, a.email, s.id AS session_id, s.created_at AS session_created_at, s.expires_at AS session_expires_at
+    `SELECT a.id, a.email, s.id AS session_id, s.device_id, s.created_at AS session_created_at, s.expires_at AS session_expires_at
        FROM sessions s JOIN accounts a ON a.id = s.account_id
       WHERE s.token_hash = $1 AND s.revoked_at IS NULL
         AND s.expires_at > now() AND a.status = 'active'`,
@@ -295,7 +295,7 @@ const server = createServer(async (req, res) => {
           await client.query("ROLLBACK");
           return send(res, 409, { error: "Esta solicitud ya fue utilizada." });
         }
-        const session = await issueSession(client, pairing.account_id);
+        const session = await issueSession(client, pairing.account_id, pairing.device_id);
         await client.query(
           "UPDATE pairing_requests SET status = 'claimed', claimed_at = now() WHERE id = $1",
           [pairing.id]
@@ -695,17 +695,39 @@ const server = createServer(async (req, res) => {
          RETURNING id, device_name, device_type, platform, created_at, last_seen_at`,
         [account.id, body.deviceName.trim(), body.deviceType, body.platform.trim()]
       );
+      await pool.query(
+        "UPDATE sessions SET device_id = $2 WHERE id = $1 AND account_id = $3 AND device_id IS NULL",
+        [account.session_id, result.rows[0].id, account.id]
+      );
       return send(res, 201, { device: result.rows[0] });
     }
 
     const revokeMatch = url.pathname.match(/^\/v1\/devices\/([0-9a-f-]{36})\/revoke$/i);
     if (req.method === "POST" && revokeMatch) {
-      const result = await pool.query(
-        "UPDATE devices SET revoked_at = now() WHERE id = $1 AND account_id = $2 AND revoked_at IS NULL RETURNING id",
-        [revokeMatch[1], account.id]
-      );
-      if (!result.rowCount) return send(res, 404, { error: "Dispositivo no encontrado o ya revocado." });
-      return send(res, 200, { success: true });
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const result = await client.query(
+          "UPDATE devices SET revoked_at = now() WHERE id = $1 AND account_id = $2 AND revoked_at IS NULL RETURNING id",
+          [revokeMatch[1], account.id]
+        );
+        if (!result.rowCount) {
+          await client.query("ROLLBACK");
+          return send(res, 404, { error: "Dispositivo no encontrado o ya revocado." });
+        }
+        const revokedSessions = await client.query(
+          "UPDATE sessions SET revoked_at = now() WHERE device_id = $1 AND account_id = $2 AND revoked_at IS NULL RETURNING id",
+          [revokeMatch[1], account.id]
+        );
+        await auditSecurityEvent(client, account.id, "device.revoked", req, {
+          deviceId: revokeMatch[1], revokedSessions: revokedSessions.rowCount
+        });
+        await client.query("COMMIT");
+        return send(res, 200, { success: true, revokedSessions: revokedSessions.rowCount });
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally { client.release(); }
     }
 
     return send(res, 404, { error: "Ruta no encontrada." });
