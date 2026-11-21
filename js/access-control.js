@@ -9,7 +9,8 @@
   const title = document.getElementById('accessTitle');
   const description = gate.querySelector('.access-card > p');
   const KEY = 'edos-local-lock-v2';
-  const SESSION_KEY = 'edos-access-granted';
+  const SESSION_KEY = 'edos-access-granted-v2';
+  let lockTicker = null;
   const ITERATIONS = 210000;
   const encoder = new TextEncoder();
   let state = { salt: null, verifier: null, failures: 0, lockedUntil: 0 };
@@ -58,10 +59,12 @@
     input.disabled = locked;
     submit.disabled = locked;
     if (locked) {
+      if (!lockTicker) lockTicker = setInterval(render, 1000);
       const seconds = Math.ceil(remaining / 1000);
       message.textContent = 'Bloqueo temporal: espera ' +
         Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0') + '.';
     } else {
+      if (lockTicker) { clearInterval(lockTicker); lockTicker = null; }
       if (state.lockedUntil) { state.lockedUntil = 0; save(); }
       message.textContent = state.failures
         ? 'Vuelve a intentarlo. Los intentos fallidos activan esperas progresivas.'
