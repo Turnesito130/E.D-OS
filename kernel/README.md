@@ -26,7 +26,7 @@ El registro de propiedad es una tabla hash estática de 262.144 entradas (2 MiB 
 
 ## Construcción y verificación
 
-La ejecución completa confirmada en GitHub Actions (commit `4a2d2b83`) pasó pruebas host, compiló la ISO híbrida y arrancó en QEMU BIOS y UEFI con OVMF. En ambos firmwares se comprobaron propiedad de páginas PMM, enumeración PCI, GDT/TSS con TR activo, pilas IST, mapeo sobre CR3 activo, ticks PIT, cambio cooperativo entre dos tareas, VFS sobre RAMFS y EDFS, ramdisk, remontaje EDFS y page fault controlado con lectura de CR2. No demuestra ring 3, multitarea preemptiva ni aislamiento de procesos.
+La ejecución completa confirmada en GitHub Actions (commit `4a2d2b83`) pasó pruebas host, compiló la ISO híbrida y arrancó en QEMU BIOS y UEFI con OVMF. En ambos firmwares se comprobaron propiedad de páginas PMM, enumeración PCI, GDT/TSS con TR activo, pilas IST, mapeo sobre CR3 activo, ticks PIT, cambio cooperativo entre dos tareas, VFS sobre RAMFS y EDFS, IPC bloqueante entre tareas, PCI y decodificación de nueve BAR, ramdisk, remontaje EDFS y page fault controlado con lectura de CR2. No demuestra ring 3, multitarea preemptiva ni aislamiento de procesos.
 
 \`\`\`sh
 make -C kernel clean all
@@ -43,7 +43,7 @@ El workflow compila ELF e ISO híbrida y arranca en QEMU BIOS y UEFI. El hito so
 - VFS: capa de sistema de archivos virtual montada sobre RAMFS, con rutas absolutas de raíz, descriptores limitados, apertura/creación/truncado, lectura/escritura por posición, seek, stat y readdir. Rechaza rutas relativas, traversal (`..`), subdirectorios aún no soportados y operaciones incompatibles con los permisos del descriptor. Tiene pruebas host y prueba de arranque en QEMU.
 - Dispositivos de bloques: API común de lectura/escritura por LBA, validación de rangos y modo de solo lectura, más un ramdisk sectorial para pruebas. Se verifica lectura/escritura de sectores durante el arranque QEMU; todavía no es un driver SATA/AHCI/NVMe.
 - EDFS: sistema de archivos plano propio sobre bloques de 512 bytes, con superblock, directorio fijo de 16 entradas y un sector de datos por archivo (hasta 512 bytes). Formato, montaje, creación, lectura, escritura y borrado; las pruebas remontan el volumen y comprueban que el contenido sigue ahí. En QEMU se prueba sobre ramdisk, por lo que no sobrevive al apagado de la máquina.
-- PCI: enumeración de buses, dispositivos y funciones multifunción mediante configuración PCI legacy; decodifica BAR de E/S, memoria de 32 bits y memoria de 64 bits. No hay todavía drivers específicos de dispositivos.\n- Los módulos scheduler, IPC, RAMFS, VFS, buddy, PCI y syscalls se compilan como parte del ELF y tienen pruebas unitarias host en CI.
+- PCI: enumeración de buses, dispositivos y funciones multifunción mediante configuración PCI legacy; decodifica BAR de E/S, memoria de 32 bits y memoria de 64 bits. El arranque BIOS y UEFI detecta seis dispositivos en QEMU y nueve BAR utilizables. No hay todavía drivers específicos de dispositivos ni sizing de BAR.\n- Los módulos scheduler, IPC, RAMFS, VFS, buddy, PCI y syscalls se compilan como parte del ELF y tienen pruebas unitarias host en CI.
 
 ## Pendiente
 
