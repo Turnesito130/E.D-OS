@@ -27,7 +27,6 @@
     "x86_64 assembly entry stub",
     "initial 16 KiB kernel stack",
     "freestanding C kernel entry",
-    "COM1 serial diagnostic output with KERNEL_BOOT_OK marker",
     "Limine base revision 3 tag",
     "higher-half ELF64 linker layout with separate RX, R and RW load segments",
     "Clang/LLD build target",
@@ -43,7 +42,8 @@
     "buddy allocator full consistency validator for free lists and block metadata",
     "COM1 UART scratch-register presence detection and bounded transmit polling",
     "syscall dispatcher context validation for WRITE, EXIT, YIELD and GETPID",
-    "syscall dispatcher YIELD, EXIT and GETPID integrated with scheduler state transitions and tested together"
+    "syscall dispatcher YIELD, EXIT and GETPID integrated with scheduler state transitions and tested together",
+    "COM1 serial diagnostics with UART detection, startup marker and bounded transmit"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000."
@@ -55,8 +55,8 @@
     "IPC integration with isolated processes and syscalls",
     "persistent filesystem, VFS, block-device drivers and permission enforcement",
     "ring 3 transition, TSS and user-mode address-space isolation",
-    "SYSCALL/SYSRET entry path and syscall dispatcher integration",
-    "COM1 hardware-presence detection and receive/interrupt support"
+    "SYSCALL/SYSRET entry path and dispatcher invocation from ring 3",
+    "COM1 receive path and interrupt-driven serial I/O"
   ],
   "linux_reference": {
     "repository": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
