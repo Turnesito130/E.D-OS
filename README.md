@@ -37,4 +37,5 @@ Rama de trabajo: `arquitectura/0.1`. Mantener `main` sin cambios durante esta et
 - El acceso local ya no usa un PIN fijo publicado en el código. En el primer uso se configura un PIN de 6–12 cifras; el verificador se deriva con PBKDF2-SHA-256 y una sal aleatoria, y el bloqueo aplica esperas progresivas.
 - Este control solo protege la apertura casual de esta página en el navegador. No es autenticación del kernel, no cifra los datos del perfil y puede eludirse manipulando el almacenamiento del navegador o el código cliente. No debe usarse como frontera de seguridad para datos sensibles.
 - El panel «Estado del sistema» informa de conexión, contexto seguro, estimación de almacenamiento web y memoria JavaScript cuando el navegador expone esa métrica. Los datos no disponibles se muestran como no compatibles, no como cero.
+- La aplicación Terminal ofrece `help`, `clear`, `date`, `status`, `open`, `echo`, `history` y `about`. Es un intérprete de órdenes del escritorio web: no ejecuta binarios, procesos del kernel ni comandos del dispositivo.
 - El workflow `.github/workflows/frontend-check.yml` comprueba la sintaxis de los módulos JavaScript en cada cambio relevante.
