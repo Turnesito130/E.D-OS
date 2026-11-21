@@ -205,6 +205,13 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   });
   assert.equal(issued.status, 201);
   assert.equal(typeof issued.data.appToken, "string");
+  const listedApps = await request("/v1/security/apps", { token });
+  assert.equal(listedApps.status, 200);
+  assert.ok(listedApps.data.apps.some(app => app.app_id === appId));
+  const initialAppPermissions = await request("/v1/security/app-permissions", { token });
+  assert.equal(initialAppPermissions.status, 200);
+  assert.ok(initialAppPermissions.data.capabilities.includes("files"));
+  assert.equal(initialAppPermissions.data.grants.some(grant => grant.app_id === appId), false);
   assert.equal((await request("/v1/security/authorize", {
     method: "POST", body: { capability: "files" }
   })).status, 401);
@@ -243,6 +250,8 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
 
   const revokeApp = await request("/v1/security/apps/" + appId, { method: "DELETE", token });
   assert.equal(revokeApp.status, 200);
+  const appsAfterRevoke = await request("/v1/security/apps", { token });
+  assert.equal(appsAfterRevoke.data.apps.some(app => app.app_id === appId), false);
   const revokedCredential = await request("/v1/security/authorize", {
     method: "POST", appToken, body: { capability: "files" }
   });
