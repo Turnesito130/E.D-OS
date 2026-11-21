@@ -37,7 +37,7 @@ footer{font-size:10px;color:#a1a8b1;text-align:center;padding:20px}
 <section class="card hidden" id="sync">
 <h2>Sincronización experimental</h2><p class="muted">Prueba con pequeños datos JSON. No es sincronización de archivos ni está cifrada de extremo a extremo.</p>
 <div class="row"><div class="field"><label>Clave del elemento</label><input id="syncKey" maxlength="100" placeholder="preferencias"></div><div class="field"><label>Versión esperada (0 para crear)</label><input id="syncVersion" type="number" min="0" value="0"></div></div>
-<div class="field"><label>Contenido JSON</label><textarea id="syncPayload">{ "tema": "claro" }</textarea></div><div class="row"><button class="primary" id="saveSync">Guardar / actualizar</button><button id="loadSync">Ver elementos sincronizados</button></div><pre id="syncResult" class="muted" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
+<div class="field"><label>Contenido JSON</label><textarea id="syncPayload">{ "tema": "claro" }</textarea></div><div class="row"><button class="primary" id="saveSync">Guardar / actualizar</button><button id="loadSync">Ver elementos sincronizados</button><button id="retrySync">Reintentar pendientes</button></div><div class="status" id="syncQueueStatus" aria-live="polite">Sin cambios pendientes.</div><pre id="syncResult" class="muted" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
 </section>
 <section class="card hidden" id="cloud">
 <h2>E.D. Cloud · Archivos</h2><p class="muted">Almacenamiento experimental de archivos en un servicio S3-compatible. Máximo 50 MB por archivo; cuota lógica de 2 GB por cuenta. No tiene cifrado de extremo a extremo.</p>
@@ -67,13 +67,60 @@ const $ = id => document.getElementById(id);
 const api = () => $('api').value.trim().replace(/\/$/, '');
 const show = (id, visible) => $(id).classList.toggle('hidden', !visible);
 const status = (id, message) => { $(id).textContent = message; };
+const SYNC_PENDING_KEY = 'ed-os-sync-pending-v1';
+function readPendingSync() {
+  try {
+    const value = JSON.parse(localStorage.getItem(SYNC_PENDING_KEY) || '{}');
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  } catch { return {}; }
+}
+function writePendingSync(value) {
+  try { localStorage.setItem(SYNC_PENDING_KEY, JSON.stringify(value)); return true; }
+  catch { return false; }
+}
+function renderPendingSync() {
+  const entries = Object.entries(readPendingSync());
+  const conflicts = entries.filter(([, item]) => item.conflict).length;
+  status('syncQueueStatus', entries.length
+    ? entries.length + ' cambio(s) pendiente(s) en este navegador' +
+      (conflicts ? ' · ' + conflicts + ' conflicto(s) que requieren revisión' : '')
+    : 'Sin cambios pendientes.');
+}
+async function flushPendingSync() {
+  if (!token || !navigator.onLine) { renderPendingSync(); return; }
+  const pending = readPendingSync();
+  for (const [key, item] of Object.entries(pending)) {
+    if (!item || item.conflict) continue;
+    try {
+      const {data} = await call('/v1/sync/items/' + encodeURIComponent(key), {
+        method:'PUT',
+        body:JSON.stringify({expectedVersion:item.expectedVersion,payload:item.payload})
+      });
+      delete pending[key];
+      if ($('syncKey').value.trim() === key) $('syncVersion').value = data.item.version;
+    } catch (error) {
+      item.lastError = error.message;
+      if (error.status === 409) {
+        item.conflict = true;
+        item.currentVersion = error.data && error.data.currentVersion;
+      }
+      pending[key] = item;
+      if (error.status === 401 || error.status === 503) break;
+    }
+  }
+  writePendingSync(pending);
+  renderPendingSync();
+}
 async function call(path, options = {}, auth = true) {
   if (!api() || !/^https:\/\//i.test(api())) throw new Error('Introduce la dirección HTTPS de la API.');
   const headers = { 'content-type':'application/json', ...(options.headers || {}) };
   if (auth && token) headers.authorization = 'Bearer ' + token;
   const response = await fetch(api() + path, { ...options, headers, cache:'no-store' });
   let data = {}; try { data = await response.json(); } catch {}
-  if (!response.ok && response.status !== 202) throw new Error(data.error || 'Error HTTP ' + response.status);
+  if (!response.ok && response.status !== 202) {
+    const error = new Error(data.error || 'Error HTTP ' + response.status);
+    error.status = response.status; error.data = data; throw error;
+  }
   return { response, data };
 }
 function enter(data) {
@@ -81,6 +128,8 @@ function enter(data) {
   $('identity').textContent = account.email || account.id;
   show('auth', false); show('dashboard', true); show('pair', true); show('sync', true); show('cloud', true); show('security', true);
   refresh();
+  refreshSecurity();
+  flushPendingSync();
 }
 async function auth(mode) {
   try {
@@ -108,7 +157,7 @@ async function refresh() {
   } catch(e) { status('pairStatus',e.message); }
 }
 async function revokeDevice(id) {
-  if (!confirm('¿Revocar este dispositivo? Sus sesiones existentes no se invalidan automáticamente en esta versión.')) return;
+  if (!confirm('¿Revocar este dispositivo? También se cerrarán sus sesiones vinculadas.')) return;
   try { await call('/v1/devices/'+id+'/revoke',{method:'POST'}); await refresh(); }
   catch(e) { status('pairStatus',e.message); }
 }
@@ -223,15 +272,31 @@ $('claim').onclick=()=>{
 $('cancelClaim').onclick=()=>{stopPairPolling();status('pairStatus','Comprobación detenida. La solicitud sigue pendiente hasta que caduque.');};
 $('saveSync').onclick=async()=>{
   try {
+    const key=$('syncKey').value.trim();
+    if(!/^[a-zA-Z0-9._-]{1,100}$/.test(key))throw new Error('La clave debe usar letras, números, punto, guion o guion bajo (máximo 100).');
+    const expectedVersion=Number($('syncVersion').value);
+    if(!Number.isSafeInteger(expectedVersion)||expectedVersion<0)throw new Error('La versión esperada no es válida.');
     const payload=JSON.parse($('syncPayload').value);
-    const {data}=await call('/v1/sync/items/'+encodeURIComponent($('syncKey').value.trim()),{method:'PUT',body:JSON.stringify({expectedVersion:Number($('syncVersion').value),payload})});
-    $('syncVersion').value=data.item.version; $('syncResult').textContent=JSON.stringify(data.item,null,2);
+    const pending=readPendingSync();
+    pending[key]={payload,expectedVersion,updatedAt:Date.now(),conflict:false};
+    if(!writePendingSync(pending))throw new Error('No se pudo guardar la cola local; comprueba el almacenamiento del navegador.');
+    renderPendingSync();
+    if(token&&navigator.onLine)await flushPendingSync();
+    $('syncResult').textContent=JSON.stringify({key,payload,status:readPendingSync()[key]?'pendiente':'sincronizado'},null,2);
   } catch(e) { $('syncResult').textContent=e.message; }
 };
 $('loadSync').onclick=async()=>{
-  try {const {data}=await call('/v1/sync/items');$('syncResult').textContent=JSON.stringify(data.items,null,2);}
-  catch(e){$('syncResult').textContent=e.message;}
+  try {
+    const {data}=await call('/v1/sync/items');
+    const key=$('syncKey').value.trim();
+    const current=data.items.find(item=>item.item_key===key);
+    if(current)$('syncVersion').value=current.version;
+    $('syncResult').textContent=JSON.stringify({serverItems:data.items,pendingChanges:readPendingSync()},null,2);
+  } catch(e){$('syncResult').textContent=e.message;}
 };
+$('retrySync').onclick=flushPendingSync;
+window.addEventListener('online',flushPendingSync);
+renderPendingSync();
 async function refreshCloud() {
   try {
     const {data}=await call('/v1/cloud/files');
