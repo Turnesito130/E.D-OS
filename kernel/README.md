@@ -25,6 +25,12 @@ make -C kernel iso LIMINE_DIR=/ruta/a/limine
 
 El workflow debe compilar y arrancar QEMU. El hito solo se considera verificado cuando el log serial muestra todos los marcadores de memoria y la excepción de breakpoint.
 
+## Nuevos subsistemas en fase inicial (0.1)
+
+- Planificador cooperativo: tabla fija de 32 tareas, estados READY/RUNNING/BLOCKED/EXITED, creación y selección round-robin. Todavía no realiza cambio de contexto, no crea pilas ni cambia privilegios; es una base de planificación, no multitarea ejecutable.
+- IPC: colas circulares acotadas de 16 mensajes con payload máximo de 64 bytes, validación de tamaño y detección de cola llena/vacía. Todavía no hay aislamiento entre procesos, bloqueo, sincronización SMP ni llamadas desde modo usuario.
+- Ambos módulos se compilan como parte del ELF y tienen pruebas unitarias host en CI.
+
 ## Pendiente
 
 Propiedad/bitmap de páginas, paginación y page faults, GDT/TSS/IST, temporizador e IRQ, planificador, cambio de contexto, procesos/hilos, syscalls y modo usuario, drivers, sistema de archivos, red, SMP, pruebas de estrés y hardware físico.
