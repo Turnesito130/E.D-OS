@@ -37,6 +37,10 @@ int main(void) {
     assert(state.exit_status == 7);
     assert(edos_syscall_dispatch(99, 0, 0, &context) == EDOS_SYSCALL_ENOSYS);
     assert(edos_syscall_dispatch(EDOS_SYSCALL_GETPID, 0, 0, 0) == EDOS_SYSCALL_EINVAL);
+    edos_syscall_context_t invalid = context;
+    invalid.user_start = invalid.user_end + 1;
+    assert(edos_syscall_dispatch(EDOS_SYSCALL_WRITE, invalid.user_start, 1, &invalid) == EDOS_SYSCALL_EINVAL);
+    assert(edos_syscall_dispatch(EDOS_SYSCALL_WRITE, 0, 0, &context) == EDOS_SYSCALL_OK);
     puts("SYSCALL_TESTS_OK");
     return 0;
 }
