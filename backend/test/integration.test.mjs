@@ -93,6 +93,8 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   });
   assert.equal(first.status, 201);
   const firstDeviceId = first.data.device.id;
+  const firstBinding = await pool.query("SELECT device_id FROM sessions WHERE id = $1", [registered.data.session.id]);
+  assert.equal(firstBinding.rows[0].device_id, firstDeviceId);
   assert.equal((await request("/v1/devices", {
     method: "POST", token,
     body: { deviceName: "Equipo duplicado", deviceType: "phone", platform: "android" }
@@ -128,6 +130,9 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   assert.equal(claimed.status, 200);
   assert.equal(claimed.data.device.id, approved.data.device.id);
   assert.ok(claimed.data.session.token);
+  const secondToken = claimed.data.session.token;
+  const secondBinding = await pool.query("SELECT device_id FROM sessions WHERE id = $1", [claimed.data.session.id]);
+  assert.equal(secondBinding.rows[0].device_id, claimed.data.device.id);
   assert.equal((await request("/v1/pairing/claim", {
     method: "POST",
     body: { requestId: pairing.data.requestId, pollSecret: pairing.data.pollSecret }
@@ -306,8 +311,13 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
     Bucket: "ed-test", Key: abandonedObject.rows[0].object_key
   })));
 
-  assert.equal((await request(`/v1/devices/${firstDeviceId}/revoke`, { method: "POST", token })).status, 200);
-  assert.equal((await request("/v1/devices", { token })).data.devices.length, 1);
-  assert.equal((await request("/v1/auth/logout", { method: "POST", token })).status, 200);
+  const revokedDevice = await request(`/v1/devices/${firstDeviceId}/revoke`, {
+    method: "POST", token: secondToken
+  });
+  assert.equal(revokedDevice.status, 200);
+  assert.equal(revokedDevice.data.revokedSessions, 1);
   assert.equal((await request("/v1/account/me", { token })).status, 401);
+  assert.equal((await request("/v1/devices", { token: secondToken })).data.devices.length, 1);
+  assert.equal((await request("/v1/auth/logout", { method: "POST", token: secondToken })).status, 200);
+  assert.equal((await request("/v1/account/me", { token: secondToken })).status, 401);
 });
