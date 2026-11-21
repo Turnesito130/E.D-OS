@@ -55,7 +55,8 @@
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000.",
     "GitHub Actions host tests passed for PS/2 decoding, four-level page tables, buddy allocator, scheduler, IPC, syscall dispatcher integration and RAMFS.",
-    "GitHub Actions built the Limine hybrid ISO and booted the kernel in BIOS QEMU; serial checks passed for PMM, page-table mapping, PS/2 polling availability and exception handling (commit 5563c878)."
+    "GitHub Actions built the Limine hybrid ISO and booted the kernel in BIOS QEMU; serial checks passed for PMM, page-table mapping, PS/2 polling availability and exception handling (commit 5563c878).",
+    "GitHub Actions BIOS QEMU boot passed with a live mapping/unmapping test against the Limine CR3 tables, explicit INVLPG, and at least three PIT IRQ0 ticks (commit 81f977ba)."
   ],
   "pending_verification": [
     "UEFI boot",
@@ -64,7 +65,7 @@
     "IPC integration with isolated processes and syscalls",
     "persistent filesystem, VFS, block-device drivers and permission enforcement",
     "ring 3 transition, TSS and user-mode address-space isolation",
-    "CR3 activation, TLB invalidation, page-fault recovery and isolated user address spaces",
+    "switching to an independently built CR3 root, automatic TLB management, page-fault recovery and isolated user address spaces",
     "PS/2 keyboard IRQ delivery, event queue and international keyboard layouts",
     "PMM page ownership tracking to reject freeing pages not returned by the allocator",
     "APIC/IOAPIC support, keyboard IRQ1, timer preemption and scheduler context switching"
