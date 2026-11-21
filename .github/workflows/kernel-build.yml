@@ -186,6 +186,7 @@ jobs:
           cat kernel/build/qemu-ata-serial.log
           grep -q "ATA_PIO_READ_OK" kernel/build/qemu-ata-serial.log
           grep -q "ATA_PIO_WRITE_OK" kernel/build/qemu-ata-serial.log
+          grep -q "ATA_PIO_EDFS_OK" kernel/build/qemu-ata-serial.log
           grep -q "PCI_ENUMERATION_OK" kernel/build/qemu-ata-serial.log
           grep -q "GDT_TSS_IST_READY" kernel/build/qemu-ata-serial.log
       - name: Upload kernel and boot diagnostics
