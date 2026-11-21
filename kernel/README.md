@@ -41,7 +41,7 @@ Propiedad/bitmap de páginas, activación de CR3 y page faults, GDT/TSS/IST, tem
 
 ## Interrupciones y temporizador PIT
 
-- PIC 8259 remapeado a los vectores 32–47; por ahora solo se habilita IRQ0 y el resto permanece enmascarado.
+- PIC 8259 remapeado a los vectores 32–47; se habilita IRQ0 y, si se detecta controlador PS/2, IRQ1. Las demás líneas permanecen enmascaradas.
 - PIT canal 0 configurado aproximadamente a 100 Hz; stub de IRQ0 guarda/restaura registros generales, despacha el tick y envía EOI al PIC.
 - La prueba QEMU espera tres ticks reales antes de continuar. No se habilita IRQ1 todavía.
 
@@ -50,9 +50,9 @@ Propiedad/bitmap de páginas, activación de CR3 y page faults, GDT/TSS/IST, tem
 ## Drivers básicos: COM1 y teclado PS/2
 
 - COM1: detección por registro scratch, inicialización UART y escritura con espera acotada; usado para logs de arranque.
-- Teclado PS/2: lectura por sondeo del puerto 0x60/0x64 y traducción básica de scancodes set 1; incluye Shift, Caps Lock, letras, números y teclas comunes. Su decodificador se prueba en host y QEMU comprueba la disponibilidad del controlador.
+- Teclado PS/2: IRQ1 lee scancodes set 1 y los deposita en una cola circular de 64 posiciones; `edos_keyboard_poll_char` consume la cola y traduce Shift, Caps Lock, letras, números y teclas comunes. Se prueban decodificador, modificadores y desbordamiento de cola en host; QEMU comprueba la disponibilidad del controlador.
 
-**Límites:** el teclado todavía no usa IRQ, no hay cola de eventos de entrada ni distribución a aplicaciones; la tabla de caracteres es básica y no cubre todos los teclados/idiomas.
+**Límites:** el teclado todavía no se integra con una shell o aplicaciones; la tabla de caracteres es básica, usa disposición tipo US y no cubre todos los teclados/idiomas ni repetición avanzada.
 
 ## Paginación x86-64 (fase inicial)
 
