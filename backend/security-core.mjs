@@ -4,7 +4,7 @@ import { promisify } from "node:util";
 const scrypt = promisify(scryptCallback);
 
 export function validEmail(value) {
-  return typeof value === "string" && value.length <= 254 && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value);
+  return typeof value === "string" && value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 export function tokenDigest(token) {
