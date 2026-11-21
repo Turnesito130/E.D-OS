@@ -39,6 +39,14 @@ El workflow debe compilar y arrancar QEMU. El hito solo se considera verificado 
 Propiedad/bitmap de páginas, activación de CR3 y page faults, GDT/TSS/IST, temporizador e IRQ, cambio de contexto real, procesos/hilos, entrada de syscalls desde ring 3, drivers de almacenamiento/red, VFS y sistema de archivos persistente, SMP, pruebas de estrés y hardware físico.
 
 
+## Interrupciones y temporizador PIT
+
+- PIC 8259 remapeado a los vectores 32–47; por ahora solo se habilita IRQ0 y el resto permanece enmascarado.
+- PIT canal 0 configurado aproximadamente a 100 Hz; stub de IRQ0 guarda/restaura registros generales, despacha el tick y envía EOI al PIC.
+- La prueba QEMU espera tres ticks reales antes de continuar. No se habilita IRQ1 todavía.
+
+**Límites:** no hay APIC/IOAPIC, temporizador HPET, prioridades, IRQ de teclado ni integración del tick con cambio de contexto del scheduler. El handler no realiza todavía preempción.
+
 ## Drivers básicos: COM1 y teclado PS/2
 
 - COM1: detección por registro scratch, inicialización UART y escritura con espera acotada; usado para logs de arranque.
