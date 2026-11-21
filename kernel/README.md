@@ -18,7 +18,7 @@ pmm_free_page exige que el llamador entregue una página obtenida previamente me
 
 ## Construcción y verificación
 
-La ejecución completa confirmada en GitHub Actions (commit `abc242f3`) pasó pruebas host, compiló ELF e ISO y arrancó en QEMU BIOS. Se comprobaron por puerto serie PMM, GDT/TSS propios con TR activo, pilas IST, mapeo/desmapeo sobre CR3 activo, ticks PIT, cambio cooperativo entre dos tareas, VFS, ramdisk y page fault controlado con lectura de CR2. No demuestra ring 3, multitarea preemptiva ni aislamiento de procesos.
+La ejecución completa confirmada en GitHub Actions (commit `8b2a8f48`) pasó pruebas host, compiló la ISO híbrida y arrancó en QEMU BIOS y UEFI con OVMF. En ambos firmwares se comprobaron PMM, GDT/TSS propios con TR activo, pilas IST, mapeo sobre CR3 activo, ticks PIT, cambio cooperativo entre dos tareas, VFS, ramdisk y page fault controlado con lectura de CR2. No demuestra ring 3, multitarea preemptiva ni aislamiento de procesos.
 
 \`\`\`sh
 make -C kernel clean all
@@ -72,4 +72,4 @@ Propiedad/bitmap de páginas, raíz CR3 propia y recuperación de page faults, G
 
 ## Verificación
 
-El workflow ejecuta pruebas unitarias de teclado, paginación, buddy, cambio de contexto, scheduler, IPC, syscalls, RAMFS y VFS, compila el ELF, genera la ISO y comprueba el arranque BIOS en QEMU mediante el registro serie, incluido un page fault deliberado y su dirección CR2. Un resultado verde demuestra esas rutas concretas; demuestra un cambio cooperativo real entre dos contextos de kernel, pero no multitarea preemptiva, modo usuario, aislamiento de procesos, persistencia ni compatibilidad con hardware físico.
+El workflow ejecuta pruebas unitarias de teclado, paginación, buddy, cambio de contexto, scheduler, IPC, syscalls, RAMFS y VFS, compila el ELF, genera la ISO y comprueba el arranque BIOS y UEFI en QEMU mediante el registro serie, incluido un page fault deliberado y su dirección CR2. Un resultado verde demuestra esas rutas concretas; demuestra un cambio cooperativo real entre dos contextos de kernel, pero no multitarea preemptiva, modo usuario, aislamiento de procesos, persistencia ni compatibilidad con hardware físico.
