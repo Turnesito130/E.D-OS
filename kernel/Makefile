@@ -39,10 +39,19 @@ $(BUILD_DIR)/buddy.o: src/buddy.c include/buddy.h include/memory.h | $(BUILD_DIR
 $(BUILD_DIR)/idt.o: src/idt.c include/idt.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
+$(BUILD_DIR)/serial.o: src/serial.c include/serial.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+$(BUILD_DIR)/syscall.o: src/syscall.c include/syscall.h include/memory.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+# IDT object is built by the rule above.
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
 $(BUILD_DIR)/interrupts.o: src/interrupts.S | $(BUILD_DIR)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
-$(TARGET): $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/ramfs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/interrupts.o linker.ld
+$(TARGET): $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/ramfs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/serial.o $(BUILD_DIR)/syscall.o $(BUILD_DIR)/interrupts.o linker.ld
 	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/ramfs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/interrupts.o
 
 iso: $(TARGET)
