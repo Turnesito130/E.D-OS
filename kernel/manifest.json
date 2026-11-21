@@ -70,19 +70,21 @@
     "IDT routes double fault, NMI and page fault through dedicated TSS IST stacks",
     "EDFS flat block-backed filesystem with versioned superblock, fixed root directory and one 512-byte data sector per file",
     "EDFS format, mount, create, read, write and delete operations with directory validation and duplicate-name rejection",
-    "QEMU BIOS and UEFI smoke tests format EDFS on a RAM disk, create and write a file, remount the filesystem and read back its data"
+    "QEMU BIOS and UEFI smoke tests format EDFS on a RAM disk, create and write a file, remount the filesystem and read back its data",
+    "PMM page ownership hash table tracks allocated physical pages and rejects invalid and duplicate frees",
+    "VFS supports interchangeable RAMFS and EDFS backends with common file descriptors, offsets, stat and directory enumeration",
+    "QEMU BIOS and UEFI boot tests mount EDFS through VFS and read a file after remounting the block-backed volume"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000.",
     "GitHub Actions host tests passed for PS/2 decoding, four-level page tables, buddy allocator, scheduler, IPC, syscall dispatcher integration and RAMFS.",
     "GitHub Actions passed host tests, built the Limine hybrid ISO and booted BIOS QEMU with custom GDT/TR, TSS RSP0 and IST stacks, cooperative task switching, VFS, RAM-disk I/O and controlled page-fault CR2 diagnostics (commit abc242f3).",
-    "GitHub Actions passed host tests, built the hybrid ISO and booted both BIOS and OVMF UEFI in QEMU; both runs verified custom GDT/TSS/IST, cooperative tasks, VFS, RAM-disk I/O, EDFS remount persistence and page-fault CR2 diagnostics (commit 5a184649)."
+    "GitHub Actions passed PMM ownership, scheduler/syscall, VFS, block-device and EDFS host tests; built the hybrid ISO and booted BIOS and OVMF UEFI with VFS mounted over EDFS, remount readback and CR2 page-fault diagnostics (commit 0326c71e)."
   ],
   "pending_verification": [
     "physical hardware compatibility",
     "IPC integration with isolated processes and syscalls",
     "PS/2 real-key event validation and international keyboard layouts",
-    "PMM page ownership tracking to reject freeing pages not returned by the allocator",
     "timer preemption and scheduler integration",
     "APIC/IOAPIC, HPET and advanced interrupt routing",
     "physical SATA/AHCI/NVMe storage drivers and persistent filesystem backend",
