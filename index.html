@@ -160,71 +160,13 @@ let desktopPrefs={};try{desktopPrefs=JSON.parse(localStorage.getItem('ed-os-sett
   <form class="access-card" id="accessForm">
     <div class="access-mark">E.D-OS</div>
     <h1 id="accessTitle">Acceso protegido</h1>
-    <p>Introduce tu código para entrar en el escritorio.</p>
+    <p>Configura un código local para este navegador.</p>
     <label for="accessPin" class="window-note">Código de acceso</label>
     <input id="accessPin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{3}" maxlength="3" autocomplete="off" required aria-label="Código de acceso de tres cifras">
     <button id="accessSubmit" type="submit">Entrar</button>
     <p id="accessMessage" role="status" aria-live="polite"></p>
   </form>
 </div>
-<script>
-(() => {
-  'use strict';
-  const PIN = '085';
-  const gate = document.getElementById('accessGate');
-  const form = document.getElementById('accessForm');
-  const input = document.getElementById('accessPin');
-  const submit = document.getElementById('accessSubmit');
-  const message = document.getElementById('accessMessage');
-  const KEY = 'edos-access-state-v1';
-  let state = { failures: 0, lockedUntil: 0 };
-  try { state = { ...state, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch (_) {}
-  let ticker = null;
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (_) {} }
-  function render() {
-    const remaining = Math.max(0, state.lockedUntil - Date.now());
-    const locked = remaining > 0;
-    input.disabled = locked;
-    submit.disabled = locked;
-    if (locked) {
-      const seconds = Math.ceil(remaining / 1000);
-      const minutes = Math.floor(seconds / 60);
-      const rest = seconds % 60;
-      message.textContent = 'Demasiados intentos. Espera ' + minutes + ':' + String(rest).padStart(2,'0') + ' para volver a intentarlo.';
-    } else {
-      state.lockedUntil = 0;
-      save();
-      message.textContent = state.failures ? 'Puedes volver a intentarlo. El siguiente fallo bloqueará el acceso durante ' + (state.failures >= 1 ? '10 minutos' : '5 minutos') + '.' : '';
-      if (ticker) { clearInterval(ticker); ticker = null; }
-    }
-  }
-  form.addEventListener('submit', event => {
-    event.preventDefault();
-    if (Date.now() < state.lockedUntil) return;
-    if (input.value === PIN) {
-      gate.hidden = true;
-      document.body.style.overflow = '';
-      try { sessionStorage.setItem('edos-access-granted','1'); } catch (_) {}
-      return;
-    }
-    state.failures += 1;
-    const waitMs = state.failures === 1 ? 5 * 60 * 1000 : 10 * 60 * 1000;
-    state.lockedUntil = Date.now() + waitMs;
-    input.value = '';
-    save();
-    render();
-    if (!ticker) ticker = setInterval(render, 1000);
-  });
-  document.body.style.overflow = 'hidden';
-  if (sessionStorage.getItem('edos-access-granted') === '1') {
-    gate.hidden = true;
-    document.body.style.overflow = '';
-  } else {
-    render();
-    if (state.lockedUntil > Date.now()) ticker = setInterval(render, 1000);
-    input.focus();
-  }
-})();
-</script>
+<script src="./js/access-control.js" defer></script>
 
 </body></html>
