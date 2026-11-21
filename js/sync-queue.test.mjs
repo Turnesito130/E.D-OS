@@ -10,11 +10,12 @@ function createQueueApi(storage = createStorage()) {
   return { api: window.EDOSyncQueue, storage };
 }
 function createStorage(initial = null) {
-  let value = initial;
+  const values = new Map();
+  if (initial !== null) values.set("ed-os-sync-pending-v1", initial);
   return {
-    getItem() { return value; },
-    setItem(_key, next) { value = next; },
-    get value() { return value; }
+    getItem(key) { return values.has(key) ? values.get(key) : null; },
+    setItem(key, next) { values.set(key, next); },
+    get value() { return values.get("ed-os-sync-pending-v1") ?? null; }
   };
 }
 
