@@ -22,9 +22,9 @@ int main(void) {
     assert(edos_vfs_stat(&vfs, "/notes.txt", &info) && info.size == 7);
     assert(edos_vfs_readdir(&vfs, &cursor, &info) && info.size == 7);
     assert(!edos_vfs_readdir(&vfs, &cursor, &info));
-    assert(!edos_vfs_open(&vfs, "/../secret", EDOS_VFS_READ));
-    assert(!edos_vfs_open(&vfs, "/dir/file", EDOS_VFS_READ));
-    assert(!edos_vfs_open(&vfs, "relative", EDOS_VFS_READ));
+    assert(edos_vfs_open(&vfs, "/../secret", EDOS_VFS_READ) == -1);
+    assert(edos_vfs_open(&vfs, "/dir/file", EDOS_VFS_READ) == -1);
+    assert(edos_vfs_open(&vfs, "relative", EDOS_VFS_READ) == -1);
     assert(edos_vfs_close(&vfs, fd));
     assert(!edos_vfs_read(&vfs, fd, out, sizeof(out)));
     int read_only = edos_vfs_open(&vfs, "/notes.txt", EDOS_VFS_READ);
