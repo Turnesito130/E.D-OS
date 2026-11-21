@@ -146,3 +146,70 @@ int edos_edfs_delete(edos_edfs_t *fs, const char *name) {
     zero_bytes(directory + (unsigned int)slot * EDFS_ENTRY_SIZE, EDFS_ENTRY_SIZE);
     return edos_block_write(fs->device, EDFS_DIRECTORY_SECTOR, 1, directory);
 }
+
+ed_u64 edos_edfs_read_at(edos_edfs_t *fs, const char *name, ed_u64 offset,
+                        void *buffer, ed_u64 capacity) {
+    if (!fs || !fs->initialized || !valid_name(name) || (!buffer && capacity)) return 0;
+    unsigned char directory[EDFS_DIRECTORY_BYTES];
+    if (!read_directory(fs, directory)) return 0;
+    int slot = find_entry(directory, name);
+    if (slot < 0) return 0;
+    ed_u64 size = read_u16(directory + (unsigned int)slot * EDFS_ENTRY_SIZE + 27U);
+    if (offset > size) return 0;
+    ed_u64 count = size - offset;
+    if (count > capacity) count = capacity;
+    if (!count) return 0;
+    unsigned char sector[EDOS_BLOCK_DEFAULT_SECTOR_SIZE];
+    if (!edos_block_read(fs->device, EDFS_DATA_START + (ed_u64)slot, 1, sector)) return 0;
+    copy_bytes((unsigned char *)buffer, sector + offset, count);
+    return count;
+}
+int edos_edfs_write_at(edos_edfs_t *fs, const char *name, ed_u64 offset,
+                       const void *data, ed_u64 length) {
+    if (!fs || !fs->initialized || !valid_name(name) || (!data && length) ||
+        offset > EDOS_EDFS_FILE_MAX || length > EDOS_EDFS_FILE_MAX - offset) return 0;
+    unsigned char directory[EDFS_DIRECTORY_BYTES];
+    if (!read_directory(fs, directory)) return 0;
+    int slot = find_entry(directory, name);
+    if (slot < 0) return 0;
+    unsigned char sector[EDOS_BLOCK_DEFAULT_SECTOR_SIZE];
+    if (!edos_block_read(fs->device, EDFS_DATA_START + (ed_u64)slot, 1, sector)) return 0;
+    ed_u64 old_size = read_u16(directory + (unsigned int)slot * EDFS_ENTRY_SIZE + 27U);
+    if (offset > old_size)
+        for (ed_u64 i = old_size; i < offset; ++i) sector[i] = 0;
+    if (length) copy_bytes(sector + offset, (const unsigned char *)data, length);
+    if (!edos_block_write(fs->device, EDFS_DATA_START + (ed_u64)slot, 1, sector)) return 0;
+    ed_u64 new_size = offset + length;
+    if (new_size > old_size)
+        write_u16(directory + (unsigned int)slot * EDFS_ENTRY_SIZE + 27U, (unsigned short)new_size);
+    return edos_block_write(fs->device, EDFS_DIRECTORY_SECTOR, 1, directory);
+}
+static void edfs_copy_name(char *dst, const unsigned char *src) {
+    unsigned int i = 0;
+    while (i < EDOS_EDFS_NAME_MAX && src[i]) { dst[i] = (char)src[i]; ++i; }
+    dst[i] = 0;
+}
+int edos_edfs_stat(edos_edfs_t *fs, const char *name, edos_edfs_dirent_t *result) {
+    if (!fs || !fs->initialized || !valid_name(name) || !result) return 0;
+    unsigned char directory[EDFS_DIRECTORY_BYTES];
+    if (!read_directory(fs, directory)) return 0;
+    int slot = find_entry(directory, name);
+    if (slot < 0) return 0;
+    unsigned char *entry = directory + (unsigned int)slot * EDFS_ENTRY_SIZE;
+    edfs_copy_name(result->name, entry + 1);
+    result->size = read_u16(entry + 27);
+    return 1;
+}
+int edos_edfs_readdir(edos_edfs_t *fs, ed_u64 *cursor, edos_edfs_dirent_t *result) {
+    if (!fs || !fs->initialized || !cursor || !result) return 0;
+    unsigned char directory[EDFS_DIRECTORY_BYTES];
+    if (!read_directory(fs, directory)) return 0;
+    while (*cursor < EDOS_EDFS_MAX_FILES) {
+        unsigned char *entry = directory + (unsigned int)(*cursor)++ * EDFS_ENTRY_SIZE;
+        if (entry[0] != 1U) continue;
+        edfs_copy_name(result->name, entry + 1);
+        result->size = read_u16(entry + 27);
+        return 1;
+    }
+    return 0;
+}
