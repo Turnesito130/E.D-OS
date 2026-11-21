@@ -83,3 +83,45 @@ edos_pci_u32 edos_pci_enumerate(edos_pci_device_callback_t callback,
     return edos_pci_enumerate_with_reader(hardware_reader, (void *)0,
                                           callback, callback_context);
 }
+
+int edos_pci_read_bar_with_reader(const edos_pci_device_t *device,
+                                  edos_pci_u8 index,
+                                  edos_pci_config_reader_t reader,
+                                  void *reader_context, edos_pci_bar_t *bar) {
+    if (!device || !reader || !bar) return 0;
+    edos_pci_u8 header = (edos_pci_u8)(device->header_type & 0x7fU);
+    edos_pci_u8 bar_count = header == 0U ? 6U : header == 1U ? 2U : 0U;
+    if (!bar_count || index >= bar_count) return 0;
+    edos_pci_u8 offset = (edos_pci_u8)(0x10U + (edos_pci_u8)(index * 4U));
+    edos_pci_u32 low = reader(device->bus, device->slot, device->function,
+                              offset, reader_context);
+    if (low == 0U || low == PCI_ABSENT) return 0;
+    bar->index = index;
+    bar->is_io = 0;
+    bar->is_64bit = 0;
+    bar->prefetchable = 0;
+    if (low & 1U) {
+        bar->base = (unsigned long long)(low & ~3U);
+        bar->is_io = 1;
+        return 1;
+    }
+    edos_pci_u32 memory_type = (low >> 1) & 3U;
+    if (memory_type == 3U) return 0;
+    bar->prefetchable = (edos_pci_u8)((low >> 3) & 1U);
+    bar->base = (unsigned long long)(low & ~0x0fU);
+    if (memory_type == 2U) {
+        if (index + 1U >= bar_count) return 0;
+        edos_pci_u32 high = reader(device->bus, device->slot, device->function,
+                                   (edos_pci_u8)(offset + 4U), reader_context);
+        if (high == PCI_ABSENT) return 0;
+        bar->base |= ((unsigned long long)high << 32);
+        bar->is_64bit = 1;
+    }
+    return 1;
+}
+
+int edos_pci_read_bar(const edos_pci_device_t *device, edos_pci_u8 index,
+                      edos_pci_bar_t *bar) {
+    return edos_pci_read_bar_with_reader(device, index, hardware_reader,
+                                         (void *)0, bar);
+}
