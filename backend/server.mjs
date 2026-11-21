@@ -105,8 +105,7 @@ async function issueSession(client, accountId) {
 
 
 async function auditSecurityEvent(db, accountId, eventType, req, details = {}) {
-  const forwarded = req.headers["x-forwarded-for"];
-  const ip = typeof forwarded === "string" ? forwarded.split(",")[0].trim() : (req.socket.remoteAddress || null);
+  const ip = req.socket.remoteAddress || null;
   await db.query(
     "INSERT INTO account_security_events (account_id, event_type, ip_address, details) VALUES ($1, $2, $3, $4::jsonb)",
     [accountId, eventType, ip, JSON.stringify(details)]
@@ -330,7 +329,7 @@ const server = createServer(async (req, res) => {
         `SELECT id, created_at, expires_at, revoked_at,
                 (id = $2::uuid) AS current
            FROM sessions
-          WHERE account_id = $1 AND expires_at > now()
+          WHERE account_id = $1 AND revoked_at IS NULL AND expires_at > now()
           ORDER BY created_at DESC LIMIT 100`,
         [account.id, account.session_id]
       );
