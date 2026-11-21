@@ -92,6 +92,15 @@ int edos_pci_read_bar_with_reader(const edos_pci_device_t *device,
     edos_pci_u8 header = (edos_pci_u8)(device->header_type & 0x7fU);
     edos_pci_u8 bar_count = header == 0U ? 6U : header == 1U ? 2U : 0U;
     if (!bar_count || index >= bar_count) return 0;
+    for (edos_pci_u8 previous = 0; previous < index; ++previous) {
+        edos_pci_u32 prior = reader(device->bus, device->slot, device->function,
+                                    (edos_pci_u8)(0x10U + previous * 4U), reader_context);
+        if (prior != 0U && prior != PCI_ABSENT && !(prior & 1U) &&
+            (((prior >> 1) & 3U) == 2U)) {
+            if ((edos_pci_u8)(previous + 1U) == index) return 0;
+            ++previous;
+        }
+    }
     edos_pci_u8 offset = (edos_pci_u8)(0x10U + (edos_pci_u8)(index * 4U));
     edos_pci_u32 low = reader(device->bus, device->slot, device->function,
                               offset, reader_context);
