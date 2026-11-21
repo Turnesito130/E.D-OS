@@ -23,6 +23,7 @@ typedef struct __attribute__((packed)) {
 
 extern void isr_unexpected(void);
 extern void irq_timer_stub(void);
+extern void irq_keyboard_stub(void);
 extern void isr0(void);  extern void isr1(void);  extern void isr2(void);  extern void isr3(void);
 extern void isr4(void);  extern void isr5(void);  extern void isr6(void);  extern void isr7(void);
 extern void isr8(void);  extern void isr9(void);  extern void isr10(void); extern void isr11(void);
@@ -63,6 +64,7 @@ int idt_init(void) {
         idt_set_gate((u8)i, exceptions[i], code_selector);
 
     idt_set_gate(32U, irq_timer_stub, code_selector);
+    idt_set_gate(33U, irq_keyboard_stub, code_selector);
 
     idtr descriptor = {
         .limit = (u16)(sizeof(idt) - 1),
