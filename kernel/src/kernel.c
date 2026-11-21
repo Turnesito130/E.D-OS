@@ -11,6 +11,8 @@
 #include "edfs.h"
 #include "pci.h"
 #include "ata_pio.h"
+#include "syscall.h"
+#include "context.h"
 #include "heap.h"
 typedef unsigned long long u64;
 __attribute__((used,section(".limine_requests"),aligned(8)))
@@ -55,6 +57,18 @@ static ed_u64 preempt_task_a, preempt_task_b, preempt_task_monitor;
 static volatile ed_u64 preempt_a_runs, preempt_b_runs;
 static volatile ed_u64 preempt_a_started, preempt_b_started;
 static ed_u64 boot_fault_address;
+#define RING3_CODE_VA 0x0000400000000000ULL
+#define RING3_DATA_VA 0x0000400000001000ULL
+#define RING3_STACK_VA 0x0000400000004000ULL
+static edos_cpu_context_t ring3_kernel_context, ring3_user_context;
+static edos_syscall_context_t ring3_syscall_context;
+static unsigned char ring3_enter_stack[8192] __attribute__((aligned(16)));
+static unsigned char ring3_kernel_stack[8192] __attribute__((aligned(16)));
+static volatile int ring3_write_seen;
+static volatile ed_u64 ring3_exit_status;
+extern unsigned char edos_ring3_blob_start[], edos_ring3_blob_end[];
+extern void edos_enter_user_mode(u64 user_rip, u64 user_rsp) __attribute__((noreturn));
+extern char kernel_stack_top[];
 static unsigned char preempt_stack_a[8192] __attribute__((aligned(16)));
 static unsigned char preempt_stack_b[8192] __attribute__((aligned(16)));
 static unsigned char preempt_stack_monitor[8192] __attribute__((aligned(16)));
