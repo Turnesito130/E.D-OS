@@ -46,7 +46,7 @@ jobs:
         run: |
           gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/context.c kernel/src/context.S kernel/src/scheduler.c kernel/tests/scheduler_test.c -o /tmp/ed-os-scheduler-test
           /tmp/ed-os-scheduler-test
-          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/ipc.c kernel/tests/ipc_test.c -o /tmp/ed-os-ipc-test
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/context.c kernel/src/context.S kernel/src/scheduler.c kernel/src/ipc.c kernel/tests/ipc_test.c -o /tmp/ed-os-ipc-test
           /tmp/ed-os-ipc-test
       - name: Unit-test syscall dispatcher
         run: |
