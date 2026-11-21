@@ -106,7 +106,7 @@ if(!edos_block_write(&boot_block_device,2,1,boot_disk_write)||
    !edos_block_read(&boot_block_device,2,1,boot_disk_read)||
    boot_disk_read[0]!=boot_disk_write[0]||boot_disk_read[255]!=boot_disk_write[255]||
    boot_disk_read[511]!=boot_disk_write[511]||
-   edos_block_read(&boot_block_device,8,1,boot_disk_read)){
+   edos_block_read(&boot_block_device,18,1,boot_disk_read)){
     serial("BLOCK_IO_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
 }
 serial("BLOCK_RAMDISK_RUNTIME_OK\n");
