@@ -10,7 +10,7 @@ E.D-OS tendrá un kernel propio e independiente. Linux se estudia como referenci
 - Lista enlazada de páginas liberadas para reutilización, comprobación segura de nodos y validador de invariantes del PMM.
 - Rechazo de direcciones desalineadas/no utilizables y doble liberación detectada.
 - IDT de 256 entradas y stubs para excepciones.
-- Pruebas QEMU superadas: asignar, liberar, rechazar doble liberación, reutilizar la misma página, comprobar que vuelve a cero y validar la lista libre.
+- Pruebas QEMU superadas: asignar, liberar, rechazar doble liberación, reutilizar la misma página, comprobar que vuelve a cero y validar la lista libre. El handler de page fault identifica el vector 14 y registra CR2; una prueba de arranque provoca un fallo controlado en una dirección virtual desmapeada.
 
 ## Límites conocidos
 
@@ -36,7 +36,7 @@ El workflow debe compilar y arrancar QEMU. El hito solo se considera verificado 
 
 ## Pendiente
 
-Propiedad/bitmap de páginas, raíz CR3 propia y page faults, GDT/TSS/IST, APIC/IOAPIC, planificador preemptivo y tarea idle, gestión de procesos/hilos, entrada de syscalls desde ring 3, drivers físicos SATA/AHCI/NVMe y red, backend VFS persistente, SMP, pruebas de estrés y hardware físico.
+Propiedad/bitmap de páginas, raíz CR3 propia y recuperación de page faults, GDT/TSS/IST, APIC/IOAPIC, planificador preemptivo y tarea idle, gestión de procesos/hilos, entrada de syscalls desde ring 3, drivers físicos SATA/AHCI/NVMe y red, backend VFS persistente, SMP, pruebas de estrés y hardware físico.
 
 
 ## Interrupciones y temporizador PIT
@@ -72,4 +72,4 @@ Propiedad/bitmap de páginas, raíz CR3 propia y page faults, GDT/TSS/IST, APIC/
 
 ## Verificación
 
-El workflow ejecuta pruebas unitarias de teclado, paginación, buddy, cambio de contexto, scheduler, IPC, syscalls, RAMFS y VFS, compila el ELF, genera la ISO y comprueba el arranque BIOS en QEMU mediante el registro serie. Un resultado verde demuestra esas rutas concretas; demuestra un cambio cooperativo real entre dos contextos de kernel, pero no multitarea preemptiva, modo usuario, aislamiento de procesos, persistencia ni compatibilidad con hardware físico.
+El workflow ejecuta pruebas unitarias de teclado, paginación, buddy, cambio de contexto, scheduler, IPC, syscalls, RAMFS y VFS, compila el ELF, genera la ISO y comprueba el arranque BIOS en QEMU mediante el registro serie, incluido un page fault deliberado y su dirección CR2. Un resultado verde demuestra esas rutas concretas; demuestra un cambio cooperativo real entre dos contextos de kernel, pero no multitarea preemptiva, modo usuario, aislamiento de procesos, persistencia ni compatibilidad con hardware físico.
