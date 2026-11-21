@@ -54,7 +54,7 @@ $(BUILD_DIR)/vfs.o: src/vfs.c include/vfs.h include/ramfs.h include/edfs.h inclu
 $(BUILD_DIR)/ramfs.o: src/ramfs.c include/ramfs.h include/memory.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
-$(BUILD_DIR)/ipc.o: src/ipc.c include/ipc.h include/memory.h | $(BUILD_DIR)
+$(BUILD_DIR)/ipc.o: src/ipc.c include/ipc.h include/scheduler.h include/context.h include/memory.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
 $(BUILD_DIR)/edfs.o: src/edfs.c include/edfs.h include/block.h include/memory.h | $(BUILD_DIR)
