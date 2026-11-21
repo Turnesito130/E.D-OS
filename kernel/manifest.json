@@ -66,8 +66,7 @@
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000.",
     "GitHub Actions host tests passed for PS/2 decoding, four-level page tables, buddy allocator, scheduler, IPC, syscall dispatcher integration and RAMFS.",
-    "GitHub Actions built the Limine hybrid ISO and booted the kernel in BIOS QEMU; serial checks passed for PMM, page-table mapping, PS/2 polling availability and exception handling (commit 5563c878).",
-    "GitHub Actions BIOS QEMU boot passed with a live mapping/unmapping test against the Limine CR3 tables, explicit INVLPG, and at least three PIT IRQ0 ticks (commit 81f977ba)."
+    "GitHub Actions passed host tests, built the Limine hybrid ISO and booted BIOS QEMU with checks for PMM, active-CR3 mapping, PIT IRQ0 ticks, cooperative two-task context switching, VFS file operations, RAM-disk sector I/O and exception handling (commit 8e673d83)."
   ],
   "pending_verification": [
     "UEFI boot",
