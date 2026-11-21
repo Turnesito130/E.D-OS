@@ -60,6 +60,8 @@ int main(void) {
     assert(edos_task_prepare_context(&ipc_scheduler, receiver_id, receiver_stack, sizeof(receiver_stack), ipc_return_trap));
     assert(edos_task_prepare_context(&ipc_scheduler, sender_id, sender_stack, sizeof(sender_stack), ipc_return_trap));
     assert(edos_task_set_state(&ipc_scheduler, receiver_id, EDOS_TASK_RUNNING));
+    assert(!edos_ipc_send_to(&ipc_endpoint, &ipc_scheduler, sender_id, 9, "spoof", 5));
+    assert(!edos_ipc_receive_wait(&ipc_endpoint, &ipc_scheduler, sender_id, &out));
     edos_context_switch(&ipc_main_context, &ipc_scheduler.tasks[0].context);
     assert(ipc_stage == 4);
     assert(ipc_scheduler.current_id == receiver_id);
