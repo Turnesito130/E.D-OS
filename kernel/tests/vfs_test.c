@@ -43,6 +43,31 @@ int main(void) {
     }
     assert(edos_vfs_open(&vfs, "/notes.txt", EDOS_VFS_READ) == -1);
     for (unsigned int i = 0; i < EDOS_VFS_MAX_FDS; ++i) assert(edos_vfs_close(&vfs, open_fds[i]));
+
+    unsigned char disk_storage[18U * 512U] = {0};
+    edos_block_device_t block_device;
+    edos_ramdisk_t ramdisk;
+    edos_edfs_t edfs, edfs_remounted;
+    edos_vfs_t persistent_vfs;
+    assert(edos_ramdisk_init(&block_device, &ramdisk, disk_storage, sizeof(disk_storage), 512U));
+    assert(edos_edfs_format(&block_device));
+    assert(edos_edfs_mount(&edfs, &block_device));
+    assert(edos_vfs_mount_edfs(&persistent_vfs, &edfs));
+    int persistent_fd = edos_vfs_open(&persistent_vfs, "/persist.log", EDOS_VFS_CREATE | EDOS_VFS_READ | EDOS_VFS_WRITE);
+    assert(persistent_fd >= EDOS_VFS_FD_BASE);
+    assert(edos_vfs_write(&persistent_vfs, persistent_fd, "persist", 7) == 7);
+    assert(edos_vfs_close(&persistent_vfs, persistent_fd));
+    assert(edos_edfs_mount(&edfs_remounted, &block_device));
+    assert(edos_vfs_mount_edfs(&persistent_vfs, &edfs_remounted));
+    persistent_fd = edos_vfs_open(&persistent_vfs, "/persist.log", EDOS_VFS_READ);
+    assert(persistent_fd >= EDOS_VFS_FD_BASE);
+    for (unsigned int i = 0; i < sizeof(out); ++i) out[i] = 0;
+    assert(edos_vfs_read(&persistent_vfs, persistent_fd, out, sizeof(out)) == 7);
+    assert(out[0] == 'p' && out[6] == 't');
+    assert(edos_vfs_stat(&persistent_vfs, "/persist.log", &info) && info.size == 7);
+    cursor = 0;
+    assert(edos_vfs_readdir(&persistent_vfs, &cursor, &info) && info.size == 7);
+    assert(edos_vfs_close(&persistent_vfs, persistent_fd));
     puts("VFS_TESTS_OK");
     return 0;
 }
