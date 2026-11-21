@@ -1,4 +1,5 @@
 #include "memory.h"
+#include "page_ownership.h"
 #define PAGE_SIZE 4096ULL
 #define MIN_SAFE_PHYS 0x100000ULL
 #define MEMMAP_USABLE 0ULL
@@ -18,6 +19,9 @@ return (limine_hhdm_response *)(unsigned long long)hhdm_request[5];}
 static limine_memmap_response *map;
 static ed_u64 hhdm, usable_bytes, allocated_pages, free_pages, region_index, region_cursor;
 static void *free_list;
+#define PMM_OWNERSHIP_CAPACITY 65536ULL
+static ed_u64 ownership_slots[PMM_OWNERSHIP_CAPACITY];
+static edos_page_ownership_t ownership;
 static int initialized;
 static int add_overflows(ed_u64 a, ed_u64 b) { return b > (~0ULL-a); }
 static int physical_page_is_usable(ed_u64 p);
@@ -40,6 +44,7 @@ map=get_memmap_response(); limine_hhdm_response *d=get_hhdm_response();
 if(!map || !d || !map->entries || !map->entry_count || map->entry_count>4096) return 0;
 hhdm=d->offset; usable_bytes=allocated_pages=free_pages=region_index=region_cursor=0;
 free_list=(void*)0;
+if(!edos_page_ownership_init(&ownership,ownership_slots,PMM_OWNERSHIP_CAPACITY)) return 0;
 for(ed_u64 i=0;i<map->entry_count;++i) {
 limine_memmap_entry *e=map->entries[i];
 if(!e || e->type!=MEMMAP_USABLE || !e->length || add_overflows(e->base,e->length)) continue;
@@ -48,7 +53,7 @@ if(add_overflows(usable_bytes,e->length)) usable_bytes=~0ULL; else usable_bytes+
 initialized=usable_bytes!=0; return initialized;
 }
 void *pmm_alloc_page(void) {
-if(!initialized || !map) return (void*)0;
+if(!initialized || !map || ownership.count>=ownership.capacity) return (void*)0;
 ed_u64 physical;
 if(free_list) {
 ed_u64 va=(ed_u64)(unsigned long long)free_list;
@@ -71,7 +76,7 @@ ed_u64 candidate=region_cursor>start?region_cursor:start;
 if(candidate<=end && end-candidate>=PAGE_SIZE) {physical=candidate;region_cursor=candidate+PAGE_SIZE;break;}
 ++region_index;region_cursor=0;
 }}
-if(add_overflows(hhdm,physical)) return (void*)0;
+if(add_overflows(hhdm,physical) || !edos_page_ownership_insert(&ownership,physical)) return (void*)0;
 ed_u64 va=hhdm+physical;
 volatile ed_u64 *words=(volatile ed_u64*)(unsigned long long)va;
 for(ed_u64 i=0;i<PAGE_SIZE/sizeof(ed_u64);++i) words[i]=0;
@@ -82,8 +87,7 @@ if(!initialized || !page || !allocated_pages) return 0;
 ed_u64 va=(ed_u64)(unsigned long long)page;
 if(va<hhdm) return 0;
 ed_u64 physical=va-hhdm;
-if(!physical_page_is_usable(physical)) return 0;
-/* The caller contract requires a page returned by pmm_alloc_page. */
+if(!physical_page_is_usable(physical) || !edos_page_ownership_contains(&ownership,physical)) return 0;
 if((free_pages==0)!=(free_list==(void*)0)) return 0;
 void *node=free_list;
 for(ed_u64 seen=0;node && seen<free_pages;++seen) {
@@ -91,6 +95,7 @@ if(!valid_free_node(node) || node==page) return 0;
 node=(void*)(unsigned long long)*(ed_u64*)node;
 }
 if(node) return 0;
+if(!edos_page_ownership_remove(&ownership,physical)) return 0;
 *(ed_u64*)page=(ed_u64)(unsigned long long)free_list;
 free_list=page; ++free_pages; --allocated_pages; return 1;
 }
@@ -100,7 +105,7 @@ ed_u64 pmm_pages_free(void){return free_pages;}
 ed_u64 memory_hhdm_offset(void){return hhdm;}
 
 int memory_validate(void) {
-if(!initialized || !map || ((free_pages==0)!=(free_list==(void*)0))) return 0;
+if(!initialized || !map || !edos_page_ownership_validate(&ownership) || ownership.count!=allocated_pages || ((free_pages==0)!=(free_list==(void*)0))) return 0;
 ed_u64 count=0; void *node=free_list;
 while(node) {
 if(count>=free_pages || !valid_free_node(node)) return 0;
