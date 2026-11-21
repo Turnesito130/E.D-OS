@@ -43,7 +43,8 @@
     "COM1 UART scratch-register presence detection and bounded transmit polling",
     "syscall dispatcher context validation for WRITE, EXIT, YIELD and GETPID",
     "syscall dispatcher YIELD, EXIT and GETPID integrated with scheduler state transitions and tested together",
-    "COM1 serial diagnostics with UART detection, startup marker and bounded transmit"
+    "COM1 serial diagnostics with UART detection, startup marker and bounded transmit",
+    "x86-64 four-level page-table builder with 4 KiB map, unmap and virtual-to-physical translation"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000."
@@ -55,8 +56,8 @@
     "IPC integration with isolated processes and syscalls",
     "persistent filesystem, VFS, block-device drivers and permission enforcement",
     "ring 3 transition, TSS and user-mode address-space isolation",
-    "SYSCALL/SYSRET entry path and dispatcher invocation from ring 3",
-    "COM1 receive path and interrupt-driven serial I/O"
+    "COM1 receive path and interrupt-driven serial I/O",
+    "CR3 activation, TLB invalidation, page-fault recovery and isolated user address spaces"
   ],
   "linux_reference": {
     "repository": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
