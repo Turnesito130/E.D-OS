@@ -14,6 +14,9 @@
     '  about                información del terminal'
   ];
   const history = [];
+  const HISTORY_LIMIT = 100;
+  const OUTPUT_LIMIT = 300;
+  const COMMAND_MAX_LENGTH = 512;
 
   function attach(win) {
     const output = win.querySelector('[data-terminal-output]');
@@ -25,12 +28,18 @@
       item.textContent = text;
       if (className) item.className = className;
       output.append(item);
+      while (output.children.length > OUTPUT_LIMIT) output.firstElementChild?.remove();
       output.scrollTop = output.scrollHeight;
     };
     const execute = raw => {
       const command = raw.trim();
       if (!command) return;
+      if (command.length > COMMAND_MAX_LENGTH) {
+        line("Comando demasiado largo (máximo " + COMMAND_MAX_LENGTH + " caracteres).");
+        return;
+      }
       history.push(command);
+      if (history.length > HISTORY_LIMIT) history.shift();
       line('$ ' + command, 'window-note');
       const [verb, ...parts] = command.split(/\s+/);
       const argument = parts.join(' ');
