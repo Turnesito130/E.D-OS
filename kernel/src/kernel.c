@@ -26,6 +26,8 @@ static unsigned char boot_disk_storage[18U * 512U];
 static unsigned char boot_disk_write[512];
 static unsigned char boot_disk_read[512];
 static edos_edfs_t boot_edfs, boot_edfs_remount;
+static edos_vfs_t boot_edfs_vfs;
+static char boot_edfs_vfs_buffer[16];
 static char boot_edfs_buffer[32];
 static edos_scheduler_t boot_scheduler;
 static edos_cpu_context_t boot_main_context;
@@ -119,6 +121,16 @@ if(!edos_edfs_format(&boot_block_device)||!edos_edfs_mount(&boot_edfs,&boot_bloc
     serial("EDFS_RUNTIME_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
 }
 serial("EDFS_RUNTIME_OK\n");
+if(!edos_vfs_mount_edfs(&boot_edfs_vfs,&boot_edfs_remount)){
+    serial("VFS_EDFS_MOUNT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
+}
+int edfs_vfs_fd=edos_vfs_open(&boot_edfs_vfs,"/boot.log",EDOS_VFS_READ);
+if(edfs_vfs_fd<0||edos_vfs_read(&boot_edfs_vfs,edfs_vfs_fd,boot_edfs_vfs_buffer,11)!=11||
+   boot_edfs_vfs_buffer[0]!='E'||boot_edfs_vfs_buffer[10]!='S'||
+   !edos_vfs_close(&boot_edfs_vfs,edfs_vfs_fd)){
+    serial("VFS_EDFS_RUNTIME_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
+}
+serial("VFS_EDFS_RUNTIME_OK\n");
 serial("IDT_READY entries=256 exceptions=32\nMEMORY_MAP_OK usable_bytes=");hex(memory_usable_bytes());serial(" hhdm=");hex(memory_hhdm_offset());serial("\n");
 void *p=pmm_alloc_page();if(!p){serial("PMM_ALLOC_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("PMM_ALLOC_ZEROED_OK\n");
