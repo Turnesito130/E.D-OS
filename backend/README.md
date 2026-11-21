@@ -8,6 +8,8 @@ Este servicio es el primer backend ejecutable de E.D. ID y del inventario de dis
 - Hash de contraseña con scrypt y sal aleatoria.
 - Inicio de sesión con token aleatorio opaco; en PostgreSQL solo se guarda su SHA-256.
 - Sesiones con caducidad de 12 horas y cierre de sesión revocable.
+- Gestión de seguridad de cuenta: listado y revocación de sesiones propias, cambio de contraseña y revocación de las demás sesiones.
+- Historial de eventos de seguridad por cuenta (registro, inicio/cierre de sesión, cambio de contraseña y revocación de sesión).
 - Consulta de la cuenta autenticada.
 - Alta del primer dispositivo de la cuenta, listado y revocación de dispositivos. Los siguientes requieren emparejamiento.
 - Consultas SQL parametrizadas y límite básico de intentos por IP en memoria.
@@ -69,6 +71,10 @@ Todas las respuestas son JSON. Las rutas privadas requieren `Authorization: Bear
 | POST | `/v1/auth/register` | Público | Crear cuenta |
 | POST | `/v1/auth/login` | Público | Iniciar sesión |
 | POST | `/v1/auth/logout` | Sesión | Revocar sesión actual |
+| POST | `/v1/auth/change-password` | Sesión | Cambiar contraseña y revocar las demás sesiones |
+| GET | `/v1/security/sessions` | Sesión | Listar sesiones activas propias |
+| DELETE | `/v1/security/sessions/{id}` | Sesión | Revocar una sesión propia |
+| GET | `/v1/security/events` | Sesión | Consultar los últimos 100 eventos de seguridad propios |
 | GET | `/v1/account/me` | Sesión | Consultar identidad |
 | GET | `/v1/devices` | Sesión | Listar dispositivos activos |
 | POST | `/v1/devices` | Sesión | Registrar dispositivo |
@@ -101,7 +107,7 @@ Ejemplo de alta de dispositivo:
 
 Tipos admitidos: `phone`, `tablet`, `computer`, `watch`, `earbuds`, `other`.
 
-## E.D. Cloud experimental\n\nEl cliente solicita una URL PUT firmada y sube directamente al almacenamiento de objetos. Después llama a `POST /v1/cloud/files/{id}/complete`; el servidor comprueba tamaño y tipo MIME con HEAD antes de marcar el archivo como disponible. Las descargas usan URLs GET firmadas de cinco minutos. Límite: 50 MB por archivo y cuota lógica de 2 GB por cuenta. Configura CORS del bucket para permitir PUT desde el origen del escritorio y el header `Content-Type`. Las reservas de cuota se serializan por cuenta con bloqueos transaccionales de PostgreSQL. Las cargas que siguen en estado `uploading` tras 60 minutos pasan a `deleting`; un proceso periódico las elimina del almacenamiento y después de la base de datos. Si el proveedor falla, la fila permanece en `deleting` para reintentarse en la siguiente ejecución. El barrido se inicia 30 segundos después del arranque y se repite cada 15 minutos. No hay cifrado E2EE ni análisis antimalware.\n\nSi faltan variables S3, las rutas Cloud devuelven 503; no se guarda el archivo localmente como sustituto.\n\n## Reglas antes de producción
+## E.D. Cloud experimental\n\nEl cliente solicita una URL PUT firmada y sube directamente al almacenamiento de objetos. Después llama a `POST /v1/cloud/files/{id}/complete`; el servidor comprueba tamaño y tipo MIME con HEAD antes de marcar el archivo como disponible. Las descargas usan URLs GET firmadas de cinco minutos. Límite: 50 MB por archivo y cuota lógica de 2 GB por cuenta. Configura CORS del bucket para permitir PUT desde el origen del escritorio y el header `Content-Type`. Las reservas de cuota se serializan por cuenta con bloqueos transaccionales de PostgreSQL. Las cargas que siguen en estado `uploading` tras 60 minutos pasan a `deleting`; un proceso periódico las elimina del almacenamiento y después de la base de datos. Si el proveedor falla, la fila permanece en `deleting` para reintentarse en la siguiente ejecución. El barrido se inicia 30 segundos después del arranque y se repite cada 15 minutos. No hay cifrado E2EE ni análisis antimalware.\n\nSi faltan variables S3, las rutas Cloud devuelven 503; no se guarda el archivo localmente como sustituto.\n\n### Seguridad de cuenta 0.2\n\n- Ejecuta de nuevo `psql "$DATABASE_URL" -f schema.sql` para crear la tabla `account_security_events` en una base de datos existente. El esquema usa `CREATE TABLE IF NOT EXISTS`.\n- `GET /v1/security/sessions` devuelve solo sesiones activas y señala la sesión actual. `DELETE /v1/security/sessions/{id}` solo puede revocar sesiones de la cuenta autenticada.\n- `POST /v1/auth/change-password` recibe `currentPassword` y `newPassword` (12–200 caracteres). Tras verificar la contraseña actual, guarda un nuevo hash scrypt y revoca todas las demás sesiones; la sesión actual permanece activa.\n- `GET /v1/security/events` devuelve hasta 100 eventos de la cuenta autenticada. No incluye contraseñas ni tokens. La IP de conexión se registra para investigación de seguridad.\n- Estas funciones todavía no equivalen a MFA, passkeys, recuperación segura ni auditoría externa.\n\n## Reglas antes de producción
 
 - Añadir verificación de correo y recuperación de cuenta segura.
 - Añadir una pantalla cliente que cree y apruebe emparejamientos, y pruebas automatizadas de caducidad, uso único y revocación.
