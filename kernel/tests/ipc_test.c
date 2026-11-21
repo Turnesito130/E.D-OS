@@ -11,5 +11,9 @@ int main(void) {
  assert(!edos_ipc_send(&q,&in));
  assert(edos_ipc_receive(&q,&out)); assert(edos_ipc_send(&q,&in));
  in.length=EDOS_IPC_PAYLOAD_MAX+1U; assert(!edos_ipc_send(&q,&in));
+ edos_ipc_queue_t corrupt={.head=EDOS_IPC_QUEUE_CAPACITY,.tail=0,.count=0};
+ assert(!edos_ipc_send(&corrupt,&in));
+ corrupt.head=0; corrupt.tail=0; corrupt.count=EDOS_IPC_QUEUE_CAPACITY+1U;
+ assert(!edos_ipc_receive(&corrupt,&out));
  puts("IPC_TESTS_OK"); return 0;
 }
