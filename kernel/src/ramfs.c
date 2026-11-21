@@ -50,3 +50,22 @@ int edos_ramfs_delete(edos_ramfs_t *fs,const char *name) {
  for(ed_u64 i=0;i<EDOS_RAMFS_FILE_CAPACITY;++i) f->data[i]=0;
  f->used=0; f->size=0; f->name[0]=0; return 1;
 }
+
+ed_u64 edos_ramfs_read_at(edos_ramfs_t *fs,const char *name,ed_u64 offset,void *buffer,ed_u64 capacity) {
+ edos_ramfs_file_t *f=find_file(fs,name);
+ if(!f || (!buffer && capacity) || offset>f->size) return 0;
+ ed_u64 remaining=f->size-offset;
+ ed_u64 count=remaining<capacity?remaining:capacity;
+ unsigned char *dst=(unsigned char*)buffer;
+ for(ed_u64 i=0;i<count;++i) dst[i]=f->data[offset+i];
+ return count;
+}
+int edos_ramfs_write_at(edos_ramfs_t *fs,const char *name,ed_u64 offset,const void *data,ed_u64 length) {
+ edos_ramfs_file_t *f=find_file(fs,name);
+ if(!f || (!data && length) || offset>EDOS_RAMFS_FILE_CAPACITY ||
+    length>EDOS_RAMFS_FILE_CAPACITY-offset) return 0;
+ const unsigned char *src=(const unsigned char*)data;
+ for(ed_u64 i=0;i<length;++i) f->data[offset+i]=src[i];
+ if(offset+length>f->size) f->size=offset+length;
+ return 1;
+}
