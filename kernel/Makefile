@@ -51,6 +51,9 @@ $(BUILD_DIR)/ramfs.o: src/ramfs.c include/ramfs.h include/memory.h | $(BUILD_DIR
 $(BUILD_DIR)/ipc.o: src/ipc.c include/ipc.h include/memory.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
+$(BUILD_DIR)/edfs.o: src/edfs.c include/edfs.h include/block.h include/memory.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
 $(BUILD_DIR)/block.o: src/block.c include/block.h include/memory.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
@@ -76,7 +79,7 @@ $(BUILD_DIR)/syscall.o: src/syscall.c include/syscall.h include/scheduler.h incl
 $(BUILD_DIR)/interrupts.o: src/interrupts.S | $(BUILD_DIR)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
-$(TARGET): $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/gdt-load.o $(BUILD_DIR)/context.o $(BUILD_DIR)/context-switch.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/paging.o $(BUILD_DIR)/keyboard.o $(BUILD_DIR)/irq.o $(BUILD_DIR)/block.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/ramfs.o $(BUILD_DIR)/vfs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/serial.o $(BUILD_DIR)/syscall.o $(BUILD_DIR)/interrupts.o linker.ld
+$(TARGET): $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/gdt-load.o $(BUILD_DIR)/context.o $(BUILD_DIR)/context-switch.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/paging.o $(BUILD_DIR)/keyboard.o $(BUILD_DIR)/irq.o $(BUILD_DIR)/block.o $(BUILD_DIR)/edfs.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/ramfs.o $(BUILD_DIR)/vfs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/serial.o $(BUILD_DIR)/syscall.o $(BUILD_DIR)/interrupts.o linker.ld
 	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/gdt-load.o $(BUILD_DIR)/context.o $(BUILD_DIR)/context-switch.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/paging.o $(BUILD_DIR)/keyboard.o $(BUILD_DIR)/irq.o $(BUILD_DIR)/block.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/ramfs.o $(BUILD_DIR)/vfs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/serial.o $(BUILD_DIR)/syscall.o $(BUILD_DIR)/interrupts.o
 
 iso: $(TARGET)
