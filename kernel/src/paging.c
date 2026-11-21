@@ -41,6 +41,38 @@ int edos_paging_init(edos_paging_space_t *space,
     return 1;
 }
 
+
+int edos_paging_adopt(edos_paging_space_t *space, ed_u64 root_physical,
+                      edos_paging_alloc_fn alloc_page,
+                      edos_paging_phys_to_virt_fn phys_to_virt, void *opaque) {
+    if (!space || !alloc_page || !phys_to_virt ||
+        (root_physical & (PAGE_SIZE - 1ULL)) ||
+        (root_physical & ~EDOS_PAGE_ADDRESS_MASK) ||
+        !phys_to_virt(root_physical, opaque)) return 0;
+    space->root_physical = root_physical;
+    space->alloc_page = alloc_page;
+    space->phys_to_virt = phys_to_virt;
+    space->opaque = opaque;
+    space->initialized = 1;
+    return 1;
+}
+
+int edos_paging_find_unused_pml4(const edos_paging_space_t *space,
+                                  ed_u64 *virtual_out) {
+    if (!space || !space->initialized || !virtual_out) return 0;
+    ed_u64 *root = space->phys_to_virt(space->root_physical, space->opaque);
+    if (!root) return 0;
+    /* Search canonical high-half slots, excluding the kernel's final slot. */
+    for (unsigned int index = 256U; index < 511U; ++index) {
+        if (!(root[index] & EDOS_PAGE_PRESENT)) {
+            *virtual_out = 0xffff800000000000ULL |
+                           ((ed_u64)index << 39);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static ed_u64 *ensure_child(edos_paging_space_t *space, ed_u64 *parent,
                             unsigned int index, int user) {
     ed_u64 entry = parent[index];
