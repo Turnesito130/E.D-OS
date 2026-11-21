@@ -11,3 +11,9 @@ export function normalizePermissionGrant(input) {
   if (keys.some(key => typeof input[key] !== "boolean")) return null;
   return Object.fromEntries(APP_CAPABILITIES.map(capability => [capability, input[capability] === true]));
 }
+
+export function permissionDecision({ credentialActive, grant }) {
+  if (credentialActive !== true) return { allowed: false, reason: "invalid_app_credential" };
+  if (grant !== true) return { allowed: false, reason: "permission_not_granted" };
+  return { allowed: true, reason: "granted" };
+}
