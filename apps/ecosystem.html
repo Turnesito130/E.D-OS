@@ -55,6 +55,20 @@ footer{font-size:10px;color:#a1a8b1;text-align:center;padding:20px}
 <button class="primary" id="changePassword">Actualizar contraseña</button><div class="status" id="securityStatus" aria-live="polite"></div>
 <hr style="border:0;border-top:1px solid #eef0f3;margin:18px 0">
 <h2>Actividad de seguridad</h2><div id="securityEvents" class="muted">Todavía no se ha cargado el historial.</div>
+<hr style="border:0;border-top:1px solid #eef0f3;margin:18px 0">
+<h2>Aplicaciones y credenciales</h2>
+<p class="muted">Cada aplicación usa su propio secreto. La credencial se muestra una sola vez; guárdala de forma segura y no la publiques.</p>
+<div class="row"><div class="field"><label>ID de aplicación</label><input id="appId" maxlength="64" placeholder="ed.notes"></div><button class="primary" id="issueApp">Emitir / rotar credencial</button></div>
+<div class="status" id="appCredentialStatus" aria-live="polite"></div>
+<div class="field hidden" id="appCredentialToken"><label>Credencial nueva (cópiala ahora; no se volverá a mostrar)</label></div>
+<h3>Aplicaciones activas</h3><div id="appList" class="muted">Todavía no se han cargado aplicaciones.</div>
+<hr style="border:0;border-top:1px solid #eef0f3;margin:18px 0">
+<h2>Permisos por aplicación</h2>
+<p class="muted">Los permisos empiezan denegados. La API permite a cada app comprobar su credencial y capacidad antes de solicitar acceso.</p>
+<div class="row"><div class="field"><label>ID de aplicación</label><input id="permissionAppId" maxlength="64" placeholder="ed.notes"></div><button id="loadAppPermissions">Consultar permisos</button></div>
+<div id="appPermissionControls" class="muted">Introduce el ID de una aplicación para consultar sus permisos.</div>
+<button class="primary" id="saveAppPermissions">Guardar permisos</button>
+<div class="status" id="appPermissionStatus" aria-live="polite"></div>
 </section>
 <footer>Prototipo experimental · No usar con datos personales reales · La sesión solo vive en memoria de esta página.</footer>
 </main>
@@ -63,6 +77,7 @@ footer{font-size:10px;color:#a1a8b1;text-align:center;padding:20px}
 (() => {
 'use strict';
 let token = null, account = null, devices = [];
+let appCapabilities = [], appPermissionGrants = [];
 let pairingPollTimer = null, pairingExpiresAt = 0;
 const $ = id => document.getElementById(id);
 const api = () => $('api').value.trim().replace(/\/$/, '');
@@ -185,6 +200,54 @@ function renderSecurityRows(container, rows, kind) {
     $(container).append(row);
   });
 }
+function validAppId(value) { return /^[a-z0-9][a-z0-9._-]{0,63}$/.test(value); }
+function renderAppPermissionControls(appId) {
+  const container=$('appPermissionControls');
+  container.replaceChildren();
+  if(!validAppId(appId)) { container.textContent='El ID de aplicación no es válido.'; return; }
+  const saved=appPermissionGrants.filter(grant=>grant.app_id===appId);
+  appCapabilities.forEach(capability=>{
+    const label=document.createElement('label');
+    label.style.display='flex'; label.style.alignItems='center'; label.style.gap='10px';
+    label.style.padding='8px 2px';
+    const input=document.createElement('input');
+    input.type='checkbox'; input.dataset.capability=capability;
+    input.checked=saved.some(grant=>grant.capability===capability&&grant.granted===true);
+    const text=document.createElement('span'); text.textContent=capability;
+    label.append(input,text); container.append(label);
+  });
+}
+async function refreshAppSecurity() {
+  try {
+    const [apps,permissions]=await Promise.all([
+      call('/v1/security/apps'), call('/v1/security/app-permissions')
+    ]);
+    appPermissionGrants=permissions.data.grants||[];
+    appCapabilities=permissions.data.capabilities||[];
+    const list=$('appList'); list.replaceChildren();
+    if(!apps.data.apps.length) list.textContent='No hay aplicaciones activas.';
+    apps.data.apps.forEach(app=>{
+      const row=document.createElement('div'); row.className='device';
+      const info=document.createElement('span'); info.textContent=app.app_id;
+      const meta=document.createElement('small');
+      meta.textContent=app.last_used_at?'Último uso: '+new Date(app.last_used_at).toLocaleString():'Sin uso registrado';
+      info.append(meta);
+      const revoke=document.createElement('button'); revoke.textContent='Revocar';
+      revoke.addEventListener('click',()=>revokeApp(app.app_id));
+      row.append(info,revoke); list.append(row);
+    });
+    const selected=$('permissionAppId').value.trim();
+    if(selected) renderAppPermissionControls(selected);
+  } catch(error) { status('appPermissionStatus',error.message); }
+}
+async function revokeApp(appId) {
+  if(!confirm('¿Revocar la credencial de '+appId+'?')) return;
+  try {
+    await call('/v1/security/apps/'+encodeURIComponent(appId),{method:'DELETE'});
+    status('appCredentialStatus','Credencial revocada.');
+    await refreshAppSecurity();
+  } catch(error) { status('appCredentialStatus',error.message); }
+}
 async function refreshSecurity() {
   try {
     const [sessions,events]=await Promise.all([
@@ -193,9 +256,41 @@ async function refreshSecurity() {
     renderSecurityRows('securitySessions',sessions.data.sessions||[],'session');
     renderSecurityRows('securityEvents',events.data.events||[],'event');
     status('securityStatus','Información de seguridad actualizada.');
+    await refreshAppSecurity();
   } catch(e) { status('securityStatus',e.message); }
 }
 $('refreshSecurity').onclick=refreshSecurity;
+$('issueApp').onclick=async()=>{
+  const appId=$('appId').value.trim();
+  if(!validAppId(appId)){status('appCredentialStatus','Usa minúsculas, números, punto, guion o guion bajo (máximo 64).');return;}
+  try {
+    const {data}=await call('/v1/security/apps',{method:'POST',body:JSON.stringify({appId})});
+    const field=document.createElement('input'); field.type='text'; field.readOnly=true;
+    field.value=data.appToken; field.autocomplete='off'; field.spellcheck=false;
+    $('appCredentialToken').replaceChildren(Object.assign(document.createElement('label'),{textContent:'Credencial nueva (cópiala ahora; no se volverá a mostrar)'}),field);
+    show('appCredentialToken',true);
+    $('permissionAppId').value=appId;
+    status('appCredentialStatus','Credencial emitida. La anterior, si existía, ha quedado sustituida.');
+    await refreshAppSecurity();
+    renderAppPermissionControls(appId);
+  } catch(error) { status('appCredentialStatus',error.message); }
+};
+$('loadAppPermissions').onclick=()=>renderAppPermissionControls($('permissionAppId').value.trim());
+$('saveAppPermissions').onclick=async()=>{
+  const appId=$('permissionAppId').value.trim();
+  if(!validAppId(appId)){status('appPermissionStatus','El ID de aplicación no es válido.');return;}
+  const grants={};
+  $('appPermissionControls').querySelectorAll('input[data-capability]').forEach(input=>{
+    grants[input.dataset.capability]=input.checked;
+  });
+  try {
+    await call('/v1/security/app-permissions/'+encodeURIComponent(appId),{
+      method:'PUT',body:JSON.stringify({grants})
+    });
+    status('appPermissionStatus','Permisos guardados. Las capacidades no marcadas permanecen denegadas.');
+    await refreshAppSecurity();
+  } catch(error) { status('appPermissionStatus',error.message); }
+};
 $('changePassword').onclick=async()=>{
   try {
     status('securityStatus','Actualizando contraseña…');
