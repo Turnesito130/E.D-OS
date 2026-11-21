@@ -114,6 +114,7 @@ jobs:
           grep -q "PAGING_TABLES_OK" kernel/build/qemu-serial.log
           grep -q "PAGING_ACTIVE_MAP_OK" kernel/build/qemu-serial.log
           grep -q "PCI_ENUMERATION_OK" kernel/build/qemu-serial.log
+          grep -q "PCI_BAR_DECODE_OK" kernel/build/qemu-serial.log
           grep -q "PS2_KEYBOARD_IRQ_READY" kernel/build/qemu-serial.log
           grep -q "PIT_TIMER_IRQ_OK" kernel/build/qemu-serial.log
           grep -q "SCHEDULER_CONTEXT_SWITCH_OK" kernel/build/qemu-serial.log
@@ -156,6 +157,7 @@ jobs:
           grep -q "VFS_EDFS_RUNTIME_OK" kernel/build/qemu-uefi-serial.log
           grep -q "PAGING_ACTIVE_MAP_OK" kernel/build/qemu-uefi-serial.log
           grep -q "PCI_ENUMERATION_OK" kernel/build/qemu-uefi-serial.log
+          grep -q "PCI_BAR_DECODE_OK" kernel/build/qemu-uefi-serial.log
           grep -q "PIT_TIMER_IRQ_OK" kernel/build/qemu-uefi-serial.log
           grep -q "EXCEPTION vector=0x000000000000000e" kernel/build/qemu-uefi-serial.log
           grep -q "PAGE_FAULT_ADDRESS=" kernel/build/qemu-uefi-serial.log
