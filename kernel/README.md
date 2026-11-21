@@ -13,13 +13,22 @@ E.D-OS tendrá un kernel propio e independiente. Linux se estudia como referenci
 - IDT de 256 entradas y stubs para excepciones.
 - Pruebas QEMU superadas: asignar, liberar, rechazar doble liberación, reutilizar la misma página, comprobar que vuelve a cero y validar la lista libre. El handler de page fault identifica el vector 14 y registra CR2; una prueba de arranque provoca un fallo controlado en una dirección virtual desmapeada.
 
-## Descubrimiento de dispositivos PCI
+## Controlador ATA PIO inicial
+
+- Detecta dispositivos ATA master/slave del canal primario mediante IDENTIFY DEVICE.
+- Expone el disco como dispositivo de bloques de 512 bytes y realiza lectura/escritura PIO con LBA28 y espera acotada por timeout.
+- La prueba QEMU usa un disco IDE virtual de 16 MiB y verifica lectura del sector 0 y su firma MBR en modo BIOS.
+
+**Límites:** no hay DMA, AHCI/SATA, LBA48, hotplug ni prueba de escritura física confirmada en este hito. El controlador no debe confundirse con soporte universal de discos.
+
+## Descubrimiento PCI y recursos BAR
 
 - Enumerador x86 de configuración PCI legacy (CF8/CFC): recorre buses, slots y funciones, identifica fabricante/dispositivo, clase, subclase, interfaz y tipo de cabecera.
 - Respeta el bit multifunción de la función 0 y no consulta funciones adicionales de dispositivos que no las declaran.
-- Tiene lector abstracto para pruebas host y se ejecuta durante el arranque; el workflow exige el marcador de enumeración en BIOS y UEFI.
+- Decodifica BAR de E/S y memoria, direcciones de 32/64 bits y atributo prefetchable, respetando el BAR superior de recursos de 64 bits.
+- Tiene lector abstracto para pruebas host y se ejecuta durante el arranque; QEMU BIOS y UEFI detectan 6 dispositivos y decodifican sus BAR.
 
-**Límites:** por ahora descubre e inventaría dispositivos; todavía no enlaza controladores ni implementa PCIe ECAM, interrupciones MSI/MSI-X, DMA, AHCI, NVMe, USB, red o gráficos.
+**Límites:** todavía no enlaza controladores PCI de forma automática, no mide tamaños BAR ni mapea regiones MMIO; faltan PCIe ECAM, MSI/MSI-X y DMA.
 
 ## Límites conocidos
 
