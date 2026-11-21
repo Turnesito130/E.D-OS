@@ -9,6 +9,7 @@ int main(void) {
     assert(buddy_init(&allocator, metadata, 64));
     assert(buddy_add_range(&allocator, 0, 64));
     assert(buddy_free_page_count(&allocator) == 64);
+    assert(buddy_validate(&allocator));
     assert(!buddy_add_range(&allocator, 0, 4));
     assert(buddy_free_page_count(&allocator) == 64);
 
@@ -17,6 +18,7 @@ int main(void) {
     assert(a == 0);
     assert(b == 4);
     assert(buddy_free_page_count(&allocator) == 58);
+    assert(buddy_validate(&allocator));
     assert(!buddy_free(&allocator, a, 1));
     assert(buddy_free(&allocator, a, 2));
     assert(!buddy_free(&allocator, a, 2));
@@ -29,17 +31,22 @@ int main(void) {
     assert(!buddy_free(&allocator, whole, 5));
     assert(buddy_free(&allocator, whole, 6));
     assert(buddy_free_page_count(&allocator) == 64);
+    assert(buddy_validate(&allocator));
 
     buddy_allocator_t partial;
     buddy_page_t partial_metadata[32];
     assert(buddy_init(&partial, partial_metadata, 32));
     assert(buddy_add_range(&partial, 3, 20));
     assert(buddy_free_page_count(&partial) == 20);
+    assert(buddy_validate(&partial));
     ed_u64 p = buddy_alloc(&partial, 2);
     assert(p != BUDDY_NONE);
     assert((p & 3U) == 0U);
     assert(buddy_free(&partial, p, 2));
     assert(buddy_free_page_count(&partial) == 20);
+    assert(buddy_validate(&partial));
+    ed_u64 saved_head = partial.free_heads[partial.pages[partial.free_heads[0]].order];
+    (void)saved_head;
 
     puts("BUDDY_TESTS_OK");
     return 0;
