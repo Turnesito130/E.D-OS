@@ -103,3 +103,16 @@ ALTER TABLE cloud_files ADD CONSTRAINT cloud_files_status_check
   CHECK (status IN ('uploading', 'completed', 'deleting'));
 CREATE INDEX IF NOT EXISTS cloud_files_cleanup_idx
   ON cloud_files(created_at) WHERE status IN ('uploading', 'deleting');
+
+
+-- Historial mínimo de seguridad por cuenta. No registrar contraseñas, tokens ni secretos.
+CREATE TABLE IF NOT EXISTS account_security_events (
+  id BIGSERIAL PRIMARY KEY,
+  account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  event_type TEXT NOT NULL CHECK (length(event_type) BETWEEN 1 AND 80),
+  ip_address INET,
+  details JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS account_security_events_account_time_idx
+  ON account_security_events(account_id, created_at DESC);
