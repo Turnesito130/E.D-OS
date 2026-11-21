@@ -92,15 +92,16 @@ function writeSyncCache(value) { return account ? EDOSyncQueue.writeCache(value,
 function renderPendingSync() {
   if(!account){status('syncQueueStatus','Inicia sesión para consultar la cola de esta cuenta.');return;}
   const entries = Object.entries(readPendingSync());
+  const cacheCount = Object.keys(readSyncCache()).length;
   const conflictEntries = entries.filter(([, item]) => item.conflict);
   const conflicts = conflictEntries.length;
   const conflictSummary = conflictEntries.slice(0, 3)
     .map(([key, item]) => key + ' (versión servidor: ' + (item.currentVersion ?? '?') + ')')
     .join(', ');
   status('syncQueueStatus', entries.length
-    ? entries.length + ' cambio(s) pendiente(s) en este navegador' +
+    ? entries.length + ' cambio(s) pendiente(s) · ' + cacheCount + ' elemento(s) en caché' +
       (conflicts ? ' · Revisa: ' + conflictSummary : '')
-    : 'Sin cambios pendientes.');
+    : cacheCount + ' elemento(s) en caché local; sin cambios pendientes.');
 }
 async function flushPendingSync() {
   if (!token || !account || !navigator.onLine) { renderPendingSync(); return; }
@@ -113,6 +114,9 @@ async function flushPendingSync() {
         body:JSON.stringify({expectedVersion:item.expectedVersion,payload:item.payload})
       });
       EDOSyncQueue.remove(pending,key);
+      const cache=readSyncCache();
+      cache[key]={version:data.item.version,deleted:false,payload:data.item.payload,updatedAt:data.item.updated_at};
+      writeSyncCache(cache);
       if ($('syncKey').value.trim() === key) $('syncVersion').value = data.item.version;
     } catch (error) {
       item.lastError = error.message;
@@ -125,6 +129,23 @@ async function flushPendingSync() {
   }
   writePendingSync(pending);
   renderPendingSync();
+}
+async function pullRemoteSync() {
+  if(!token||!account||!navigator.onLine) return;
+  try {
+    const {data}=await call('/v1/sync/items');
+    const pending=readPendingSync();
+    const cache=readSyncCache();
+    for(const item of data.items||[]) {
+      if(Object.prototype.hasOwnProperty.call(pending,item.item_key)) continue;
+      cache[item.item_key]={
+        version:item.version,deleted:item.deleted===true,
+        payload:item.deleted?null:item.payload,updatedAt:item.updated_at
+      };
+    }
+    if(!writeSyncCache(cache)) throw new Error('No se pudo guardar la caché local de sincronización.');
+    renderPendingSync();
+  } catch(error) { status('syncQueueStatus','No se pudo actualizar la caché: '+error.message); }
 }
 async function call(path, options = {}, auth = true) {
   if (!api() || !/^https:\/\//i.test(api())) throw new Error('Introduce la dirección HTTPS de la API.');
@@ -144,7 +165,7 @@ function enter(data) {
   show('auth', false); show('dashboard', true); show('pair', true); show('sync', true); show('cloud', true); show('security', true);
   refresh();
   refreshSecurity();
-  flushPendingSync();
+  flushPendingSync().then(pullRemoteSync);
 }
 async function auth(mode) {
   try {
@@ -380,21 +401,21 @@ $('saveSync').onclick=async()=>{
     if(!queued.ok)throw new Error(queued.error);
     if(!writePendingSync(pending))throw new Error('No se pudo guardar la cola local; comprueba el almacenamiento del navegador.');
     renderPendingSync();
-    if(token&&navigator.onLine)await flushPendingSync();
-    $('syncResult').textContent=JSON.stringify({key,payload,status:readPendingSync()[key]?'pendiente':'sincronizado'},null,2);
+    if(token&&navigator.onLine){await flushPendingSync();await pullRemoteSync();}
+    $('syncResult').textContent=JSON.stringify({key,payload,status:readPendingSync()[key]?'pendiente':'sincronizado',localCache:readSyncCache()[key]||null},null,2);
   } catch(e) { $('syncResult').textContent=e.message; }
 };
 $('loadSync').onclick=async()=>{
   try {
-    const {data}=await call('/v1/sync/items');
+    await pullRemoteSync();
     const key=$('syncKey').value.trim();
-    const current=data.items.find(item=>item.item_key===key);
-    if(current)$('syncVersion').value=current.version;
-    $('syncResult').textContent=JSON.stringify({serverItems:data.items,pendingChanges:readPendingSync()},null,2);
+    const current=readSyncCache()[key];
+    if(current){$('syncVersion').value=current.version;if(!current.deleted)$('syncPayload').value=JSON.stringify(current.payload,null,2);}
+    $('syncResult').textContent=JSON.stringify({localCache:readSyncCache(),pendingChanges:readPendingSync()},null,2);
   } catch(e){$('syncResult').textContent=e.message;}
 };
-$('retrySync').onclick=flushPendingSync;
-window.addEventListener('online',flushPendingSync);
+$('retrySync').onclick=async()=>{await flushPendingSync();await pullRemoteSync();};
+window.addEventListener('online',async()=>{await flushPendingSync();await pullRemoteSync();});
 renderPendingSync();
 async function refreshCloud() {
   try {
