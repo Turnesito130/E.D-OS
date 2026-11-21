@@ -53,6 +53,19 @@ test("cola local limita el número de claves y marca conflictos", () => {
   assert.equal(api.write(queue), true);
 });
 
+test("caché local conserva versiones remotas y tombstones", () => {
+  const { api, storage } = createQueueApi();
+  const cache = api.readCache(storage);
+  cache["settings"] = { version: 3, deleted: false, payload: { theme: "dark" } };
+  cache["old-item"] = { version: 4, deleted: true, payload: null };
+  assert.equal(api.writeCache(cache, storage), true);
+  const restored = api.readCache(storage);
+  assert.equal(restored.settings.version, 3);
+  assert.equal(restored.settings.payload.theme, "dark");
+  assert.equal(restored["old-item"].deleted, true);
+  assert.equal(restored["old-item"].version, 4);
+});
+
 test("cola local tolera almacenamiento inaccesible", () => {
   const storage = {
     getItem() { throw new Error("blocked"); },
