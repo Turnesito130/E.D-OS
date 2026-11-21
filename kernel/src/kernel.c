@@ -1,16 +1,15 @@
 #include "memory.h"
 #include "idt.h"
+#include "serial.h"
 typedef unsigned char u8; typedef unsigned short u16; typedef unsigned long long u64;
 __attribute__((used,section(".limine_requests"),aligned(8)))
 volatile u64 limine_base_revision[3]={0xf9562b2d5c95a6c8ULL,0x6a7b384944536bdcULL,3};
-static inline void outb(u16 p,u8 v){__asm__ volatile("outb %0, %1"::"a"(v),"Nd"(p));}
-static inline u8 inb(u16 p){u8 v;__asm__ volatile("inb %1, %0":"=a"(v):"Nd"(p));return v;}
-static void serial_init(void){outb(0x3F9,0);outb(0x3FB,0x80);outb(0x3F8,1);outb(0x3F9,0);outb(0x3FB,3);outb(0x3FA,0xC7);outb(0x3FC,0x0B);}
-static void serial_char(char c){unsigned int t=1000000;while(!(inb(0x3FD)&0x20)&&t)--t;if(t)outb(0x3F8,(u8)c);}
-static void serial(const char*s){while(*s){if(*s=='\n')serial_char('\r');serial_char(*s++);}}
+static void serial_char(char c){(void)edos_serial_write_char(c);}
+static void serial(const char*s){(void)edos_serial_write(s);}
 static void hex(u64 v){static const char d[]="0123456789abcdef";serial("0x");for(int s=60;s>=0;s-=4)serial_char(d[(v>>s)&15]);}
 __attribute__((noreturn)) void kernel_main(void){
-serial_init();serial("\nE.D-OS kernel 0.0.4\n");
+if (!edos_serial_init()) { for(;;)__asm__ volatile("cli; hlt"); }
+serial("\nE.D-OS kernel 0.0.5\n");
 if(limine_base_revision[2]!=0){serial("BOOT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("BOOT_PROTOCOL=Limine revision 3\n");
 if(!memory_init()){serial("MEMORY_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
