@@ -27,6 +27,10 @@ int edos_paging_init(edos_paging_space_t *space,
                      edos_paging_alloc_fn alloc_page,
                      edos_paging_phys_to_virt_fn phys_to_virt,
                      void *opaque);
+int edos_paging_adopt(edos_paging_space_t *space, ed_u64 root_physical,
+                      edos_paging_alloc_fn alloc_page,
+                      edos_paging_phys_to_virt_fn phys_to_virt, void *opaque);
+int edos_paging_find_unused_pml4(const edos_paging_space_t *space, ed_u64 *virtual_out);
 int edos_paging_map_4k(edos_paging_space_t *space, ed_u64 virtual_address,
                        ed_u64 physical_address, ed_u64 flags);
 int edos_paging_unmap_4k(edos_paging_space_t *space, ed_u64 virtual_address,
