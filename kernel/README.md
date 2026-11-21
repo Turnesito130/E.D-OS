@@ -23,7 +23,7 @@ E.D-OS tendrá un kernel propio e independiente. Linux se estudia como referenci
 
 ## Límites conocidos
 
-El registro de propiedad es una tabla hash estática de 262.144 entradas (2 MiB de metadatos; límite teórico de 1 GiB de páginas simultáneamente asignadas). El heap admite hasta 4032 bytes por asignación y no hace asignaciones contiguas de varias páginas; tampoco hay bloqueo SMP ni integración completa con el buddy allocator. Esto sigue siendo un asignador bootstrap, no uno de producción.
+El registro de propiedad es una tabla hash estática de 262.144 entradas (2 MiB de metadatos; límite teórico de 1 GiB de páginas simultáneamente asignadas). El heap admite hasta 4032 bytes por asignación y no hace asignaciones contiguas de varias páginas; tampoco hay bloqueo SMP ni integración completa con el buddy allocator. La preempción actual es solo entre tareas de kernel ring 0: no hay aislamiento ring 3, espacios de direcciones por proceso, guardado de FPU/SIMD ni SMP. Esto sigue siendo un kernel inicial, no uno de producción.
 
 ## Construcción y verificación
 
@@ -38,7 +38,7 @@ El workflow compila ELF e ISO híbrida y arranca en QEMU BIOS y UEFI. El hito so
 
 ## Nuevos subsistemas en fase inicial (0.1)
 
-- Planificador cooperativo: tabla fija de 32 tareas, estados READY/RUNNING/BLOCKED/EXITED, preparación de pilas y contextos, cambio real de pila/registros entre tareas, transición de estados y validación de invariantes. La prueba host alterna dos tareas y el arranque QEMU repite el cambio entre dos tareas sobre pilas estáticas dedicadas. El tick PIT sigue siendo independiente y no realiza preempción.
+- Planificador de hasta 32 tareas: estados READY/RUNNING/BLOCKED/EXITED, cambio cooperativo de contexto y cambio preemptivo por IRQ0/PIT. Los frames de interrupción guardan y restauran registros generales y el frame completo de `IRETQ` en long mode (RIP/CS/RFLAGS/RSP/SS). La prueba host verifica la rotación de tres frames; el arranque BIOS/UEFI ejecuta dos tareas de carga y una de monitor, y exige que ambas reciban CPU.
 - Heap de kernel: nueve clases slab (16, 32, 64, 128, 256, 512, 1024, 2048 y 4032 bytes), zero-on-alloc/free, comprobación de punteros y bitmap de ocupación, liberación de páginas vacías sobrantes al PMM y pruebas host de reutilización, doble liberación y expansión a varios slabs. El arranque QEMU comprueba asignar, limpiar, liberar y reutilizar un bloque.
 - IPC: colas circulares acotadas de 16 mensajes con payload máximo de 64 bytes y endpoints asociados a una tarea propietaria. El envío valida que el emisor sea la tarea actual; la recepción puede bloquear al receptor, y un envío despierta la tarea bloqueada. Se prueba el cambio real de contexto entre emisor y receptor. Todavía no hay aislamiento entre procesos, sincronización SMP ni llamadas desde modo usuario.
 - RAMFS: sistema de archivos temporal en memoria con hasta 16 archivos de 256 bytes, creación, lectura, escritura completa y borrado; rechaza nombres con separadores de ruta y límites excedidos. No es persistente y no tiene directorios jerárquicos, permisos, caché ni integración con dispositivos de bloques.
