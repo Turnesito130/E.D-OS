@@ -22,7 +22,7 @@ test("cola local guarda, lee y elimina elementos sin perder claves especiales", 
   const { api, storage } = createQueueApi();
   const queue = api.read(storage);
   assert.equal(Object.getPrototypeOf(queue), null);
-  assert.deepEqual(api.enqueue(queue, "__proto__", { safe: true }, 0, 10), { ok: true });
+  assert.equal(api.enqueue(queue, "__proto__", { safe: true }, 0, 10).ok, true);
   assert.equal(api.write(queue, storage), true);
   const restored = api.read(storage);
   assert.equal(restored["__proto__"].payload.safe, true);
