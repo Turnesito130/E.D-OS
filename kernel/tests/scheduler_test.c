@@ -93,12 +93,13 @@ int main(void) {
                                                            sizeof(irq_stack_c), task_returned);
     assert(initial_a && initial_b && initial_c);
     ed_u64 stack_top = ((ed_u64)(unsigned long long)irq_stack_a + sizeof(irq_stack_a)) & ~15ULL;
-    assert((ed_u64)(unsigned long long)initial_a + 160ULL == stack_top - 8ULL);
+    assert((ed_u64)(unsigned long long)initial_a + 176ULL == stack_top - 8ULL);
     assert(*((ed_u64 *)(unsigned long long)(stack_top - 8ULL)) ==
            (ed_u64)(unsigned long long)task_returned);
     ed_u64 *initial_words = (ed_u64 *)initial_a;
     assert(initial_words[17] == (ed_u64)(unsigned long long)task_a);
     assert(initial_words[18] == 0x08U && initial_words[19] == 0x202U);
+    assert(initial_words[20] == stack_top - 8ULL && initial_words[21] == 0x10U);
     assert(edos_scheduler_validate(&preempt));
     assert(edos_scheduler_start_interrupt(&preempt, pa) == initial_a);
     assert(preempt.current_id == pa);
