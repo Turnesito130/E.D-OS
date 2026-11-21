@@ -324,6 +324,44 @@ const server = createServer(async (req, res) => {
     const account = await authenticatedAccount(req);
     if (!account) return send(res, 401, { error: "Sesión no válida o caducada." });
 
+    // Privacidad: permisos por aplicación, denegados por defecto.
+    // Solo se modifica la cuenta autenticada; el servidor valida capacidades conocidas.
+    if (req.method === "GET" && url.pathname === "/v1/security/app-permissions") {
+      const result = await pool.query(
+        "SELECT app_id, capability, granted, updated_at FROM app_permission_grants WHERE account_id = $1 ORDER BY app_id, capability",
+        [account.id]
+      );
+      return send(res, 200, { capabilities: ["microphone", "camera", "location", "files", "notifications"], grants: result.rows });
+    }
+
+    const appPermissionMatch = url.pathname.match(/^\\/v1\\/security\\/app-permissions\\/([a-z0-9][a-z0-9._-]{0,63})$/);
+    if (req.method === "PUT" && appPermissionMatch) {
+      const { normalizePermissionGrant } = await import("./security-permissions.mjs");
+      const body = await readJson(req);
+      const grants = normalizePermissionGrant(body.grants);
+      if (!grants) return send(res, 400, { error: "Permisos no válidos. Solo se admiten microphone, camera, location, files y notifications con valores booleanos." });
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        for (const [capability, granted] of Object.entries(grants)) {
+          await client.query(
+            `INSERT INTO app_permission_grants (account_id, app_id, capability, granted, updated_at)
+             VALUES ($1, $2, $3, $4, now())
+             ON CONFLICT (account_id, app_id, capability)
+             DO UPDATE SET granted = EXCLUDED.granted, updated_at = now()`,
+            [account.id, appPermissionMatch[1], capability, granted]
+          );
+        }
+        await auditSecurityEvent(client, account.id, "app.permissions.updated", req, { appId: appPermissionMatch[1] });
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally { client.release(); }
+      return send(res, 200, { success: true, appId: appPermissionMatch[1], grants });
+    }
+
+
     if (req.method === "GET" && url.pathname === "/v1/security/sessions") {
       const result = await pool.query(
         `SELECT id, created_at, expires_at, revoked_at,
