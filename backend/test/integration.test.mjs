@@ -255,6 +255,8 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   assert.equal(revokeApp.status, 200);
   const appsAfterRevoke = await request("/v1/security/apps", { token });
   assert.equal(appsAfterRevoke.data.apps.some(app => app.app_id === appId), false);
+  const permissionsAfterRevoke = await request("/v1/security/app-permissions", { token });
+  assert.equal(permissionsAfterRevoke.data.grants.find(grant => grant.app_id === appId && grant.capability === "files").granted, false);
   const revokedCredential = await request("/v1/security/authorize", {
     method: "POST", appToken, body: { capability: "files" }
   });
