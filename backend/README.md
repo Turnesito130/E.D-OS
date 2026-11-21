@@ -9,7 +9,7 @@ Este servicio es el primer backend ejecutable de E.D. ID y del inventario de dis
 - Inicio de sesión con token aleatorio opaco; en PostgreSQL solo se guarda su SHA-256.
 - Sesiones con caducidad de 12 horas y cierre de sesión revocable.
 - Gestión de seguridad de cuenta: listado y revocación de sesiones propias, cambio de contraseña y revocación de las demás sesiones.
-- Historial de eventos de seguridad por cuenta (registro, inicio/cierre de sesión, cambio de contraseña y revocación de sesión).
+- Historial de eventos de seguridad por cuenta (registro, inicio/cierre de sesión, cambio de contraseña y revocación de sesión).\n- Permisos configurables por aplicación para micrófono, cámara, ubicación, archivos y notificaciones; denegados por defecto.
 - Consulta de la cuenta autenticada.
 - Alta del primer dispositivo de la cuenta, listado y revocación de dispositivos. Los siguientes requieren emparejamiento.
 - Consultas SQL parametrizadas y límite básico de intentos por IP en memoria.
