@@ -38,7 +38,11 @@
     "bounded in-kernel IPC message queue prototype",
     "bounded in-memory RAM filesystem prototype (16 files, 256 bytes per file)",
     "COM1 UART serial driver with bounded transmit polling",
-    "experimental syscall ABI dispatcher for WRITE, EXIT, YIELD and GETPID with range checks"
+    "experimental syscall ABI dispatcher for WRITE, EXIT, YIELD and GETPID with range checks",
+    "round-robin scheduler transition bookkeeping with single-running-task invariant and validator",
+    "buddy allocator full consistency validator for free lists and block metadata",
+    "COM1 UART scratch-register presence detection and bounded transmit polling",
+    "syscall dispatcher context validation for WRITE, EXIT, YIELD and GETPID"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000."
