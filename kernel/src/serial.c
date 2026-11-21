@@ -11,6 +11,14 @@ static inline u8 inb(u16 port) {
 }
 #define COM1 0x3F8U
 int edos_serial_init(void) {
+    /* The 16550 scratch register must retain a test value. */
+    u8 previous = inb(COM1 + 7U);
+    outb(COM1 + 7U, 0x5AU);
+    if (inb(COM1 + 7U) != 0x5AU) {
+        outb(COM1 + 7U, previous);
+        return 0;
+    }
+    outb(COM1 + 7U, previous);
     outb(COM1 + 1U, 0x00U);
     outb(COM1 + 3U, 0x80U);
     outb(COM1 + 0U, 0x01U);
@@ -18,7 +26,7 @@ int edos_serial_init(void) {
     outb(COM1 + 3U, 0x03U);
     outb(COM1 + 2U, 0xC7U);
     outb(COM1 + 4U, 0x0BU);
-    return 1; /* UART configurada; disponibilidad se comprueba en cada escritura. */
+    return 1;
 }
 int edos_serial_write_char(char value) {
     unsigned int timeout = 1000000U;
