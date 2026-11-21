@@ -42,7 +42,8 @@
     "round-robin scheduler transition bookkeeping with single-running-task invariant and validator",
     "buddy allocator full consistency validator for free lists and block metadata",
     "COM1 UART scratch-register presence detection and bounded transmit polling",
-    "syscall dispatcher context validation for WRITE, EXIT, YIELD and GETPID"
+    "syscall dispatcher context validation for WRITE, EXIT, YIELD and GETPID",
+    "syscall dispatcher YIELD, EXIT and GETPID integrated with scheduler state transitions and tested together"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000."
