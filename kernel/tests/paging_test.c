@@ -33,6 +33,11 @@ int main(void) {
     assert(unmapped == 0x9000);
     assert(!edos_paging_translate(&space, va, &translated, 0));
     assert(!edos_paging_unmap_4k(&space, va, 0));
+    edos_paging_space_t adopted;
+    assert(edos_paging_adopt(&adopted, space.root_physical, alloc_page, phys_to_virt, 0));
+    ed_u64 unused_va = 0;
+    assert(edos_paging_find_unused_pml4(&adopted, &unused_va));
+    assert(((unused_va >> 39) & 0x1ffULL) == 256ULL);
     puts("PAGING_TESTS_OK");
     return 0;
 }
