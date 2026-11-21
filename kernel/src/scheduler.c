@@ -129,15 +129,17 @@ void *edos_task_prepare_interrupt_context(edos_scheduler_t *s, ed_u64 id,
     ed_u64 base = (ed_u64)(unsigned long long)stack_base;
     if (base > ~0ULL - stack_size) return (void *)0;
     ed_u64 top = (base + stack_size) & ~15ULL;
-    if (top < base + 168U) return (void *)0;
+    if (top < base + 184U) return (void *)0;
 
-    /* irq_common saves 15 GPRs, vector/error, then the iretq frame. */
-    ed_u64 frame_address = top - 168U;
+    /* Long-mode IRETQ restores RIP/CS/RFLAGS/RSP/SS after the saved GPRs. */
+    ed_u64 frame_address = top - 184U;
     ed_u64 *frame = (ed_u64 *)(unsigned long long)frame_address;
-    for (unsigned int i = 0; i < 20U; ++i) frame[i] = 0;
+    for (unsigned int i = 0; i < 22U; ++i) frame[i] = 0;
     frame[17] = (ed_u64)(unsigned long long)task->entry;
     frame[18] = 0x08U;   /* kernel code selector */
     frame[19] = 0x202U;  /* reserved bit + interrupts enabled */
+    frame[20] = top - 8U; /* initial kernel stack pointer */
+    frame[21] = 0x10U;    /* kernel data selector */
     *((ed_u64 *)(unsigned long long)(top - 8U)) =
         (ed_u64)(unsigned long long)return_trap;
 
