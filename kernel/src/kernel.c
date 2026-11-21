@@ -141,5 +141,5 @@ volatile u64 fault_value=*(volatile u64*)(unsigned long long)live_va;
 for(;;)__asm__ volatile("cli; hlt");
 }
 __attribute__((noreturn)) void kernel_exception_panic(u64 vector,u64 error_code){
-serial("EXCEPTION vector=");hex(vector);serial(" error=");hex(error_code);serial("\nKERNEL_HALTED_ON_EXCEPTION\n");for(;;)__asm__ volatile("cli; hlt");
+serial("EXCEPTION vector=");hex(vector);serial(" error=");hex(error_code);if(vector==14ULL){u64 cr2=0;__asm__ volatile("mov %%cr2, %0":"=r"(cr2));serial(" PAGE_FAULT_ADDRESS=");hex(cr2);}serial("\nKERNEL_HALTED_ON_EXCEPTION\n");for(;;)__asm__ volatile("cli; hlt");
 }
