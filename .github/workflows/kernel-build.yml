@@ -123,6 +123,7 @@ jobs:
           grep -q "PS2_KEYBOARD_IRQ_READY" kernel/build/qemu-serial.log
           grep -q "PIT_TIMER_IRQ_OK" kernel/build/qemu-serial.log
           grep -q "SCHEDULER_CONTEXT_SWITCH_OK" kernel/build/qemu-serial.log
+          grep -q "PREEMPTIVE_SCHEDULER_OK" kernel/build/qemu-serial.log
           grep -q "VFS_RUNTIME_OK" kernel/build/qemu-serial.log
           grep -q "BLOCK_RAMDISK_RUNTIME_OK" kernel/build/qemu-serial.log
           grep -q "EDFS_RUNTIME_OK" kernel/build/qemu-serial.log
@@ -156,6 +157,7 @@ jobs:
           grep -q "SERIAL_DRIVER_READY COM1" kernel/build/qemu-uefi-serial.log
           grep -q "GDT_TSS_IST_READY" kernel/build/qemu-uefi-serial.log
           grep -q "SCHEDULER_CONTEXT_SWITCH_OK" kernel/build/qemu-uefi-serial.log
+          grep -q "PREEMPTIVE_SCHEDULER_OK" kernel/build/qemu-uefi-serial.log
           grep -q "VFS_RUNTIME_OK" kernel/build/qemu-uefi-serial.log
           grep -q "BLOCK_RAMDISK_RUNTIME_OK" kernel/build/qemu-uefi-serial.log
           grep -q "EDFS_RUNTIME_OK" kernel/build/qemu-uefi-serial.log
