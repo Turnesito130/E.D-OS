@@ -134,7 +134,7 @@ const server = createServer(async (req, res) => {
     res.setHeader("access-control-allow-origin", origin);
     res.setHeader("vary", "Origin");
     res.setHeader("access-control-allow-methods", "GET, POST, PUT, DELETE, OPTIONS");
-    res.setHeader("access-control-allow-headers", "authorization, content-type");
+    res.setHeader("access-control-allow-headers", "authorization, content-type, x-ed-app-token");
     res.setHeader("access-control-max-age", "600");
   }
   if (req.method === "OPTIONS") {
@@ -323,6 +323,7 @@ const server = createServer(async (req, res) => {
 
     // Las aplicaciones se autentican con credenciales propias, nunca con el token de sesión del usuario.
     if (req.method === "POST" && url.pathname === "/v1/security/authorize") {
+      if (!rateLimit(req, res)) return;
       const appToken = req.headers["x-ed-app-token"] || "";
       if (typeof appToken !== "string" || appToken.length < 40 || appToken.length > 100) {
         return send(res, 401, { allowed: false, reason: "invalid_app_credential" });
@@ -352,6 +353,7 @@ const server = createServer(async (req, res) => {
 
     // Registro y revocación de credenciales de aplicaciones (requiere sesión del titular).
     if (req.method === "POST" && url.pathname === "/v1/security/apps") {
+      if (!rateLimit(req, res)) return;
       const body = await readJson(req);
       const { validAppId } = await import("./security-permissions.mjs");
       if (!validAppId(body.appId)) return send(res, 400, { error: "Identificador de aplicación no válido." });
