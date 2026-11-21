@@ -19,7 +19,7 @@ Proyecto experimental para construir, por etapas, un sistema operativo y ecosist
 
 E.D-OS tendrá kernel propio y no dependerá del kernel Linux para arrancar ni funcionar. Para el primer prototipo se ha integrado Limine como cargador externo; Limine entrega el control al ELF del kernel E.D-OS, no sustituye al núcleo.
 
-La última ejecución completa confirmada del kernel pasó en `arquitectura/0.1` (commit `40163f25`): pruebas host, compilación de la ISO híbrida y arranque BIOS/UEFI en QEMU. Se verificaron GDT/TSS/IST, PMM con propiedad de páginas, scheduler preemptivo de tareas ring 0, IPC bloqueante, VFS sobre RAMFS y EDFS, PCI con nueve BAR decodificados, page fault diagnóstico y ATA PIO. Una prueba con disco IDE virtual comprobó lectura/escritura de sectores y EDFS/VFS tras remontar el volumen. Aún no hay ring 3, aislamiento de procesos, APIC/SMP, DMA/AHCI/NVMe ni soporte universal de hardware.
+La última ejecución completa confirmada del kernel pasó en `arquitectura/0.1` (commit `ce041be4`): pruebas host, arranque BIOS/UEFI en QEMU, scheduler preemptivo ring 0, IPC bloqueante, VFS sobre RAMFS/EDFS, PCI con nueve BAR, ATA PIO con lectura/escritura y EDFS/VFS tras remontar un disco IDE virtual. Una prueba QMP también inyectó una tecla y confirmó su recepción por IRQ1 del teclado PS/2. Aún no hay ring 3, aislamiento de procesos, APIC/SMP, DMA/AHCI/NVMe ni soporte universal de hardware.
 
 ## Backend de E.D. Ecosystem
 
