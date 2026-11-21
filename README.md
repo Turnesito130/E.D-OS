@@ -19,13 +19,13 @@ Proyecto experimental para construir, por etapas, un sistema operativo y ecosist
 
 E.D-OS tendrá kernel propio y no dependerá del kernel Linux para arrancar ni funcionar. Para el primer prototipo se ha integrado Limine como cargador externo; Limine entrega el control al ELF del kernel E.D-OS, no sustituye al núcleo.
 
-La compilación local del ELF x86_64 está verificada. La construcción de ISO híbrida y la prueba de arranque en QEMU están automatizadas en GitHub Actions y pendientes de resultado. Hasta que el log de QEMU contenga `KERNEL_BOOT_OK`, no se considera demostrado el arranque.
+La compilación del ELF x86_64, las pruebas host de buddy/scheduler/IPC/syscalls/RAMFS y el arranque BIOS en QEMU están automatizados en GitHub Actions. La última ejecución completa confirmada del kernel pasó en la rama `arquitectura/0.1` (commit `0a714e2d`). Esto demuestra el arranque hasta los hitos de memoria y la gestión de la excepción de prueba; no demuestra todavía modo usuario, multitarea real ni arranque UEFI.
 
 ## Backend de E.D. Ecosystem
 
 - Servicio experimental en `backend/`: cuentas, sesiones, inventario de dispositivos, emparejamiento temporal aprobado, sincronización versionada de registros JSON pequeños y controles de seguridad de cuenta (sesiones, cambio de contraseña e historial de eventos). La interfaz `apps/ecosystem.html` incorpora un panel de Seguridad y usuarios.
 - Instrucciones y rutas disponibles: [backend/README.md](backend/README.md).
-- **No está desplegado ni probado contra PostgreSQL ni entre dispositivos reales.** No usar con datos personales reales. Hay pruebas unitarias iniciales para las primitivas de autenticación, pero faltan pruebas de integración de endpoints, verificación y recuperación de cuenta, MFA/passkeys, cifrado de extremo a extremo y revisión de seguridad independiente.
+- **No está desplegado como servicio público para usuarios ni verificado entre dispositivos físicos.** El workflow de backend incluye pruebas de integración con PostgreSQL y almacenamiento S3 simulado; no usar con datos personales reales. Faltan verificación y recuperación de cuenta, MFA/passkeys, cifrado de extremo a extremo y revisión de seguridad independiente.
 
 ## Desarrollo
 
