@@ -30,6 +30,7 @@ static edos_edfs_t boot_edfs, boot_edfs_remount;
 static edos_vfs_t boot_edfs_vfs;
 static char boot_edfs_vfs_buffer[16];
 static char boot_edfs_buffer[32];
+static edos_pci_device_t boot_pci_devices[32];
 static edos_scheduler_t boot_scheduler;
 static edos_cpu_context_t boot_main_context;
 static ed_u64 boot_task_a, boot_task_b;
@@ -52,7 +53,7 @@ static void boot_task_b_entry(void){
     for(;;)__asm__ volatile("cli; hlt");
 }
 
-static void count_pci_device(const edos_pci_device_t *device, void *context){(void)device; ++*(ed_u64*)context;}
+static void count_pci_device(const edos_pci_device_t *device, void *context){ed_u64 *count=(ed_u64*)context;if(*count<32ULL)boot_pci_devices[*count]=*device;++*count;}
 static void serial_char(char c){(void)edos_serial_write_char(c);}
 static void serial(const char*s){(void)edos_serial_write(s);}
 static void hex(u64 v){static const char d[]="0123456789abcdef";serial("0x");for(int s=60;s>=0;s-=4)serial_char(d[(v>>s)&15]);}
@@ -71,6 +72,14 @@ ed_u64 pci_device_count=0;
 edos_pci_u32 pci_found=edos_pci_enumerate(count_pci_device,&pci_device_count);
 if(!pci_found||(ed_u64)pci_found!=pci_device_count){serial("PCI_ENUMERATION_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("PCI_ENUMERATION_OK devices=");hex(pci_device_count);serial("\n");
+ed_u64 pci_bar_count=0;
+for(ed_u64 i=0;i<pci_device_count&&i<32ULL;++i)
+    for(edos_pci_u8 bar_index=0;bar_index<6U;++bar_index){
+        edos_pci_bar_t bar;
+        if(edos_pci_read_bar(&boot_pci_devices[i],bar_index,&bar))++pci_bar_count;
+    }
+if(!pci_bar_count){serial("PCI_BAR_DECODE_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+serial("PCI_BAR_DECODE_OK bars=");hex(pci_bar_count);serial("\n");
 if(!edos_irq_init(keyboard_ready)){serial("IRQ_INIT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 edos_scheduler_init(&boot_scheduler);
 boot_task_a=edos_task_create(&boot_scheduler,boot_task_a_entry,boot_task_stack_a);
