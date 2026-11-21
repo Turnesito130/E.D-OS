@@ -83,9 +83,14 @@ const $ = id => document.getElementById(id);
 const api = () => $('api').value.trim().replace(/\/$/, '');
 const show = (id, visible) => $(id).classList.toggle('hidden', !visible);
 const status = (id, message) => { $(id).textContent = message; };
-function readPendingSync() { return EDOSyncQueue.read(); }
-function writePendingSync(value) { return EDOSyncQueue.write(value); }
+function syncQueueStorageKey() { return 'ed-os-sync-pending-v1:' + account.id; }
+function syncCacheStorageKey() { return 'ed-os-sync-cache-v1:' + account.id; }
+function readPendingSync() { return account ? EDOSyncQueue.read(localStorage,syncQueueStorageKey()) : Object.create(null); }
+function writePendingSync(value) { return account ? EDOSyncQueue.write(value,localStorage,syncQueueStorageKey()) : false; }
+function readSyncCache() { return account ? EDOSyncQueue.readCache(localStorage,syncCacheStorageKey()) : Object.create(null); }
+function writeSyncCache(value) { return account ? EDOSyncQueue.writeCache(value,localStorage,syncCacheStorageKey()) : false; }
 function renderPendingSync() {
+  if(!account){status('syncQueueStatus','Inicia sesión para consultar la cola de esta cuenta.');return;}
   const entries = Object.entries(readPendingSync());
   const conflictEntries = entries.filter(([, item]) => item.conflict);
   const conflicts = conflictEntries.length;
@@ -98,7 +103,7 @@ function renderPendingSync() {
     : 'Sin cambios pendientes.');
 }
 async function flushPendingSync() {
-  if (!token || !navigator.onLine) { renderPendingSync(); return; }
+  if (!token || !account || !navigator.onLine) { renderPendingSync(); return; }
   const pending = readPendingSync();
   for (const [key, item] of Object.entries(pending)) {
     if (!item || item.conflict) continue;
@@ -173,7 +178,7 @@ async function revokeDevice(id) {
 }
 $('login').onclick=()=>auth('login');
 $('register').onclick=()=>auth('register');
-$('logout').onclick=async()=>{try{await call('/v1/auth/logout',{method:'POST'});}catch{} token=null;account=null;$('appCredentialToken').replaceChildren();show('appCredentialToken',false);show('auth',true);show('dashboard',false);show('pair',false);show('sync',false);show('cloud',false);show('security',false);};
+$('logout').onclick=async()=>{try{await call('/v1/auth/logout',{method:'POST'});}catch{} token=null;account=null;$('appCredentialToken').replaceChildren();show('appCredentialToken',false);renderPendingSync();show('auth',true);show('dashboard',false);show('pair',false);show('sync',false);show('cloud',false);show('security',false);};
 
 function renderSecurityRows(container, rows, kind) {
   $(container).replaceChildren();
@@ -362,6 +367,7 @@ $('claim').onclick=()=>{
 $('cancelClaim').onclick=()=>{stopPairPolling();status('pairStatus','Comprobación detenida. La solicitud sigue pendiente hasta que caduque.');};
 $('saveSync').onclick=async()=>{
   try {
+    if(!account||!token)throw new Error('Inicia sesión para guardar datos de sincronización.');
     const key=$('syncKey').value.trim();
     if(!/^[a-zA-Z0-9._-]{1,100}$/.test(key))throw new Error('La clave debe usar letras, números, punto, guion o guion bajo (máximo 100).');
     const expectedVersion=Number($('syncVersion').value);
