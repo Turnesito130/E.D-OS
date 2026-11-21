@@ -45,7 +45,7 @@ $(BUILD_DIR)/context-switch.o: src/context.S | $(BUILD_DIR)
 $(BUILD_DIR)/scheduler.o: src/scheduler.c include/scheduler.h include/context.h include/memory.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
-$(BUILD_DIR)/vfs.o: src/vfs.c include/vfs.h include/ramfs.h include/memory.h | $(BUILD_DIR)
+$(BUILD_DIR)/vfs.o: src/vfs.c include/vfs.h include/ramfs.h include/edfs.h include/block.h include/memory.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
 $(BUILD_DIR)/ramfs.o: src/ramfs.c include/ramfs.h include/memory.h | $(BUILD_DIR)
