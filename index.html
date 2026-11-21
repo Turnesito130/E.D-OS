@@ -135,6 +135,7 @@ main{grid-template-columns:286px minmax(0,1fr);gap:24px;padding:24px 34px 112px;
 <div class="device"><div class="device-icon">▯</div><div><strong>Añadir dispositivo</strong><small>Conecta otro equipo más adelante</small></div><span class="status"></span></div>
 </section>
 </aside>
+<section class="panel"><h2>Estado del sistema</h2><div class="sub">Diagnóstico del navegador y recursos web</div><div id="systemHealth" aria-live="polite"></div></section>
 <section class="workspace" aria-label="Espacio de trabajo"><div class="orb"></div><div class="welcome"><h1>Tu espacio.</h1><p>Todo empieza aquí.</p></div></section>
 </main>
 <div class="dock-wrap"><nav class="dock" aria-label="Aplicaciones">
@@ -142,6 +143,7 @@ main{grid-template-columns:286px minmax(0,1fr);gap:24px;padding:24px 34px 112px;
 </nav></div><div id="windowLayer" aria-live="polite"></div><div class="toast" id="toast" role="status"></div>
 <script src="./js/window-manager.js" defer></script>
 <script src="./js/system-tools.js" defer></script>
+<script src="./js/system-health.js" defer></script>
 <script src="./js/freedom.js" defer></script>
 <script>
 const toast=document.getElementById('toast');let toastTimer;
