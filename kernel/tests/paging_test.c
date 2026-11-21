@@ -20,9 +20,9 @@ int main(void) {
     ed_u64 translated = 0, flags = 0, unmapped = 0;
     assert(edos_paging_init(&space, alloc_page, phys_to_virt, 0));
     const ed_u64 va = 0xffff800000001000ULL;
-    assert(edos_paging_map_4k(&space, va, 0x2000, EDOS_PAGE_PRESENT | EDOS_PAGE_WRITE));
+    assert(edos_paging_map_4k(&space, va, 0x9000, EDOS_PAGE_PRESENT | EDOS_PAGE_WRITE));
     assert(edos_paging_translate(&space, va + 0x123, &translated, &flags));
-    assert(translated == 0x2123);
+    assert(translated == 0x9123);
     assert((flags & (EDOS_PAGE_PRESENT | EDOS_PAGE_WRITE)) ==
            (EDOS_PAGE_PRESENT | EDOS_PAGE_WRITE));
     assert(!edos_paging_map_4k(&space, va, 0x3000, EDOS_PAGE_PRESENT));
@@ -30,7 +30,7 @@ int main(void) {
     assert(!edos_paging_map_4k(&space, va + 1, 0x3000, EDOS_PAGE_PRESENT));
     assert(!edos_paging_map_4k(&space, va + 0x1000, 0x3000, 0));
     assert(edos_paging_unmap_4k(&space, va, &unmapped));
-    assert(unmapped == 0x2000);
+    assert(unmapped == 0x9000);
     assert(!edos_paging_translate(&space, va, &translated, 0));
     assert(!edos_paging_unmap_4k(&space, va, 0));
     puts("PAGING_TESTS_OK");
