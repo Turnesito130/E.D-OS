@@ -28,7 +28,7 @@ El workflow debe compilar y arrancar QEMU. El hito solo se considera verificado 
 ## Nuevos subsistemas en fase inicial (0.1)
 
 - Planificador cooperativo: tabla fija de 32 tareas, estados READY/RUNNING/BLOCKED/EXITED, creación y selección round-robin. Todavía no realiza cambio de contexto, no crea pilas ni cambia privilegios; es una base de planificación, no multitarea ejecutable.
-- IPC: colas circulares acotadas de 16 mensajes con payload máximo de 64 bytes, validación de tamaño y detección de cola llena/vacía. Todavía no hay aislamiento entre procesos, bloqueo, sincronización SMP ni llamadas desde modo usuario.
+- IPC: colas circulares acotadas de 16 mensajes con payload máximo de 64 bytes, validación de tamaño, índices y contador internos, y detección de cola llena/vacía/corrupta. Todavía no hay aislamiento entre procesos, bloqueo, sincronización SMP ni llamadas desde modo usuario.
 - RAMFS: sistema de archivos temporal en memoria con hasta 16 archivos de 256 bytes, creación, lectura, escritura completa y borrado; rechaza nombres con separadores de ruta y límites excedidos. No es persistente, no usa VFS, no tiene directorios, permisos, caché ni integración con dispositivos de bloques.
 - Ambos módulos se compilan como parte del ELF y tienen pruebas unitarias host en CI.
 
