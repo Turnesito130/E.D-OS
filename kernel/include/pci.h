@@ -18,6 +18,9 @@ typedef struct {
     edos_pci_u8 function;
 } edos_pci_device_t;
 
+typedef struct {
+    edos_pci_u64_placeholder base;
+} edos_pci_bar_t;
 typedef edos_pci_u32 (*edos_pci_config_reader_t)(
     edos_pci_u8 bus, edos_pci_u8 slot, edos_pci_u8 function,
     edos_pci_u8 offset, void *context);
