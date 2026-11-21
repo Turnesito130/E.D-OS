@@ -60,6 +60,10 @@ jobs:
         run: |
           gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/block.c kernel/tests/block_test.c -o /tmp/ed-os-block-test
           /tmp/ed-os-block-test
+      - name: Unit-test EDFS block-backed filesystem
+        run: |
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/block.c kernel/src/edfs.c kernel/tests/edfs_test.c -o /tmp/ed-os-edfs-test
+          /tmp/ed-os-edfs-test
       - name: Download pinned Limine binary release
         run: |
           curl -fL --retry 3 https://github.com/Limine-Bootloader/Limine/releases/download/v12.9.6/limine-binary.tar.gz -o limine-binary.tar.gz
