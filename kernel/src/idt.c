@@ -35,11 +35,11 @@ extern void isr28(void); extern void isr29(void); extern void isr30(void); exter
 
 static idt_gate idt[256] __attribute__((aligned(16)));
 
-static void idt_set_gate(u8 vector, void (*handler)(void), u16 selector) {
+static void idt_set_gate(u8 vector, void (*handler)(void), u16 selector, u8 ist) {
     u64 address = (u64)(unsigned long long)handler;
     idt[vector].offset_low = (u16)(address & 0xffff);
     idt[vector].selector = selector;
-    idt[vector].ist = 0;
+    idt[vector].ist = (u8)(ist & 7U);
     idt[vector].attributes = 0x8e; /* present, ring 0, 64-bit interrupt gate */
     idt[vector].offset_middle = (u16)((address >> 16) & 0xffff);
     idt[vector].offset_high = (u32)(address >> 32);
@@ -52,7 +52,7 @@ int idt_init(void) {
     if (code_selector == 0) return 0;
 
     for (u32 i = 0; i < 256; ++i)
-        idt_set_gate((u8)i, isr_unexpected, code_selector);
+        idt_set_gate((u8)i, isr_unexpected, code_selector, 0);
 
     void (* const exceptions[32])(void) = {
         isr0, isr1, isr2, isr3, isr4, isr5, isr6, isr7,
@@ -61,10 +61,13 @@ int idt_init(void) {
         isr24, isr25, isr26, isr27, isr28, isr29, isr30, isr31
     };
     for (u32 i = 0; i < 32; ++i)
-        idt_set_gate((u8)i, exceptions[i], code_selector);
+        idt_set_gate((u8)i, exceptions[i], code_selector, 0);
 
-    idt_set_gate(32U, irq_timer_stub, code_selector);
-    idt_set_gate(33U, irq_keyboard_stub, code_selector);
+    idt_set_gate(2U, isr2, code_selector, 2);
+    idt_set_gate(8U, isr8, code_selector, 1);
+    idt_set_gate(14U, isr14, code_selector, 3);
+    idt_set_gate(32U, irq_timer_stub, code_selector, 0);
+    idt_set_gate(33U, irq_keyboard_stub, code_selector, 0);
 
     idtr descriptor = {
         .limit = (u16)(sizeof(idt) - 1),
