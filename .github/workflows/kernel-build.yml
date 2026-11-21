@@ -171,7 +171,7 @@ jobs:
         run: |
           set -e
           truncate -s 16M kernel/build/ata-test.img
-          printf '\\125\\252' | dd of=kernel/build/ata-test.img bs=1 seek=510 conv=notrunc status=none
+          printf '\125\252' | dd of=kernel/build/ata-test.img bs=1 seek=510 conv=notrunc status=none
           set +e
           timeout 20s qemu-system-x86_64 -machine pc -m 256M -boot order=d -cdrom kernel/build/ed-os.iso -drive file=kernel/build/ata-test.img,format=raw,if=ide,index=0,media=disk -display none -serial file:kernel/build/qemu-ata-serial.log -monitor none -no-reboot -no-shutdown
           status=$?
