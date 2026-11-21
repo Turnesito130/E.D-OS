@@ -4,11 +4,33 @@
 #include "paging.h"
 #include "keyboard.h"
 #include "irq.h"
+#include "scheduler.h"
 typedef unsigned long long u64;
 __attribute__((used,section(".limine_requests"),aligned(8)))
 volatile u64 limine_base_revision[3]={0xf9562b2d5c95a6c8ULL,0x6a7b384944536bdcULL,3};
 static ed_u64 paging_alloc_page(void *opaque){(void)opaque;void *p=pmm_alloc_page();if(!p)return EDOS_PAGING_INVALID;return (ed_u64)(unsigned long long)p-memory_hhdm_offset();}
 static ed_u64 *paging_phys_to_virt(ed_u64 physical,void *opaque){(void)opaque;if(physical>~0ULL-memory_hhdm_offset())return (ed_u64*)0;return (ed_u64*)(unsigned long long)(memory_hhdm_offset()+physical);}
+
+static edos_scheduler_t boot_scheduler;
+static edos_cpu_context_t boot_main_context;
+static ed_u64 boot_task_a, boot_task_b;
+static volatile int boot_task_stage;
+static void boot_task_returned(void){for(;;)__asm__ volatile("cli; hlt");}
+static void boot_task_a_entry(void){
+    boot_task_stage=1;
+    if(!edos_scheduler_switch_to(&boot_scheduler,boot_task_a,boot_task_b)){serial("SCHEDULER_SWITCH_A_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");}
+    if(boot_task_stage!=2){serial("SCHEDULER_STAGE_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");}
+    boot_task_stage=3;
+    edos_context_switch(&boot_scheduler.tasks[0].context,&boot_main_context);
+    for(;;)__asm__ volatile("cli; hlt");
+}
+static void boot_task_b_entry(void){
+    if(boot_task_stage!=1){serial("SCHEDULER_STAGE_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");}
+    boot_task_stage=2;
+    if(!edos_scheduler_switch_to(&boot_scheduler,boot_task_b,boot_task_a)){serial("SCHEDULER_SWITCH_B_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");}
+    for(;;)__asm__ volatile("cli; hlt");
+}
+
 static void serial_char(char c){(void)edos_serial_write_char(c);}
 static void serial(const char*s){(void)edos_serial_write(s);}
 static void hex(u64 v){static const char d[]="0123456789abcdef";serial("0x");for(int s=60;s>=0;s-=4)serial_char(d[(v>>s)&15]);}
