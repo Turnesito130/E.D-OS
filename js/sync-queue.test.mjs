@@ -66,6 +66,18 @@ test("caché local conserva versiones remotas y tombstones", () => {
   assert.equal(restored["old-item"].version, 4);
 });
 
+test("cola y caché mantienen aislamiento entre cuentas", () => {
+  const { api, storage } = createQueueApi();
+  const queueA = api.read(storage, "pending:account-a");
+  const queueB = api.read(storage, "pending:account-b");
+  assert.equal(api.enqueue(queueA, "settings", { theme: "dark" }, 0).ok, true);
+  assert.equal(api.enqueue(queueB, "settings", { theme: "light" }, 0).ok, true);
+  assert.equal(api.write(queueA, storage, "pending:account-a"), true);
+  assert.equal(api.write(queueB, storage, "pending:account-b"), true);
+  assert.equal(api.read(storage, "pending:account-a").settings.payload.theme, "dark");
+  assert.equal(api.read(storage, "pending:account-b").settings.payload.theme, "light");
+});
+
 test("cola local tolera almacenamiento inaccesible", () => {
   const storage = {
     getItem() { throw new Error("blocked"); },
