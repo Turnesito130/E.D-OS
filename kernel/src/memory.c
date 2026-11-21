@@ -20,6 +20,12 @@ static ed_u64 hhdm, usable_bytes, allocated_pages, free_pages, region_index, reg
 static void *free_list;
 static int initialized;
 static int add_overflows(ed_u64 a, ed_u64 b) { return b > (~0ULL-a); }
+static int valid_free_node(void *node) {
+if(!node)return 1;
+ed_u64 va=(ed_u64)(unsigned long long)node;
+if(va<hhdm)return 0;
+return physical_page_is_usable(va-hhdm);
+}
 static int physical_page_is_usable(ed_u64 p) {
 if ((p & (PAGE_SIZE-1)) || p<MIN_SAFE_PHYS || add_overflows(p,PAGE_SIZE)) return 0;
 for(ed_u64 i=0;i<map->entry_count;++i) {
@@ -45,9 +51,12 @@ if(!initialized || !map) return (void*)0;
 ed_u64 physical;
 if(free_list) {
 ed_u64 va=(ed_u64)(unsigned long long)free_list;
-if(va<hhdm || free_pages==0) return (void*)0;
+if(!free_pages || !valid_free_node(free_list)) return (void*)0;
 ed_u64 *link=(ed_u64*)(unsigned long long)va;
-physical=va-hhdm; free_list=(void*)(unsigned long long)*link; --free_pages;
+physical=va-hhdm;
+void *next=(void*)(unsigned long long)*link;
+if(!valid_free_node(next)) return (void*)0;
+free_list=next; --free_pages;
 } else {
 for(;;) {
 if(region_index>=map->entry_count) return (void*)0;
@@ -74,9 +83,10 @@ if(va<hhdm) return 0;
 ed_u64 physical=va-hhdm;
 if(!physical_page_is_usable(physical)) return 0;
 /* The caller contract requires a page returned by pmm_alloc_page. */
+if((free_pages==0)!=(free_list==(void*)0)) return 0;
 void *node=free_list;
-for(ed_u64 seen=0;node && seen<=free_pages;++seen) {
-if(node==page) return 0;
+for(ed_u64 seen=0;node && seen<free_pages;++seen) {
+if(!valid_free_node(node) || node==page) return 0;
 node=(void*)(unsigned long long)*(ed_u64*)node;
 }
 if(node) return 0;
@@ -87,3 +97,13 @@ ed_u64 memory_usable_bytes(void){return usable_bytes;}
 ed_u64 pmm_pages_allocated(void){return allocated_pages;}
 ed_u64 pmm_pages_free(void){return free_pages;}
 ed_u64 memory_hhdm_offset(void){return hhdm;}
+
+int memory_validate(void) {
+if(!initialized || !map || ((free_pages==0)!=(free_list==(void*)0))) return 0;
+ed_u64 count=0; void *node=free_list;
+while(node) {
+if(count>=free_pages || !valid_free_node(node)) return 0;
+node=(void*)(unsigned long long)*(ed_u64*)node; ++count;
+}
+return count==free_pages && allocated_pages<=~0ULL-free_pages;
+}
