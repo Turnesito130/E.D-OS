@@ -57,3 +57,12 @@ int edos_gdt_init(void) {
     __asm__ volatile ("str %0" : "=r"(task_register));
     return task_register == 0x28U;
 }
+
+int edos_tss_set_rsp0(void *stack_top) {
+    u64 address = (u64)(unsigned long long)stack_top;
+    u64 upper = address >> 48;
+    if (!address || (address & 15ULL) || (upper != 0ULL && upper != 0xffffULL))
+        return 0;
+    tss.rsp0 = address;
+    return 1;
+}
