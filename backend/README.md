@@ -162,3 +162,13 @@ El código de ocho cifras caduca en cinco minutos y solo se guarda su hash. El s
 - `PUT /v1/security/app-permissions/{appId}` recibe `{ "grants": { "microphone": true, "camera": false, "location": false, "files": false, "notifications": false } }`. Se rechazan capacidades desconocidas y valores que no sean booleanos.
 - **Límite importante:** este primer paso almacena y administra las preferencias de consentimiento. Todavía no intercepta llamadas al micrófono/cámara ni restringe el acceso del sistema operativo a archivos o ubicación. Cada API/controlador que entregue esos recursos deberá consultar la concesión en el servidor/núcleo antes de autorizar el acceso.
 - En bases de datos existentes, vuelve a ejecutar `psql "$DATABASE_URL" -f schema.sql` para crear la tabla nueva.
+
+
+### Motor de autorización de aplicaciones (paso hacia 5/10)
+
+- El titular registra una app con `POST /v1/security/apps` (sesión de usuario y JSON `{ "appId": "ed.notes" }`). La API devuelve un secreto aleatorio `appToken` una sola vez. Guardar el secreto de forma privada en la aplicación; no incluirlo en código público ni registros.
+- La app solicita autorización con `POST /v1/security/authorize`, cabecera `X-ED-App-Token: <appToken>` y JSON `{ "capability": "microphone" }`. El servidor identifica la app a partir del digest del secreto (no confía en un appId enviado por el solicitante) y comprueba la concesión de la cuenta. Sin concesión, responde HTTP 403. Credencial ausente, inválida o revocada: HTTP 401.
+- El titular revoca la credencial con `DELETE /v1/security/apps/{appId}`. Las credenciales revocadas no pueden autorizar solicitudes.
+- Las decisiones permitidas y denegadas se añaden al registro de seguridad. El secreto nunca se almacena en claro.
+- **Límite:** esto aplica control en la API de autorización, pero aún no intercepta directamente syscalls, drivers ni APIs del navegador. El programa consumidor debe solicitar autorización al backend antes de acceder al recurso; la integración con el kernel/controladores queda pendiente.
+- Migración: ejecutar `psql "$DATABASE_URL" -f schema.sql` en la base existente.
