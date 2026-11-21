@@ -189,6 +189,65 @@ jobs:
           grep -q "ATA_PIO_EDFS_OK" kernel/build/qemu-ata-serial.log
           grep -q "PCI_ENUMERATION_OK" kernel/build/qemu-ata-serial.log
           grep -q "GDT_TSS_IST_READY" kernel/build/qemu-ata-serial.log
+      - name: Test PS/2 keyboard IRQ input through QMP
+        run: |
+          set -e
+          rm -f kernel/build/qmp-keyboard.sock kernel/build/qemu-keyboard-serial.log
+          qemu-system-x86_64 -machine q35 -m 256M -cdrom kernel/build/ed-os.iso -display none -serial file:kernel/build/qemu-keyboard-serial.log -monitor none -qmp unix:kernel/build/qmp-keyboard.sock,server=on,wait=off -no-reboot -no-shutdown &
+          QEMU_PID=$!
+          trap 'kill "$QEMU_PID" 2>/dev/null || true; wait "$QEMU_PID" 2>/dev/null || true' EXIT
+          python3 - <<'PY'
+          import json, pathlib, socket, time
+          qmp_path = "kernel/build/qmp-keyboard.sock"
+          serial_path = pathlib.Path("kernel/build/qemu-keyboard-serial.log")
+          sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+          deadline = time.time() + 10
+          while True:
+              try:
+                  sock.connect(qmp_path)
+                  break
+              except OSError:
+                  if time.time() >= deadline:
+                      raise
+                  time.sleep(0.05)
+          stream = sock.makefile("rwb", buffering=0)
+          greeting = json.loads(stream.readline().decode())
+          if "QMP" not in greeting:
+              raise RuntimeError("QMP greeting missing")
+          stream.write(b'{"execute":"qmp_capabilities","id":1}\r\n')
+          while True:
+              response = json.loads(stream.readline().decode())
+              if response.get("id") == 1:
+                  if "return" not in response:
+                      raise RuntimeError("QMP capabilities failed")
+                  break
+          deadline = time.time() + 10
+          while time.time() < deadline:
+              log = serial_path.read_text(errors="ignore") if serial_path.exists() else ""
+              if "PS2_KEYBOARD_IRQ_READY" in log:
+                  break
+              time.sleep(0.05)
+          else:
+              raise RuntimeError("PS/2 controller did not become ready")
+          stream.write(b'{"execute":"send-key","arguments":{"keys":[{"type":"qcode","data":"a"}],"hold-time":100},"id":2}\r\n')
+          while True:
+              response = json.loads(stream.readline().decode())
+              if response.get("id") == 2:
+                  if "return" not in response:
+                      raise RuntimeError("QMP send-key failed")
+                  break
+          deadline = time.time() + 5
+          while time.time() < deadline:
+              log = serial_path.read_text(errors="ignore") if serial_path.exists() else ""
+              if "PS2_KEYBOARD_IRQ_INPUT_OK" in log:
+                  print("QMP keyboard IRQ input verified")
+                  break
+              time.sleep(0.05)
+          else:
+              raise RuntimeError("No keyboard character was received through IRQ1")
+          sock.close()
+          PY
+          grep -q "PS2_KEYBOARD_IRQ_INPUT_OK" kernel/build/qemu-keyboard-serial.log
       - name: Upload kernel and boot diagnostics
         uses: actions/upload-artifact@v4
         with:
@@ -199,3 +258,4 @@ jobs:
             kernel/build/qemu-serial.log
             kernel/build/qemu-uefi-serial.log
             kernel/build/qemu-ata-serial.log
+            kernel/build/qemu-keyboard-serial.log
