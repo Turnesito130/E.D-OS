@@ -61,7 +61,6 @@
     "ring 3 transition, TSS and user-mode address-space isolation",
     "CR3 activation, TLB invalidation, page-fault recovery and isolated user address spaces",
     "PS/2 keyboard IRQ delivery, event queue and international keyboard layouts",
-    "PS/2 keyboard IRQ delivery, event queue and international keyboard layouts",
     "PMM page ownership tracking to reject freeing pages not returned by the allocator"
   ],
   "linux_reference": {
