@@ -29,7 +29,8 @@ int edos_ipc_endpoint_init(edos_ipc_endpoint_t *endpoint, ed_u64 owner_task_id) 
 int edos_ipc_send_to(edos_ipc_endpoint_t *endpoint, edos_scheduler_t *scheduler,
                      ed_u64 sender_id, ed_u64 type, const void *payload, ed_u64 length) {
     if (!endpoint || !endpoint->initialized || !scheduler || !scheduler->initialized ||
-        !sender_id || length > EDOS_IPC_PAYLOAD_MAX || (!payload && length)) return 0;
+        !sender_id || scheduler->current_id != sender_id ||
+        length > EDOS_IPC_PAYLOAD_MAX || (!payload && length)) return 0;
     edos_ipc_message_t message;
     message.sender = sender_id;
     message.type = type;
@@ -44,9 +45,9 @@ int edos_ipc_send_to(edos_ipc_endpoint_t *endpoint, edos_scheduler_t *scheduler,
 int edos_ipc_receive_wait(edos_ipc_endpoint_t *endpoint, edos_scheduler_t *scheduler,
                           ed_u64 receiver_id, edos_ipc_message_t *message) {
     if (!endpoint || !endpoint->initialized || !scheduler || !scheduler->initialized ||
-        !receiver_id || receiver_id != endpoint->owner_task_id || !message) return 0;
+        !receiver_id || receiver_id != endpoint->owner_task_id ||
+        scheduler->current_id != receiver_id || !message) return 0;
     if (edos_ipc_receive(&endpoint->queue, message)) return 1;
-    if (scheduler->current_id != receiver_id) return 0;
     edos_task_t *next = edos_scheduler_pick(scheduler);
     if (!next || !next->context_ready) return 0;
     if (!edos_scheduler_block_current(scheduler, receiver_id, next->id)) return 0;
