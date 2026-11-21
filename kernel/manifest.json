@@ -61,7 +61,9 @@
     "VFS host tests for path traversal rejection, access modes, truncation, descriptor exhaustion and directory enumeration",
     "generic block-device API with LBA range validation, sector-size constraints and read-only enforcement",
     "bounded sector-addressable RAM disk backend with multi-sector read/write operations",
-    "kernel QEMU smoke test verifies RAM disk sector writes, reads and out-of-range rejection"
+    "kernel QEMU smoke test verifies RAM disk sector writes, reads and out-of-range rejection",
+    "x86-64 page-fault exception path reports CR2 fault address and error code before halting",
+    "QEMU boot test deliberately accesses an unmapped canonical virtual address to validate page-fault dispatch"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000.",
@@ -73,13 +75,13 @@
     "physical hardware compatibility",
     "IPC integration with isolated processes and syscalls",
     "ring 3 transition, TSS and user-mode address-space isolation",
-    "switching to an independently built CR3 root, automatic TLB management, page-fault recovery and isolated user address spaces",
     "PS/2 real-key event validation and international keyboard layouts",
     "PMM page ownership tracking to reject freeing pages not returned by the allocator",
     "timer preemption and scheduler integration",
     "APIC/IOAPIC, HPET and advanced interrupt routing",
     "persistent block-backed filesystem, nested directories and file permissions",
-    "physical SATA/AHCI/NVMe storage drivers and persistent filesystem backend"
+    "physical SATA/AHCI/NVMe storage drivers and persistent filesystem backend",
+    "page-fault recovery, lazy allocation and copy-on-write"
   ],
   "linux_reference": {
     "repository": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
