@@ -26,6 +26,12 @@ jobs:
         run: |
           gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/buddy.c kernel/tests/buddy_test.c -o /tmp/ed-os-buddy-test
           /tmp/ed-os-buddy-test
+      - name: Unit-test scheduler and IPC foundations
+        run: |
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/scheduler.c kernel/tests/scheduler_test.c -o /tmp/ed-os-scheduler-test
+          /tmp/ed-os-scheduler-test
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/ipc.c kernel/tests/ipc_test.c -o /tmp/ed-os-ipc-test
+          /tmp/ed-os-ipc-test
       - name: Download pinned Limine binary release
         run: |
           curl -fL --retry 3 https://github.com/Limine-Bootloader/Limine/releases/download/v12.9.6/limine-binary.tar.gz -o limine-binary.tar.gz
