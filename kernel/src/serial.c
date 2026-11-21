@@ -18,7 +18,7 @@ int edos_serial_init(void) {
     outb(COM1 + 3U, 0x03U);
     outb(COM1 + 2U, 0xC7U);
     outb(COM1 + 4U, 0x0BU);
-    return (inb(COM1 + 5U) & 0x20U) == 0x20U || (inb(COM1 + 5U) & 0x01U) == 0U;
+    return 1; /* UART configurada; disponibilidad se comprueba en cada escritura. */
 }
 int edos_serial_write_char(char value) {
     unsigned int timeout = 1000000U;
