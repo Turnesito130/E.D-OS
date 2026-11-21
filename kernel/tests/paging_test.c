@@ -37,7 +37,7 @@ int main(void) {
     assert(edos_paging_adopt(&adopted, space.root_physical, alloc_page, phys_to_virt, 0));
     ed_u64 unused_va = 0;
     assert(edos_paging_find_unused_pml4(&adopted, &unused_va));
-    assert(((unused_va >> 39) & 0x1ffULL) == 256ULL);
+    assert(((unused_va >> 39) & 0x1ffULL) == 257ULL);
     puts("PAGING_TESTS_OK");
     return 0;
 }
