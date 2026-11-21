@@ -5,7 +5,7 @@
 #define EDOS_SCHEDULER_MAX_TASKS 32U
 typedef enum { EDOS_TASK_UNUSED=0, EDOS_TASK_READY=1, EDOS_TASK_RUNNING=2, EDOS_TASK_BLOCKED=3, EDOS_TASK_EXITED=4 } edos_task_state_t;
 typedef struct { ed_u64 id; edos_task_state_t state; void (*entry)(void); void *stack; edos_cpu_context_t context; int context_ready; void *interrupt_frame; int interrupt_context_ready; } edos_task_t;
-typedef struct { edos_task_t tasks[EDOS_SCHEDULER_MAX_TASKS]; ed_u64 next_id; ed_u64 cursor; ed_u64 current_id; ed_u64 preemptive_switches; int initialized; } edos_scheduler_t;
+typedef struct { edos_task_t tasks[EDOS_SCHEDULER_MAX_TASKS]; ed_u64 next_id; ed_u64 cursor; ed_u64 current_id; volatile ed_u64 preemptive_switches; int initialized; } edos_scheduler_t;
 void edos_scheduler_init(edos_scheduler_t *scheduler);
 ed_u64 edos_task_create(edos_scheduler_t *scheduler, void (*entry)(void), void *stack);
 int edos_task_set_state(edos_scheduler_t *scheduler, ed_u64 id, edos_task_state_t state);
