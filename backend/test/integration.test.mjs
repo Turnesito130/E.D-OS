@@ -20,12 +20,13 @@ const s3 = new S3Client({
 let child;
 let mockS3Server;
 
-async function request(path, { method = "GET", token, body } = {}) {
+async function request(path, { method = "GET", token, appToken, body } = {}) {
   const response = await fetch(base + path, {
     method,
     headers: {
       ...(body === undefined ? {} : { "content-type": "application/json" }),
-      ...(token ? { authorization: `Bearer ${token}` } : {})
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+      ...(appToken ? { "x-ed-app-token": appToken } : {})
     },
     body: body === undefined ? undefined : JSON.stringify(body)
   });
@@ -191,6 +192,56 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   const otherItems = await request("/v1/sync/items", { token: other.data.session.token });
   assert.equal(otherItems.status, 200);
   assert.equal(otherItems.data.items.length, 0);
+
+  // App credentials are isolated from user sessions and permissions default to deny.
+  const appId = "ed.notes";
+  const issued = await request("/v1/security/apps", {
+    method: "POST", token, body: { appId }
+  });
+  assert.equal(issued.status, 201);
+  assert.equal(typeof issued.data.appToken, "string");
+  assert.equal((await request("/v1/security/authorize", {
+    method: "POST", body: { capability: "files" }
+  })).status, 401);
+  const appToken = issued.data.appToken;
+  const deniedByDefault = await request("/v1/security/authorize", {
+    method: "POST", appToken, body: { capability: "files" }
+  });
+  assert.equal(deniedByDefault.status, 403);
+  assert.equal(deniedByDefault.data.reason, "permission_not_granted");
+
+  // A grant on another account must never authorize this app's credential.
+  const otherGrant = await request("/v1/security/app-permissions/" + appId, {
+    method: "PUT", token: other.data.session.token,
+    body: { grants: { files: true } }
+  });
+  assert.equal(otherGrant.status, 200);
+  const stillDenied = await request("/v1/security/authorize", {
+    method: "POST", appToken, body: { capability: "files" }
+  });
+  assert.equal(stillDenied.status, 403);
+
+  const ownerGrant = await request("/v1/security/app-permissions/" + appId, {
+    method: "PUT", token, body: { grants: { files: true, camera: false } }
+  });
+  assert.equal(ownerGrant.status, 200);
+  const allowed = await request("/v1/security/authorize", {
+    method: "POST", appToken, body: { capability: "files" }
+  });
+  assert.equal(allowed.status, 200);
+  assert.equal(allowed.data.allowed, true);
+  const deniedCamera = await request("/v1/security/authorize", {
+    method: "POST", appToken, body: { capability: "camera" }
+  });
+  assert.equal(deniedCamera.status, 403);
+  assert.equal(deniedCamera.data.reason, "permission_not_granted");
+
+  const revokeApp = await request("/v1/security/apps/" + appId, { method: "DELETE", token });
+  assert.equal(revokeApp.status, 200);
+  const revokedCredential = await request("/v1/security/authorize", {
+    method: "POST", appToken, body: { capability: "files" }
+  });
+  assert.equal(revokedCredential.status, 401);
 
   // End-to-end Cloud upload, completion, signed download and deletion through the S3 HTTP fixture.
   const cloudToken = other.data.session.token;
