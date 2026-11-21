@@ -1,6 +1,6 @@
 #ifndef EDOS_SYSCALL_H
 #define EDOS_SYSCALL_H
-#include "memory.h"
+#include "scheduler.h"
 #define EDOS_SYSCALL_WRITE 0ULL
 #define EDOS_SYSCALL_EXIT 1ULL
 #define EDOS_SYSCALL_YIELD 2ULL
@@ -10,10 +10,12 @@
 #define EDOS_SYSCALL_EINVAL (~0ULL)
 #define EDOS_SYSCALL_ENOSYS (~1ULL)
 #define EDOS_SYSCALL_EFAULT (~2ULL)
+#define EDOS_SYSCALL_EAGAIN (~3ULL)
 typedef struct {
     ed_u64 user_start;
     ed_u64 user_end;
     ed_u64 pid;
+    edos_scheduler_t *scheduler;
     int (*write)(const char *buffer, ed_u64 length, void *opaque);
     void (*yield)(void *opaque);
     void (*exit)(ed_u64 status, void *opaque);
