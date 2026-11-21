@@ -18,7 +18,7 @@ pmm_free_page exige que el llamador entregue una página obtenida previamente me
 
 ## Construcción y verificación
 
-La ejecución completa confirmada en GitHub Actions (commit `5563c878`) pasó las pruebas host, compiló ELF e ISO y arrancó en QEMU BIOS. Se comprobaron por puerto serie PMM, tablas de páginas, disponibilidad PS/2 y el manejador de excepción. La prueba no activa CR3 ni demuestra ring 3 o multitarea real.
+La ejecución completa confirmada en GitHub Actions (commit `5a6c689c`) pasó las pruebas host, compiló ELF e ISO y arrancó en QEMU BIOS. Se comprobaron por puerto serie PMM, mapeo/desmapeo sobre el CR3 activo, ticks del PIT, cambio cooperativo de contexto entre dos tareas y el manejador de excepción. No demuestra ring 3, multitarea preemptiva ni aislamiento de procesos.
 
 \`\`\`sh
 make -C kernel clean all
@@ -31,12 +31,12 @@ El workflow debe compilar y arrancar QEMU. El hito solo se considera verificado 
 
 - Planificador cooperativo: tabla fija de 32 tareas, estados READY/RUNNING/BLOCKED/EXITED, preparación de pilas y contextos, cambio real de pila/registros entre tareas, transición de estados y validación de invariantes. La prueba host alterna dos tareas y el arranque QEMU repite el cambio entre dos tareas sobre pilas estáticas dedicadas. El tick PIT sigue siendo independiente y no realiza preempción.
 - IPC: colas circulares acotadas de 16 mensajes con payload máximo de 64 bytes, validación de tamaño, índices y contador internos, y detección de cola llena/vacía/corrupta. Todavía no hay aislamiento entre procesos, bloqueo, sincronización SMP ni llamadas desde modo usuario.
-- RAMFS: sistema de archivos temporal en memoria con hasta 16 archivos de 256 bytes, creación, lectura, escritura completa y borrado; rechaza nombres con separadores de ruta y límites excedidos. No es persistente, no usa VFS, no tiene directorios, permisos, caché ni integración con dispositivos de bloques.
-- Los módulos scheduler, IPC, RAMFS, buddy y syscalls se compilan como parte del ELF y tienen pruebas unitarias host en CI.
+- RAMFS: sistema de archivos temporal en memoria con hasta 16 archivos de 256 bytes, creación, lectura, escritura completa y borrado; rechaza nombres con separadores de ruta y límites excedidos. No es persistente y no tiene directorios jerárquicos, permisos, caché ni integración con dispositivos de bloques.
+- VFS: capa de sistema de archivos virtual montada sobre RAMFS, con rutas absolutas de raíz, descriptores limitados, apertura/creación/truncado, lectura/escritura por posición, seek, stat y readdir. Rechaza rutas relativas, traversal (`..`), subdirectorios aún no soportados y operaciones incompatibles con los permisos del descriptor. Tiene pruebas host en CI.\n- Los módulos scheduler, IPC, RAMFS, VFS, buddy y syscalls se compilan como parte del ELF y tienen pruebas unitarias host en CI.
 
 ## Pendiente
 
-Propiedad/bitmap de páginas, activación de CR3 y page faults, GDT/TSS/IST, temporizador e IRQ, planificador preemptivo, tarea idle y gestión de procesos/hilos, entrada de syscalls desde ring 3, drivers de almacenamiento/red, VFS y sistema de archivos persistente, SMP, pruebas de estrés y hardware físico.
+Propiedad/bitmap de páginas, raíz CR3 propia y page faults, GDT/TSS/IST, APIC/IOAPIC, planificador preemptivo y tarea idle, gestión de procesos/hilos, entrada de syscalls desde ring 3, drivers de almacenamiento/red, backend VFS persistente y dispositivos de bloques, SMP, pruebas de estrés y hardware físico.
 
 
 ## Interrupciones y temporizador PIT
@@ -68,8 +68,8 @@ Propiedad/bitmap de páginas, activación de CR3 y page faults, GDT/TSS/IST, tem
 - Dispatcher de syscalls con números estables para `WRITE`, `EXIT`, `YIELD` y `GETPID`. Valida el contexto y, para `WRITE`, limita el tamaño a 4096 bytes y comprueba el rango virtual declarado antes de invocar el backend.
 - Pruebas host para resultados, límites, punteros fuera de rango, callbacks y números desconocidos.
 
-**Límites importantes:** el planificador aún no guarda/restaura registros ni pilas y no produce multitarea real. Todavía no existe transición a ring 3, TSS/espacio de usuario, instrucción `syscall/sysret`, copia segura de memoria entre privilegios ni conexión del dispatcher a una entrada de interrupción. El dispatcher conecta `YIELD` y `EXIT` con el planificador y `GETPID` con la tarea actual; su integración está probada en host. Sigue siendo una capa ABI invocada por el kernel de pruebas, no un mecanismo de llamadas desde programas de usuario. El driver COM1 no tiene recepción IRQ ni gestión de interrupciones serie.
+**Límites importantes:** el planificador ya guarda/restaura registros callee-saved y pilas en cambios cooperativos de contexto del kernel, pero todavía no hay preempción ni ejecución en ring 3. Todavía no existe transición a ring 3, TSS/espacio de usuario, instrucción `syscall/sysret`, copia segura de memoria entre privilegios ni conexión del dispatcher a una entrada de interrupción. El dispatcher conecta `YIELD` y `EXIT` con el planificador y `GETPID` con la tarea actual; su integración está probada en host. Sigue siendo una capa ABI invocada por el kernel de pruebas, no un mecanismo de llamadas desde programas de usuario. El driver COM1 no tiene recepción IRQ ni gestión de interrupciones serie.
 
 ## Verificación
 
-El workflow ejecuta pruebas unitarias de buddy, scheduler, IPC, RAMFS y dispatcher de syscalls, compila el ELF, genera la ISO y comprueba el arranque BIOS en QEMU mediante el registro serie. Un resultado verde demuestra esas rutas concretas; demuestra un cambio cooperativo real entre dos contextos de kernel, pero no multitarea preemptiva, modo usuario, aislamiento de procesos, persistencia ni compatibilidad con hardware físico.
+El workflow ejecuta pruebas unitarias de teclado, paginación, buddy, cambio de contexto, scheduler, IPC, syscalls, RAMFS y VFS, compila el ELF, genera la ISO y comprueba el arranque BIOS en QEMU mediante el registro serie. Un resultado verde demuestra esas rutas concretas; demuestra un cambio cooperativo real entre dos contextos de kernel, pero no multitarea preemptiva, modo usuario, aislamiento de procesos, persistencia ni compatibilidad con hardware físico.
