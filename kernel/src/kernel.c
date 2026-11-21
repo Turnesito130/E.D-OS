@@ -10,6 +10,7 @@
 #include "gdt.h"
 #include "edfs.h"
 #include "pci.h"
+#include "heap.h"
 typedef unsigned long long u64;
 __attribute__((used,section(".limine_requests"),aligned(8)))
 volatile u64 limine_base_revision[3]={0xf9562b2d5c95a6c8ULL,0x6a7b384944536bdcULL,3};
@@ -31,6 +32,7 @@ static edos_vfs_t boot_edfs_vfs;
 static char boot_edfs_vfs_buffer[16];
 static char boot_edfs_buffer[32];
 static edos_pci_device_t boot_pci_devices[32];
+static edos_heap_t boot_heap;
 static edos_scheduler_t boot_scheduler;
 static edos_cpu_context_t boot_main_context;
 static ed_u64 boot_task_a, boot_task_b;
@@ -53,6 +55,8 @@ static void boot_task_b_entry(void){
     for(;;)__asm__ volatile("cli; hlt");
 }
 
+static void *heap_page_alloc(void *context){(void)context;return pmm_alloc_page();}
+static int heap_page_free(void *context,void *page){(void)context;return pmm_free_page(page);}
 static void count_pci_device(const edos_pci_device_t *device, void *context){ed_u64 *count=(ed_u64*)context;if(*count<32ULL)boot_pci_devices[*count]=*device;++*count;}
 static void serial_char(char c){(void)edos_serial_write_char(c);}
 static void serial(const char*s){(void)edos_serial_write(s);}
@@ -62,7 +66,7 @@ if (!edos_serial_init()) { for(;;)__asm__ volatile("cli; hlt"); }
 serial("\nE.D-OS kernel 0.0.5\nSERIAL_DRIVER_READY COM1\n");
 if(limine_base_revision[2]!=0){serial("BOOT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("BOOT_PROTOCOL=Limine revision 3\n");
-if(!memory_init() || !memory_validate()){serial("MEMORY_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+if(!memory_init() || !memory_validate() || !edos_heap_init(&boot_heap,heap_page_alloc,heap_page_free,(void*)0)){serial("MEMORY_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 if(!edos_gdt_init()){serial("GDT_TSS_INIT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("GDT_TSS_IST_READY\n");
 if(!idt_init()){serial("IDT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
@@ -159,6 +163,16 @@ volatile u64 *w=(volatile u64*)q;for(u64 i=0;i<512;++i)if(w[i]!=0){serial("PMM_Z
 serial("PMM_REUSE_AND_ZERO_OK\n");
 if(!memory_validate()){serial("PMM_INVARIANTS_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("PMM_INVARIANTS_OK\n");
+void *heap_probe=edos_heap_alloc(&boot_heap,128U);
+if(!heap_probe){serial("KERNEL_HEAP_ALLOC_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+for(unsigned int i=0;i<128U;++i)if(((unsigned char*)heap_probe)[i]!=0){serial("KERNEL_HEAP_ZERO_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+for(unsigned int i=0;i<128U;++i)((unsigned char*)heap_probe)[i]=0x5aU;
+if(!edos_heap_free(&boot_heap,heap_probe)||!edos_heap_validate(&boot_heap)){serial("KERNEL_HEAP_FREE_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+void *heap_reuse=edos_heap_alloc(&boot_heap,128U);
+if(heap_reuse!=heap_probe){serial("KERNEL_HEAP_REUSE_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+for(unsigned int i=0;i<128U;++i)if(((unsigned char*)heap_reuse)[i]!=0){serial("KERNEL_HEAP_REZERO_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+if(!edos_heap_free(&boot_heap,heap_reuse)||!edos_heap_validate(&boot_heap)||!memory_validate()){serial("KERNEL_HEAP_INVARIANTS_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+serial("KERNEL_HEAP_RUNTIME_OK\n");
 edos_paging_space_t address_space;
 if(!edos_paging_init(&address_space,paging_alloc_page,paging_phys_to_virt,(void*)0)){serial("PAGING_INIT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 u64 test_va=0xffff900000000000ULL, test_pa=(u64)(unsigned long long)q-memory_hhdm_offset(), translated=0;
