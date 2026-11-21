@@ -324,6 +324,63 @@ const server = createServer(async (req, res) => {
     const account = await authenticatedAccount(req);
     if (!account) return send(res, 401, { error: "Sesión no válida o caducada." });
 
+    // Registro y revocación de credenciales de aplicaciones (requiere sesión del titular).
+    if (req.method === "POST" && url.pathname === "/v1/security/apps") {
+      const body = await readJson(req);
+      const { validAppId } = await import("./security-permissions.mjs");
+      if (!validAppId(body.appId)) return send(res, 400, { error: "Identificador de aplicación no válido." });
+      const appToken = randomBytes(32).toString("base64url");
+      await pool.query(
+        `INSERT INTO app_credentials (account_id, app_id, token_hash, revoked_at)
+         VALUES ($1, $2, $3, NULL)
+         ON CONFLICT (account_id, app_id)
+         DO UPDATE SET token_hash = EXCLUDED.token_hash, created_at = now(), last_used_at = NULL, revoked_at = NULL`,
+        [account.id, body.appId, tokenDigest(appToken)]
+      );
+      await auditSecurityEvent(pool, account.id, "app.credential.issued", req, { appId: body.appId });
+      return send(res, 201, { appId: body.appId, appToken, warning: "Guarda este secreto ahora. No volverá a mostrarse." });
+    }
+
+    if (req.method === "DELETE" && url.pathname.startsWith("/v1/security/apps/")) {
+      const appId = url.pathname.slice("/v1/security/apps/".length);
+      const { validAppId } = await import("./security-permissions.mjs");
+      if (!validAppId(appId)) return send(res, 400, { error: "Identificador de aplicación no válido." });
+      const result = await pool.query(
+        "UPDATE app_credentials SET revoked_at = now() WHERE account_id = $1 AND app_id = $2 AND revoked_at IS NULL RETURNING id",
+        [account.id, appId]
+      );
+      if (!result.rowCount) return send(res, 404, { error: "Aplicación no encontrada o ya revocada." });
+      await auditSecurityEvent(pool, account.id, "app.credential.revoked", req, { appId });
+      return send(res, 200, { success: true, appId });
+    }
+
+
+    // Las aplicaciones se autentican con credenciales propias, nunca con el token de sesión del usuario.
+    if (req.method === "POST" && url.pathname === "/v1/security/authorize") {
+      const appToken = req.headers["x-ed-app-token"] || "";
+      if (typeof appToken !== "string" || appToken.length < 40 || appToken.length > 100) {
+        return send(res, 401, { allowed: false, reason: "invalid_app_credential" });
+      }
+      const body = await readJson(req);
+      const { APP_CAPABILITIES, permissionDecision } = await import("./security-permissions.mjs");
+      if (!APP_CAPABILITIES.includes(body.capability)) return send(res, 400, { allowed: false, error: "Capacidad no reconocida." });
+      const credential = await pool.query(
+        `SELECT id, account_id, app_id FROM app_credentials
+          WHERE token_hash = $1 AND revoked_at IS NULL`, [tokenDigest(appToken)]
+      );
+      if (!credential.rowCount) return send(res, 401, { allowed: false, reason: "invalid_app_credential" });
+      const app = credential.rows[0];
+      const grantResult = await pool.query(
+        "SELECT granted FROM app_permission_grants WHERE account_id = $1 AND app_id = $2 AND capability = $3",
+        [app.account_id, app.app_id, body.capability]
+      );
+      const decision = permissionDecision({ credentialActive: true, grant: grantResult.rows[0]?.granted === true });
+      await pool.query("UPDATE app_credentials SET last_used_at = now() WHERE id = $1", [app.id]);
+      await auditSecurityEvent(pool, app.account_id, decision.allowed ? "app.access.allowed" : "app.access.denied", req, { appId: app.app_id, capability: body.capability, reason: decision.reason });
+      return send(res, decision.allowed ? 200 : 403, { ...decision, appId: app.app_id, capability: body.capability });
+    }
+
+
     // Privacidad: permisos por aplicación, denegados por defecto.
     // Solo se modifica la cuenta autenticada; el servidor valida capacidades conocidas.
     if (req.method === "GET" && url.pathname === "/v1/security/app-permissions") {
