@@ -63,7 +63,8 @@
     "bounded sector-addressable RAM disk backend with multi-sector read/write operations",
     "kernel QEMU smoke test verifies RAM disk sector writes, reads and out-of-range rejection",
     "x86-64 page-fault exception path reports CR2 fault address and error code before halting",
-    "QEMU boot test deliberately accesses an unmapped canonical virtual address to validate page-fault dispatch"
+    "QEMU boot test deliberately accesses an unmapped canonical virtual address to validate page-fault dispatch",
+    "syscall YIELD invokes real cooperative context switching when the current and next task have prepared CPU contexts"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000.",
