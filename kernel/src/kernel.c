@@ -5,6 +5,7 @@
 #include "keyboard.h"
 #include "irq.h"
 #include "scheduler.h"
+#include "vfs.h"
 typedef unsigned long long u64;
 __attribute__((used,section(".limine_requests"),aligned(8)))
 volatile u64 limine_base_revision[3]={0xf9562b2d5c95a6c8ULL,0x6a7b384944536bdcULL,3};
@@ -13,6 +14,9 @@ static ed_u64 *paging_phys_to_virt(ed_u64 physical,void *opaque){(void)opaque;if
 
 static void serial_char(char c);
 static void serial(const char *s);
+static edos_ramfs_t boot_ramfs;
+static edos_vfs_t boot_vfs;
+static char boot_vfs_buffer[16];
 static edos_scheduler_t boot_scheduler;
 static edos_cpu_context_t boot_main_context;
 static ed_u64 boot_task_a, boot_task_b;
@@ -65,6 +69,23 @@ if(boot_task_stage!=3||boot_scheduler.current_id!=boot_task_a||
     serial("SCHEDULER_VERIFY_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
 }
 serial("SCHEDULER_CONTEXT_SWITCH_OK\n");
+edos_ramfs_init(&boot_ramfs);
+if(!edos_vfs_mount_root(&boot_vfs,&boot_ramfs)){serial("VFS_MOUNT_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");}
+int vfs_fd=edos_vfs_open(&boot_vfs,"/boot.txt",EDOS_VFS_CREATE|EDOS_VFS_READ|EDOS_VFS_WRITE);
+if(vfs_fd<0||edos_vfs_write(&boot_vfs,vfs_fd,"E.D-OS VFS",10)!=10||
+   !edos_vfs_seek(&boot_vfs,vfs_fd,0,EDOS_VFS_SEEK_SET)||
+   edos_vfs_read(&boot_vfs,vfs_fd,boot_vfs_buffer,10)!=10||
+   boot_vfs_buffer[0]!='E'||boot_vfs_buffer[9]!='S'){
+    serial("VFS_RUNTIME_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");
+}
+edos_vfs_dirent_t vfs_info;
+ed_u64 vfs_cursor=0;
+if(!edos_vfs_stat(&boot_vfs,"/boot.txt",&vfs_info)||vfs_info.size!=10||
+   !edos_vfs_readdir(&boot_vfs,&vfs_cursor,&vfs_info)||vfs_info.size!=10||
+   !edos_vfs_close(&boot_vfs,vfs_fd)){
+    serial("VFS_RUNTIME_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");
+}
+serial("VFS_RUNTIME_OK\\n");
 serial("IDT_READY entries=256 exceptions=32\nMEMORY_MAP_OK usable_bytes=");hex(memory_usable_bytes());serial(" hhdm=");hex(memory_hhdm_offset());serial("\n");
 void *p=pmm_alloc_page();if(!p){serial("PMM_ALLOC_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("PMM_ALLOC_ZEROED_OK\n");
