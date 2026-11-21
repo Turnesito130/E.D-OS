@@ -37,3 +37,4 @@ jobs:
             node --check "$file"
           done
           node scripts/check-html-scripts.mjs
+          node --test js/sync-queue.test.mjs
