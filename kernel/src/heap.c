@@ -46,6 +46,10 @@ static void bit_clear(heap_slab_t *slab, ed_u32 index) {
 static heap_slab_t *create_slab(edos_heap_t *heap, ed_u32 class_index) {
     heap_slab_t *slab = (heap_slab_t *)heap->allocate_page(heap->context);
     if (!slab) return (heap_slab_t *)0;
+    if (((ed_u64)(unsigned long long)slab & (HEAP_PAGE_SIZE - 1U)) != 0) {
+        (void)heap->free_page(heap->context, slab);
+        return (heap_slab_t *)0;
+    }
     zero_bytes(slab, HEAP_PAGE_SIZE);
     slab->next = (heap_slab_t *)heap->slabs[class_index];
     slab->magic = HEAP_MAGIC;
@@ -148,6 +152,7 @@ int edos_heap_validate(const edos_heap_t *heap) {
         const heap_slab_t *slab = (const heap_slab_t *)heap->slabs[class_index];
         while (slab) {
             if (++pages > heap->page_counts[class_index] ||
+                ((ed_u64)(unsigned long long)slab & (HEAP_PAGE_SIZE - 1U)) != 0 ||
                 slab->magic != HEAP_MAGIC || slab->class_index != class_index ||
                 slab->slot_count != slots_for_class(class_index) ||
                 slab->free_count > slab->slot_count) return 0;
