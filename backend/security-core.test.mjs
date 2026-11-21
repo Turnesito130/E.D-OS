@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { hashPassword, verifyPassword, tokenDigest, validEmail } from "./security-core.mjs";
+import { APP_CAPABILITIES, validAppId, normalizePermissionGrant } from "./security-permissions.mjs";
 
 test("password hashes use unique random salts and verify correctly", async () => {
   const first = await hashPassword("correct horse battery staple");
@@ -29,7 +30,6 @@ test("email validation rejects malformed and oversized values", () => {
   assert.equal(validEmail("a b@example.com"), false);
   assert.equal(validEmail("x".repeat(250) + "@a.com"), false);
 });
-import { APP_CAPABILITIES, validAppId, normalizePermissionGrant } from "./security-permissions.mjs";
 
 test("app permission grants accept only known capabilities and boolean values", () => {
   assert.deepEqual(normalizePermissionGrant({ microphone: true, files: false }), {
