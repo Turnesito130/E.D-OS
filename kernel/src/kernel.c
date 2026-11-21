@@ -72,6 +72,105 @@ extern char kernel_stack_top[];
 static unsigned char preempt_stack_a[8192] __attribute__((aligned(16)));
 static unsigned char preempt_stack_b[8192] __attribute__((aligned(16)));
 static unsigned char preempt_stack_monitor[8192] __attribute__((aligned(16)));
+
+static void ring3_return_trap(void){for(;;)__asm__ volatile("cli; hlt");}
+static void ring3_enter_task(void){edos_enter_user_mode(RING3_CODE_VA,RING3_STACK_VA+4096ULL);}
+static int ring3_write_callback(const char *buffer, ed_u64 length, void *opaque){
+    (void)opaque;
+    static const char expected[]="RING3_SYSCALL_OK";
+    if(!buffer||length!=16ULL)return 0;
+    for(ed_u64 i=0;i<16ULL;++i)if(buffer[i]!=expected[i])return 0;
+    ring3_write_seen=1;
+    serial("RING3_SYSCALL_WRITE_OK\n");
+    return 1;
+}
+static void ring3_exit_callback(ed_u64 status, void *opaque){
+    (void)opaque;
+    ring3_exit_status=status;
+    edos_context_switch(&ring3_user_context,&ring3_kernel_context);
+    for(;;)__asm__ volatile("cli; hlt");
+}
+u64 kernel_syscall_entry(u64 number,u64 arg0,u64 arg1){
+    return edos_syscall_dispatch(number,arg0,arg1,&ring3_syscall_context);
+}
+static int ring3_user_mode_test(edos_paging_space_t *space){
+    void *code_page=pmm_alloc_page();
+    void *data_page=pmm_alloc_page();
+    void *stack_page=pmm_alloc_page();
+    if(!code_page||!data_page||!stack_page){
+        if(code_page)(void)pmm_free_page(code_page);
+        if(data_page)(void)pmm_free_page(data_page);
+        if(stack_page)(void)pmm_free_page(stack_page);
+        serial("RING3_PAGE_ALLOC_ERROR\n");return 0;
+    }
+    unsigned char *code=(unsigned char*)code_page;
+    unsigned char *data=(unsigned char*)data_page;
+    unsigned char *stack=(unsigned char*)stack_page;
+    for(unsigned int i=0;i<4096U;++i){code[i]=0;data[i]=0;stack[i]=0;}
+    u64 blob_size=(u64)(unsigned long long)(edos_ring3_blob_end-edos_ring3_blob_start);
+    if(!blob_size||blob_size>4096ULL){
+        (void)pmm_free_page(code_page);(void)pmm_free_page(data_page);(void)pmm_free_page(stack_page);
+        serial("RING3_BLOB_SIZE_ERROR\n");return 0;
+    }
+    for(u64 i=0;i<blob_size;++i)code[i]=edos_ring3_blob_start[i];
+    static const char message[]="RING3_SYSCALL_OK";
+    for(unsigned int i=0;i<16U;++i)data[i]=(unsigned char)message[i];
+    u64 code_pa=(u64)(unsigned long long)code_page-memory_hhdm_offset();
+    u64 data_pa=(u64)(unsigned long long)data_page-memory_hhdm_offset();
+    u64 stack_pa=(u64)(unsigned long long)stack_page-memory_hhdm_offset();
+    int code_mapped=edos_paging_map_4k(space,RING3_CODE_VA,code_pa,EDOS_PAGE_PRESENT|EDOS_PAGE_USER);
+    int data_mapped=code_mapped&&edos_paging_map_4k(space,RING3_DATA_VA,data_pa,EDOS_PAGE_PRESENT|EDOS_PAGE_WRITE|EDOS_PAGE_USER);
+    int stack_mapped=data_mapped&&edos_paging_map_4k(space,RING3_STACK_VA,stack_pa,EDOS_PAGE_PRESENT|EDOS_PAGE_WRITE|EDOS_PAGE_USER);
+    if(!stack_mapped){
+        if(data_mapped){u64 ignored;(void)edos_paging_unmap_4k(space,RING3_DATA_VA,&ignored);__asm__ volatile("invlpg (%0)"::"r"(RING3_DATA_VA):"memory");}
+        if(code_mapped){u64 ignored;(void)edos_paging_unmap_4k(space,RING3_CODE_VA,&ignored);__asm__ volatile("invlpg (%0)"::"r"(RING3_CODE_VA):"memory");}
+        (void)pmm_free_page(code_page);(void)pmm_free_page(data_page);(void)pmm_free_page(stack_page);
+        serial("RING3_MAP_ERROR\n");return 0;
+    }
+    __asm__ volatile("invlpg (%0)"::"r"(RING3_CODE_VA):"memory");
+    __asm__ volatile("invlpg (%0)"::"r"(RING3_DATA_VA):"memory");
+    __asm__ volatile("invlpg (%0)"::"r"(RING3_STACK_VA):"memory");
+    ring3_write_seen=0;ring3_exit_status=~0ULL;
+    ring3_syscall_context.user_start=RING3_CODE_VA;
+    ring3_syscall_context.user_end=RING3_DATA_VA+4096ULL;
+    ring3_syscall_context.pid=42ULL;
+    ring3_syscall_context.scheduler=(edos_scheduler_t*)0;
+    ring3_syscall_context.write=ring3_write_callback;
+    ring3_syscall_context.exit=ring3_exit_callback;
+    ring3_syscall_context.opaque=(void*)0;
+    if(!edos_tss_set_rsp0(ring3_kernel_stack+sizeof(ring3_kernel_stack))||
+       !edos_context_init(&ring3_user_context,ring3_enter_stack,sizeof(ring3_enter_stack),ring3_enter_task,ring3_return_trap)){
+        (void)edos_tss_set_rsp0(kernel_stack_top);
+        u64 ignored;(void)edos_paging_unmap_4k(space,RING3_STACK_VA,&ignored);
+        (void)edos_paging_unmap_4k(space,RING3_DATA_VA,&ignored);
+        (void)edos_paging_unmap_4k(space,RING3_CODE_VA,&ignored);
+        __asm__ volatile("invlpg (%0)"::"r"(RING3_STACK_VA):"memory");
+        __asm__ volatile("invlpg (%0)"::"r"(RING3_DATA_VA):"memory");
+        __asm__ volatile("invlpg (%0)"::"r"(RING3_CODE_VA):"memory");
+        (void)pmm_free_page(code_page);(void)pmm_free_page(data_page);(void)pmm_free_page(stack_page);
+        serial("RING3_CONTEXT_ERROR\n");return 0;
+    }
+    edos_context_switch(&ring3_kernel_context,&ring3_user_context);
+    __asm__ volatile("cli" ::: "memory");
+    unsigned short kernel_data=0x10U;
+    __asm__ volatile("mov %0, %%ds; mov %0, %%es; mov %0, %%ss"::"r"(kernel_data):"memory");
+    (void)edos_tss_set_rsp0(kernel_stack_top);
+    __asm__ volatile("sti" ::: "memory");
+    if(ring3_exit_status!=0ULL||!ring3_write_seen){
+        serial("RING3_SYSCALL_ERROR\n");return 0;
+    }
+    u64 ignored;
+    (void)edos_paging_unmap_4k(space,RING3_STACK_VA,&ignored);
+    (void)edos_paging_unmap_4k(space,RING3_DATA_VA,&ignored);
+    (void)edos_paging_unmap_4k(space,RING3_CODE_VA,&ignored);
+    __asm__ volatile("invlpg (%0)"::"r"(RING3_STACK_VA):"memory");
+    __asm__ volatile("invlpg (%0)"::"r"(RING3_DATA_VA):"memory");
+    __asm__ volatile("invlpg (%0)"::"r"(RING3_CODE_VA):"memory");
+    (void)pmm_free_page(code_page);(void)pmm_free_page(data_page);(void)pmm_free_page(stack_page);
+    serial("RING3_USERMODE_OK\n");
+    return 1;
+}
+
 static void preempt_task_returned(void){for(;;)__asm__ volatile("cli; hlt");}
 static void preempt_task_a_entry(void){preempt_a_started=1;for(;;)++preempt_a_runs;}
 static void preempt_task_b_entry(void){preempt_b_started=1;for(;;)++preempt_b_runs;}
