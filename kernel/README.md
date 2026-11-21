@@ -39,11 +39,11 @@ Propiedad/bitmap de páginas, paginación y page faults, GDT/TSS/IST, temporizad
 
 ## Driver serie y ABI de syscalls (fase experimental)
 
-- Driver COM1 separado en `serial.c`: configuración UART 16550, transmisión con espera acotada y salida de cadenas. El kernel lo usa para sus diagnósticos de arranque.
-- Dispatcher de syscalls con números estables para `WRITE`, `EXIT`, `YIELD` y `GETPID`. La llamada `WRITE` limita el tamaño a 4096 bytes y comprueba el rango virtual declarado antes de invocar el backend.
+- Driver COM1 separado en `serial.c`: comprobación del registro scratch para detectar la UART, configuración 16550, transmisión con espera acotada y salida de cadenas. El kernel lo usa para sus diagnósticos de arranque.
+- Dispatcher de syscalls con números estables para `WRITE`, `EXIT`, `YIELD` y `GETPID`. Valida el contexto y, para `WRITE`, limita el tamaño a 4096 bytes y comprueba el rango virtual declarado antes de invocar el backend.
 - Pruebas host para resultados, límites, punteros fuera de rango, callbacks y números desconocidos.
 
-**Límites importantes:** todavía no existe transición a ring 3, TSS/espacio de usuario, instrucción `syscall/sysret`, copia segura de memoria entre privilegios ni conexión del dispatcher a una entrada de interrupción. El dispatcher es una capa ABI probada aisladamente, no un mecanismo de llamadas desde programas de usuario. El driver COM1 no tiene detección fiable de hardware ausente ni recepción IRQ.
+**Límites importantes:** el planificador aún no guarda/restaura registros ni pilas y no produce multitarea real. Todavía no existe transición a ring 3, TSS/espacio de usuario, instrucción `syscall/sysret`, copia segura de memoria entre privilegios ni conexión del dispatcher a una entrada de interrupción. El dispatcher es una capa ABI probada aisladamente, no un mecanismo de llamadas desde programas de usuario. El driver COM1 no tiene recepción IRQ ni gestión de interrupciones serie.
 
 ## Verificación
 
