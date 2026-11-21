@@ -9,6 +9,7 @@
 #include "block.h"
 #include "gdt.h"
 #include "edfs.h"
+#include "pci.h"
 typedef unsigned long long u64;
 __attribute__((used,section(".limine_requests"),aligned(8)))
 volatile u64 limine_base_revision[3]={0xf9562b2d5c95a6c8ULL,0x6a7b384944536bdcULL,3};
@@ -51,6 +52,7 @@ static void boot_task_b_entry(void){
     for(;;)__asm__ volatile("cli; hlt");
 }
 
+static void count_pci_device(const edos_pci_device_t *device, void *context){(void)device; ++*(ed_u64*)context;}
 static void serial_char(char c){(void)edos_serial_write_char(c);}
 static void serial(const char*s){(void)edos_serial_write(s);}
 static void hex(u64 v){static const char d[]="0123456789abcdef";serial("0x");for(int s=60;s>=0;s-=4)serial_char(d[(v>>s)&15]);}
@@ -65,6 +67,10 @@ serial("GDT_TSS_IST_READY\n");
 if(!idt_init()){serial("IDT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 int keyboard_ready=edos_keyboard_available();
 if(keyboard_ready)edos_keyboard_init();
+ed_u64 pci_device_count=0;
+edos_pci_u32 pci_found=edos_pci_enumerate(count_pci_device,&pci_device_count);
+if((ed_u64)pci_found!=pci_device_count){serial("PCI_ENUMERATION_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");}
+serial("PCI_ENUMERATION_OK devices=");hex(pci_device_count);serial("\\n");
 if(!edos_irq_init(keyboard_ready)){serial("IRQ_INIT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 edos_scheduler_init(&boot_scheduler);
 boot_task_a=edos_task_create(&boot_scheduler,boot_task_a_entry,boot_task_stack_a);
