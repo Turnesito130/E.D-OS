@@ -29,7 +29,7 @@ El workflow debe compilar y arrancar QEMU. El hito solo se considera verificado 
 
 ## Nuevos subsistemas en fase inicial (0.1)
 
-- Planificador cooperativo: tabla fija de 32 tareas, estados READY/RUNNING/BLOCKED/EXITED, preparación de pilas y contextos, cambio real de pila/registros entre tareas, transición de estados y validación de invariantes. La prueba host alterna dos tareas y QEMU repite el cambio sobre pilas asignadas por el PMM.
+- Planificador cooperativo: tabla fija de 32 tareas, estados READY/RUNNING/BLOCKED/EXITED, preparación de pilas y contextos, cambio real de pila/registros entre tareas, transición de estados y validación de invariantes. La prueba host alterna dos tareas y el arranque QEMU repite el cambio entre dos tareas sobre pilas estáticas dedicadas. El tick PIT sigue siendo independiente y no realiza preempción.
 - IPC: colas circulares acotadas de 16 mensajes con payload máximo de 64 bytes, validación de tamaño, índices y contador internos, y detección de cola llena/vacía/corrupta. Todavía no hay aislamiento entre procesos, bloqueo, sincronización SMP ni llamadas desde modo usuario.
 - RAMFS: sistema de archivos temporal en memoria con hasta 16 archivos de 256 bytes, creación, lectura, escritura completa y borrado; rechaza nombres con separadores de ruta y límites excedidos. No es persistente, no usa VFS, no tiene directorios, permisos, caché ni integración con dispositivos de bloques.
 - Los módulos scheduler, IPC, RAMFS, buddy y syscalls se compilan como parte del ELF y tienen pruebas unitarias host en CI.
@@ -43,9 +43,9 @@ Propiedad/bitmap de páginas, activación de CR3 y page faults, GDT/TSS/IST, tem
 
 - PIC 8259 remapeado a los vectores 32–47; se habilita IRQ0 y, si se detecta controlador PS/2, IRQ1. Las demás líneas permanecen enmascaradas.
 - PIT canal 0 configurado aproximadamente a 100 Hz; stub de IRQ0 guarda/restaura registros generales, despacha el tick y envía EOI al PIC.
-- La prueba QEMU espera tres ticks reales antes de continuar. No se habilita IRQ1 todavía.
+- La prueba QEMU espera tres ticks reales antes de continuar. IRQ1 se habilita únicamente si se detecta el controlador PS/2.
 
-**Límites:** no hay APIC/IOAPIC, temporizador HPET, prioridades, IRQ de teclado ni integración del tick con cambio de contexto del scheduler. El handler no realiza todavía preempción.
+**Límites:** no hay APIC/IOAPIC, temporizador HPET, prioridades ni integración del tick con cambio de contexto del scheduler. El handler no realiza todavía preempción.
 
 ## Drivers básicos: COM1 y teclado PS/2
 
@@ -72,4 +72,4 @@ Propiedad/bitmap de páginas, activación de CR3 y page faults, GDT/TSS/IST, tem
 
 ## Verificación
 
-El workflow ejecuta pruebas unitarias de buddy, scheduler, IPC, RAMFS y dispatcher de syscalls, compila el ELF, genera la ISO y comprueba el arranque BIOS en QEMU mediante el registro serie. Un resultado verde demuestra esas rutas concretas; no demuestra multitarea real, aislamiento de procesos, persistencia ni compatibilidad con hardware físico.
+El workflow ejecuta pruebas unitarias de buddy, scheduler, IPC, RAMFS y dispatcher de syscalls, compila el ELF, genera la ISO y comprueba el arranque BIOS en QEMU mediante el registro serie. Un resultado verde demuestra esas rutas concretas; demuestra un cambio cooperativo real entre dos contextos de kernel, pero no multitarea preemptiva, modo usuario, aislamiento de procesos, persistencia ni compatibilidad con hardware físico.
