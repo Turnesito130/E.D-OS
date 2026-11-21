@@ -10,6 +10,8 @@ static inline void io_wait(void) { outb(0x80U, 0); }
 
 int edos_irq_init(int enable_keyboard) {
     timer_ticks = 0;
+    outb(0x21U, 0xffU);
+    outb(0xa1U, 0xffU);
     /* Remap the legacy PIC to vectors 0x20-0x2f. */
     outb(0x20U, 0x11U); io_wait();
     outb(0xa0U, 0x11U); io_wait();
