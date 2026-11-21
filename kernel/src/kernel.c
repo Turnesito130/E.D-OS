@@ -6,6 +6,7 @@
 #include "irq.h"
 #include "scheduler.h"
 #include "vfs.h"
+#include "block.h"
 typedef unsigned long long u64;
 __attribute__((used,section(".limine_requests"),aligned(8)))
 volatile u64 limine_base_revision[3]={0xf9562b2d5c95a6c8ULL,0x6a7b384944536bdcULL,3};
@@ -17,6 +18,11 @@ static void serial(const char *s);
 static edos_ramfs_t boot_ramfs;
 static edos_vfs_t boot_vfs;
 static char boot_vfs_buffer[16];
+static edos_block_device_t boot_block_device;
+static edos_ramdisk_t boot_ramdisk;
+static unsigned char boot_disk_storage[4096];
+static unsigned char boot_disk_write[512];
+static unsigned char boot_disk_read[512];
 static edos_scheduler_t boot_scheduler;
 static edos_cpu_context_t boot_main_context;
 static ed_u64 boot_task_a, boot_task_b;
@@ -86,6 +92,18 @@ if(!edos_vfs_stat(&boot_vfs,"/boot.txt",&vfs_info)||vfs_info.size!=10||
     serial("VFS_RUNTIME_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
 }
 serial("VFS_RUNTIME_OK\n");
+if(!edos_ramdisk_init(&boot_block_device,&boot_ramdisk,boot_disk_storage,sizeof(boot_disk_storage),512U)){
+    serial("BLOCK_INIT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
+}
+for(unsigned int i=0;i<512U;++i)boot_disk_write[i]=(unsigned char)(i^0x5aU);
+if(!edos_block_write(&boot_block_device,2,1,boot_disk_write)||
+   !edos_block_read(&boot_block_device,2,1,boot_disk_read)||
+   boot_disk_read[0]!=boot_disk_write[0]||boot_disk_read[255]!=boot_disk_write[255]||
+   boot_disk_read[511]!=boot_disk_write[511]||
+   edos_block_read(&boot_block_device,8,1,boot_disk_read)){
+    serial("BLOCK_IO_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
+}
+serial("BLOCK_RAMDISK_RUNTIME_OK\n");
 serial("IDT_READY entries=256 exceptions=32\nMEMORY_MAP_OK usable_bytes=");hex(memory_usable_bytes());serial(" hhdm=");hex(memory_hhdm_offset());serial("\n");
 void *p=pmm_alloc_page();if(!p){serial("PMM_ALLOC_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("PMM_ALLOC_ZEROED_OK\n");
