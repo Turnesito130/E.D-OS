@@ -6,9 +6,9 @@
   const MAX_PAYLOAD_BYTES = 12_000;
   const KEY_PATTERN = /^[a-zA-Z0-9._-]{1,100}$/;
 
-  function read(storage = window.localStorage) {
+  function read(storage = window.localStorage, storageKey = STORAGE_KEY) {
     try {
-      const parsed = JSON.parse(storage.getItem(STORAGE_KEY) || '{}');
+      const parsed = JSON.parse(storage.getItem(storageKey) || '{}');
       return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
         ? Object.assign(Object.create(null), parsed)
         : Object.create(null);
@@ -17,9 +17,9 @@
     }
   }
 
-  function readCache(storage = window.localStorage) {
+  function readCache(storage = window.localStorage, storageKey = CACHE_KEY) {
     try {
-      const parsed = JSON.parse(storage.getItem(CACHE_KEY) || '{}');
+      const parsed = JSON.parse(storage.getItem(storageKey) || '{}');
       return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
         ? Object.assign(Object.create(null), parsed)
         : Object.create(null);
@@ -28,22 +28,22 @@
     }
   }
 
-  function writeCache(cache, storage = window.localStorage) {
+  function writeCache(cache, storage = window.localStorage, storageKey = CACHE_KEY) {
     if (!cache || typeof cache !== 'object' || Array.isArray(cache) ||
         Object.keys(cache).length > MAX_ITEMS) return false;
     try {
-      storage.setItem(CACHE_KEY, JSON.stringify(cache));
+      storage.setItem(storageKey, JSON.stringify(cache));
       return true;
     } catch (_) {
       return false;
     }
   }
 
-  function write(queue, storage = window.localStorage) {
+  function write(queue, storage = window.localStorage, storageKey = STORAGE_KEY) {
     if (!queue || typeof queue !== 'object' || Array.isArray(queue)) return false;
     if (Object.keys(queue).length > MAX_ITEMS) return false;
     try {
-      storage.setItem(STORAGE_KEY, JSON.stringify(queue));
+      storage.setItem(storageKey, JSON.stringify(queue));
       return true;
     } catch (_) {
       return false;
