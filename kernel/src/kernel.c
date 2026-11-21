@@ -69,8 +69,8 @@ int keyboard_ready=edos_keyboard_available();
 if(keyboard_ready)edos_keyboard_init();
 ed_u64 pci_device_count=0;
 edos_pci_u32 pci_found=edos_pci_enumerate(count_pci_device,&pci_device_count);
-if((ed_u64)pci_found!=pci_device_count){serial("PCI_ENUMERATION_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");}
-serial("PCI_ENUMERATION_OK devices=");hex(pci_device_count);serial("\\n");
+if((ed_u64)pci_found!=pci_device_count){serial("PCI_ENUMERATION_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+serial("PCI_ENUMERATION_OK devices=");hex(pci_device_count);serial("\n");
 if(!edos_irq_init(keyboard_ready)){serial("IRQ_INIT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 edos_scheduler_init(&boot_scheduler);
 boot_task_a=edos_task_create(&boot_scheduler,boot_task_a_entry,boot_task_stack_a);
