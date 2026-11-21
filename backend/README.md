@@ -74,7 +74,7 @@ Todas las respuestas son JSON. Las rutas privadas requieren `Authorization: Bear
 | POST | `/v1/auth/change-password` | Sesión | Cambiar contraseña y revocar las demás sesiones |
 | GET | `/v1/security/sessions` | Sesión | Listar sesiones activas propias |
 | DELETE | `/v1/security/sessions/{id}` | Sesión | Revocar una sesión propia |
-| GET | `/v1/security/events` | Sesión | Consultar los últimos 100 eventos de seguridad propios |
+| GET | `/v1/security/events` | Sesión | Consultar los últimos 100 eventos de seguridad propios |\n| GET | `/v1/security/app-permissions` | Sesión | Consultar permisos de aplicaciones |\n| PUT | `/v1/security/app-permissions/{appId}` | Sesión | Guardar concesiones de permisos para una aplicación |
 | GET | `/v1/account/me` | Sesión | Consultar identidad |
 | GET | `/v1/devices` | Sesión | Listar dispositivos activos |
 | POST | `/v1/devices` | Sesión | Registrar dispositivo |
@@ -153,3 +153,12 @@ El código de ocho cifras caduca en cinco minutos y solo se guarda su hash. El s
 - `DELETE` requiere la versión actual y crea un tombstone versionado.
 - `GET` devuelve como máximo 500 elementos recientes.
 - No se sincronizan archivos, fotos ni secretos; el contenido se almacena como JSONB en el servidor y **no tiene cifrado de extremo a extremo**.
+
+
+### Permisos de aplicaciones 0.3
+
+- Las concesiones se guardan por cuenta y aplicación. Las capacidades admitidas son `microphone`, `camera`, `location`, `files` y `notifications`; las no registradas se consideran denegadas.
+- `GET /v1/security/app-permissions` lista las concesiones de la cuenta autenticada.
+- `PUT /v1/security/app-permissions/{appId}` recibe `{ "grants": { "microphone": true, "camera": false, "location": false, "files": false, "notifications": false } }`. Se rechazan capacidades desconocidas y valores que no sean booleanos.
+- **Límite importante:** este primer paso almacena y administra las preferencias de consentimiento. Todavía no intercepta llamadas al micrófono/cámara ni restringe el acceso del sistema operativo a archivos o ubicación. Cada API/controlador que entregue esos recursos deberá consultar la concesión en el servidor/núcleo antes de autorizar el acceso.
+- En bases de datos existentes, vuelve a ejecutar `psql "$DATABASE_URL" -f schema.sql` para crear la tabla nueva.
