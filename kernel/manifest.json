@@ -35,7 +35,8 @@
     "Limine boot configuration",
     "GitHub Actions QEMU boot-test workflow",
     "fixed-capacity cooperative task registry and round-robin task selection prototype",
-    "bounded in-kernel IPC message queue prototype"
+    "bounded in-kernel IPC message queue prototype",
+    "bounded in-memory RAM filesystem prototype (16 files, 256 bytes per file)"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000."
@@ -48,7 +49,8 @@
     "UEFI boot",
     "physical hardware compatibility",
     "scheduler context switching and real task execution",
-    "IPC integration with isolated processes and syscalls"
+    "IPC integration with isolated processes and syscalls",
+    "persistent filesystem, VFS, block-device drivers and permission enforcement"
   ],
   "linux_reference": {
     "repository": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
