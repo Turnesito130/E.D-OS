@@ -4,7 +4,7 @@ E.D-OS utiliza un kernel propio. Limine es el bootloader; Linux se estudia como 
 
 ## Verificación confirmada
 
-La ejecución completa de GitHub Actions en la rama `arquitectura/0.1` (commit `40163f25`) pasó las pruebas host, compiló la ISO híbrida y arrancó el kernel en QEMU BIOS y UEFI con OVMF. También arrancó en una máquina QEMU tipo PC con disco IDE y verificó lectura/escritura ATA PIO.
+La ejecución completa de GitHub Actions en la rama `arquitectura/0.1` (commit `ce041be4`) pasó las pruebas host, compiló la ISO híbrida y arrancó el kernel en QEMU BIOS y UEFI con OVMF. También arrancó en una máquina QEMU tipo PC con disco IDE y verificó lectura/escritura ATA PIO.
 
 En BIOS y UEFI se verificó:
 - PMM con registro de propiedad de páginas y heap slab.
@@ -16,7 +16,7 @@ En BIOS y UEFI se verificó:
 - Enumeración PCI y decodificación de nueve BAR en QEMU.
 - Page fault deliberado en una dirección desmapeada, con registro de CR2.
 
-En la prueba ATA PIO se utilizó un disco virtual IDE de 16 MiB: lectura del sector 0, escritura y verificación de un sector de prueba, formato EDFS, escritura de un archivo mediante VFS, remontaje y lectura de vuelta.
+En la prueba ATA PIO se utilizó un disco virtual IDE de 16 MiB: lectura del sector 0, escritura y verificación de un sector de prueba, formato EDFS, escritura de un archivo mediante VFS, remontaje y lectura de vuelta. Otra prueba QMP inyectó la tecla `a` en QEMU y confirmó que el teclado PS/2 la recibió mediante IRQ1.
 
 ## Memoria
 
@@ -64,7 +64,7 @@ En la prueba ATA PIO se utilizó un disco virtual IDE de 16 MiB: lectura del sec
 ## Drivers y buses
 
 - COM1: UART 16550 por sondeo para diagnósticos.
-- Teclado PS/2: IRQ1, cola circular de 64 scancodes y decodificación básica set 1 con Shift y Caps Lock.
+- Teclado PS/2: IRQ1, cola circular de 64 scancodes y decodificación básica set 1 con Shift y Caps Lock. Una prueba QMP envía `a` al teclado virtual y verifica la recepción del carácter desde la cola de IRQ1.
 - PCI legacy CF8/CFC: enumeración de buses, slots y funciones multifunción; decodifica BAR de E/S, memoria 32/64 bits y prefetchable. QEMU detecta seis dispositivos y nueve BAR.
 
 **Límites:** no hay drivers de red, USB, audio, GPU, AHCI ni PCIe MSI/MSI-X. El teclado aún no está conectado a una shell y utiliza una distribución básica tipo US.
