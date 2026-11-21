@@ -55,7 +55,10 @@
     "PIC remapping enables IRQ1 only when a PS/2 controller is detected",
     "x86-64 cooperative context save/restore for callee-saved registers, stack pointer and instruction pointer",
     "kernel scheduler prepares per-task stacks and performs explicit cooperative context switches between READY and RUNNING tasks",
-    "kernel boot smoke test switches between two independent task stacks and verifies scheduler state invariants"
+    "kernel boot smoke test switches between two independent task stacks and verifies scheduler state invariants",
+    "RAMFS offset-based reads and bounded writes for file-descriptor semantics",
+    "root-mounted VFS over RAMFS with validated absolute paths, bounded descriptors, read/write/seek/stat and directory enumeration",
+    "VFS host tests for path traversal rejection, access modes, truncation, descriptor exhaustion and directory enumeration"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000.",
@@ -67,13 +70,13 @@
     "UEFI boot",
     "physical hardware compatibility",
     "IPC integration with isolated processes and syscalls",
-    "persistent filesystem, VFS, block-device drivers and permission enforcement",
     "ring 3 transition, TSS and user-mode address-space isolation",
     "switching to an independently built CR3 root, automatic TLB management, page-fault recovery and isolated user address spaces",
     "PS/2 real-key event validation and international keyboard layouts",
     "PMM page ownership tracking to reject freeing pages not returned by the allocator",
     "timer preemption and scheduler integration",
-    "APIC/IOAPIC, HPET and advanced interrupt routing"
+    "APIC/IOAPIC, HPET and advanced interrupt routing",
+    "persistent block-backed filesystem, nested directories and file permissions"
   ],
   "linux_reference": {
     "repository": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
