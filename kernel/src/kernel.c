@@ -30,6 +30,9 @@ static unsigned char boot_ata_sector[512];
 static unsigned char boot_ata_marker_sector[512];
 static unsigned char boot_ata_write_sector[512];
 static unsigned char boot_ata_verify_sector[512];
+static edos_edfs_t boot_ata_edfs, boot_ata_edfs_remount;
+static edos_vfs_t boot_ata_vfs;
+static char boot_ata_file_buffer[16];
 static edos_ramdisk_t boot_ramdisk;
 static unsigned char boot_disk_storage[18U * 512U];
 static unsigned char boot_disk_write[512];
@@ -136,6 +139,25 @@ if(edos_ata_pio_init(&boot_ata_block,&boot_ata,0U)){
             serial("ATA_PIO_VERIFY_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
         }
         serial("ATA_PIO_WRITE_OK\n");
+if(!edos_edfs_format(&boot_ata_block)||
+   !edos_edfs_mount(&boot_ata_edfs,&boot_ata_block)||
+   !edos_vfs_mount_edfs(&boot_ata_vfs,&boot_ata_edfs)){
+    serial("ATA_PIO_EDFS_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
+}
+int ata_file_fd=edos_vfs_open(&boot_ata_vfs,"/ata.log",EDOS_VFS_CREATE|EDOS_VFS_READ|EDOS_VFS_WRITE);
+if(ata_file_fd<0||edos_vfs_write(&boot_ata_vfs,ata_file_fd,"ATA disk ok",11)!=11||
+   !edos_vfs_close(&boot_ata_vfs,ata_file_fd)||
+   !edos_edfs_mount(&boot_ata_edfs_remount,&boot_ata_block)||
+   !edos_vfs_mount_edfs(&boot_ata_vfs,&boot_ata_edfs_remount)){
+    serial("ATA_PIO_EDFS_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
+}
+ata_file_fd=edos_vfs_open(&boot_ata_vfs,"/ata.log",EDOS_VFS_READ);
+if(ata_file_fd<0||edos_vfs_read(&boot_ata_vfs,ata_file_fd,boot_ata_file_buffer,11)!=11||
+   boot_ata_file_buffer[0]!='A'||boot_ata_file_buffer[10]!='k'||
+   !edos_vfs_close(&boot_ata_vfs,ata_file_fd)){
+    serial("ATA_PIO_EDFS_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
+}
+serial("ATA_PIO_EDFS_OK\n");
     }
     serial("ATA_PIO_READ_OK sectors=");hex(boot_ata.sector_count);serial("\n");
 }else{
