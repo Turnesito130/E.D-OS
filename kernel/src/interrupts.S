@@ -105,7 +105,7 @@ irq_common:
     pushq %r14
     pushq %r15
     movq %rsp, %rbx
-    movq 128(%rbx), %rdi
+    movq 120(%rbx), %rdi
     andq $-16, %rsp
     call irq_dispatch
     movq %rbx, %rsp
