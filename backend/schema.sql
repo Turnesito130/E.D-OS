@@ -130,3 +130,17 @@ CREATE TABLE IF NOT EXISTS app_permission_grants (
 );
 CREATE INDEX IF NOT EXISTS app_permission_grants_app_idx
   ON app_permission_grants(app_id, capability, granted);
+
+-- Credenciales independientes para aplicaciones registradas por el titular de la cuenta.
+-- Solo se almacena el digest; el secreto se muestra una única vez al registrarlo.
+CREATE TABLE IF NOT EXISTS app_credentials (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  app_id TEXT NOT NULL CHECK (app_id ~ '^[a-z0-9][a-z0-9._-]{0,63}$'),
+  token_hash CHAR(64) NOT NULL UNIQUE CHECK (token_hash ~ '^[a-f0-9]{64}$'),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_used_at TIMESTAMPTZ,
+  revoked_at TIMESTAMPTZ,
+  UNIQUE (account_id, app_id)
+);
+CREATE INDEX IF NOT EXISTS app_credentials_active_idx ON app_credentials(token_hash) WHERE revoked_at IS NULL;
