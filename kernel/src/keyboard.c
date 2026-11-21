@@ -8,6 +8,10 @@ static inline u8 inb(u16 port) {
 }
 static int shift_down;
 static int caps_lock;
+#define KEY_QUEUE_CAPACITY 64U
+static volatile u8 key_queue[KEY_QUEUE_CAPACITY];
+static volatile unsigned int key_head;
+static volatile unsigned int key_tail;
 int edos_keyboard_decode(u8 code, int shift, int caps) {
     if (code & 0x80U) return 0;
     static const char normal[128] = {
@@ -40,17 +44,34 @@ int edos_keyboard_decode(u8 code, int shift, int caps) {
     return shift && shifted[code] ? shifted[code] : value;
 }
 int edos_keyboard_available(void) { return inb(0x64U) != 0xffU; }
+int edos_keyboard_enqueue_scancode(u8 code) {
+    unsigned int next = (key_tail + 1U) % KEY_QUEUE_CAPACITY;
+    if (next == key_head) return 0;
+    key_queue[key_tail] = code;
+    key_tail = next;
+    return 1;
+}
+
+void edos_keyboard_handle_irq(void) {
+    if (inb(0x64U) & 1U) (void)edos_keyboard_enqueue_scancode(inb(0x60U));
+}
+
 void edos_keyboard_init(void) {
     shift_down = 0;
     caps_lock = 0;
+    key_head = key_tail = 0;
     for (unsigned int i = 0; i < 32U && (inb(0x64U) & 1U); ++i)
         (void)inb(0x60U);
 }
 int edos_keyboard_poll_char(void) {
-    if (!(inb(0x64U) & 1U)) return 0;
-    u8 code = inb(0x60U);
+    while (key_head != key_tail) {
+    u8 code = key_queue[key_head];
+    key_head = (key_head + 1U) % KEY_QUEUE_CAPACITY;
     if (code == 0x2aU || code == 0x36U) { shift_down = 1; return 0; }
     if (code == 0xaaU || code == 0xb6U) { shift_down = 0; return 0; }
     if (code == 0x3aU) { caps_lock = !caps_lock; return 0; }
-    return edos_keyboard_decode(code, shift_down, caps_lock);
+    int value = edos_keyboard_decode(code, shift_down, caps_lock);
+    if (value) return value;
+    }
+    return 0;
 }
