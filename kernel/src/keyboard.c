@@ -67,9 +67,9 @@ int edos_keyboard_poll_char(void) {
     while (key_head != key_tail) {
     u8 code = key_queue[key_head];
     key_head = (key_head + 1U) % KEY_QUEUE_CAPACITY;
-    if (code == 0x2aU || code == 0x36U) { shift_down = 1; return 0; }
-    if (code == 0xaaU || code == 0xb6U) { shift_down = 0; return 0; }
-    if (code == 0x3aU) { caps_lock = !caps_lock; return 0; }
+    if (code == 0x2aU || code == 0x36U) { shift_down = 1; continue; }
+    if (code == 0xaaU || code == 0xb6U) { shift_down = 0; continue; }
+    if (code == 0x3aU) { caps_lock = !caps_lock; continue; }
     int value = edos_keyboard_decode(code, shift_down, caps_lock);
     if (value) return value;
     }
