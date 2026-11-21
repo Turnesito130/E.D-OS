@@ -40,6 +40,10 @@ CREATE TABLE IF NOT EXISTS devices (
 CREATE INDEX IF NOT EXISTS devices_account_idx ON devices(account_id);
 CREATE INDEX IF NOT EXISTS devices_active_idx ON devices(account_id) WHERE revoked_at IS NULL;
 
+-- Una sesión creada mediante emparejamiento queda vinculada al dispositivo aprobado.
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS device_id UUID REFERENCES devices(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS sessions_device_active_idx ON sessions(device_id) WHERE revoked_at IS NULL;
+
 -- Nunca guardar contraseñas ni tokens en claro en estas tablas.
 -- La API almacena hashes scrypt de contraseñas y SHA-256 de tokens aleatorios.
 
