@@ -109,6 +109,8 @@ if(!initialized || !map || !edos_page_ownership_validate(&ownership) || ownershi
 ed_u64 count=0; void *node=free_list;
 while(node) {
 if(count>=free_pages || !valid_free_node(node)) return 0;
+ed_u64 node_va=(ed_u64)(unsigned long long)node;
+if(edos_page_ownership_contains(&ownership,node_va-hhdm)) return 0;
 node=(void*)(unsigned long long)*(ed_u64*)node; ++count;
 }
 return count==free_pages && allocated_pages<=~0ULL-free_pages;
