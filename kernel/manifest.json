@@ -58,7 +58,10 @@
     "kernel boot smoke test switches between two independent task stacks and verifies scheduler state invariants",
     "RAMFS offset-based reads and bounded writes for file-descriptor semantics",
     "root-mounted VFS over RAMFS with validated absolute paths, bounded descriptors, read/write/seek/stat and directory enumeration",
-    "VFS host tests for path traversal rejection, access modes, truncation, descriptor exhaustion and directory enumeration"
+    "VFS host tests for path traversal rejection, access modes, truncation, descriptor exhaustion and directory enumeration",
+    "generic block-device API with LBA range validation, sector-size constraints and read-only enforcement",
+    "bounded sector-addressable RAM disk backend with multi-sector read/write operations",
+    "kernel QEMU smoke test verifies RAM disk sector writes, reads and out-of-range rejection"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000.",
@@ -76,7 +79,8 @@
     "PMM page ownership tracking to reject freeing pages not returned by the allocator",
     "timer preemption and scheduler integration",
     "APIC/IOAPIC, HPET and advanced interrupt routing",
-    "persistent block-backed filesystem, nested directories and file permissions"
+    "persistent block-backed filesystem, nested directories and file permissions",
+    "physical SATA/AHCI/NVMe storage drivers and persistent filesystem backend"
   ],
   "linux_reference": {
     "repository": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
