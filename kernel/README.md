@@ -35,3 +35,16 @@ El workflow debe compilar y arrancar QEMU. El hito solo se considera verificado 
 ## Pendiente
 
 Propiedad/bitmap de páginas, paginación y page faults, GDT/TSS/IST, temporizador e IRQ, planificador, cambio de contexto, procesos/hilos, syscalls y modo usuario, drivers, sistema de archivos, red, SMP, pruebas de estrés y hardware físico.
+
+
+## Driver serie y ABI de syscalls (fase experimental)
+
+- Driver COM1 separado en `serial.c`: configuración UART 16550, transmisión con espera acotada y salida de cadenas. El kernel lo usa para sus diagnósticos de arranque.
+- Dispatcher de syscalls con números estables para `WRITE`, `EXIT`, `YIELD` y `GETPID`. La llamada `WRITE` limita el tamaño a 4096 bytes y comprueba el rango virtual declarado antes de invocar el backend.
+- Pruebas host para resultados, límites, punteros fuera de rango, callbacks y números desconocidos.
+
+**Límites importantes:** todavía no existe transición a ring 3, TSS/espacio de usuario, instrucción `syscall/sysret`, copia segura de memoria entre privilegios ni conexión del dispatcher a una entrada de interrupción. El dispatcher es una capa ABI probada aisladamente, no un mecanismo de llamadas desde programas de usuario. El driver COM1 no tiene detección fiable de hardware ausente ni recepción IRQ.
+
+## Verificación
+
+El workflow ejecuta pruebas unitarias de buddy, scheduler, IPC, RAMFS y dispatcher de syscalls, compila el ELF, genera la ISO y comprueba el arranque BIOS en QEMU mediante el registro serie. Un resultado verde demuestra esas rutas concretas; no demuestra multitarea real, aislamiento de procesos, persistencia ni compatibilidad con hardware físico.
