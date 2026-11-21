@@ -6,6 +6,9 @@ on:
     paths:
       - "index.html"
       - "js/**"
+      - "apps/**"
+      - "connect.html"
+      - "scripts/**"
       - ".github/workflows/frontend-check.yml"
   pull_request:
     branches: [arquitectura/0.1]
@@ -33,3 +36,4 @@ jobs:
             echo "Checking $file"
             node --check "$file"
           done
+          node scripts/check-html-scripts.mjs
