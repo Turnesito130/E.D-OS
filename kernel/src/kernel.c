@@ -287,6 +287,13 @@ if(!preempt_task_a||!preempt_task_b||!preempt_task_monitor||
 }
 void *first_frame=edos_scheduler_start_interrupt(&preempt_scheduler,preempt_task_a);
 if(!first_frame){serial("PREEMPTIVE_SCHEDULER_START_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+serial("PREEMPTIVE_DEBUG stackA=");hex((u64)(unsigned long long)preempt_stack_a);
+serial(" frame=");hex((u64)(unsigned long long)first_frame);
+serial(" entry=");hex((u64)(unsigned long long)preempt_task_a_entry);
+serial(" counter=");hex((u64)(unsigned long long)&preempt_a_runs);
+serial(" frame_rip=");hex(((ed_u64*)first_frame)[17]);
+serial(" frame_cs=");hex(((ed_u64*)first_frame)[18]);
+serial(" frame_flags=");hex(((ed_u64*)first_frame)[19]);serial("\n");
 serial("PREEMPTIVE_SCHEDULER_START\n");
 edos_irq_resume_context(first_frame);
 for(;;)__asm__ volatile("cli; hlt");
