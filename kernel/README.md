@@ -32,14 +32,24 @@ El workflow compila ELF e ISO híbrida y arranca en QEMU BIOS y UEFI. El hito so
 - Planificador cooperativo: tabla fija de 32 tareas, estados READY/RUNNING/BLOCKED/EXITED, preparación de pilas y contextos, cambio real de pila/registros entre tareas, transición de estados y validación de invariantes. La prueba host alterna dos tareas y el arranque QEMU repite el cambio entre dos tareas sobre pilas estáticas dedicadas. El tick PIT sigue siendo independiente y no realiza preempción.
 - IPC: colas circulares acotadas de 16 mensajes con payload máximo de 64 bytes, validación de tamaño, índices y contador internos, y detección de cola llena/vacía/corrupta. Todavía no hay aislamiento entre procesos, bloqueo, sincronización SMP ni llamadas desde modo usuario.
 - RAMFS: sistema de archivos temporal en memoria con hasta 16 archivos de 256 bytes, creación, lectura, escritura completa y borrado; rechaza nombres con separadores de ruta y límites excedidos. No es persistente y no tiene directorios jerárquicos, permisos, caché ni integración con dispositivos de bloques.
-- VFS: capa de sistema de archivos virtual montada sobre RAMFS, con rutas absolutas de raíz, descriptores limitados, apertura/creación/truncado, lectura/escritura por posición, seek, stat y readdir. Rechaza rutas relativas, traversal (`..`), subdirectorios aún no soportados y operaciones incompatibles con los permisos del descriptor. Tiene pruebas host y prueba de arranque en QEMU.\n- Dispositivos de bloques: API común de lectura/escritura por LBA, validación de rangos y modo de solo lectura, más un ramdisk sectorial para pruebas. Se verifica lectura/escritura de sectores durante el arranque QEMU; todavía no es un driver SATA/AHCI/NVMe.\n- EDFS: sistema de archivos plano propio sobre bloques de 512 bytes, con superblock, directorio fijo de 16 entradas y un sector de datos por archivo (hasta 512 bytes). Formato, montaje, creación, lectura, escritura y borrado; las pruebas remontan el volumen y comprueban que el contenido sigue ahí. En QEMU se prueba sobre ramdisk, por lo que no sobrevive al apagado de la máquina.\n- Los módulos scheduler, IPC, RAMFS, VFS, buddy y syscalls se compilan como parte del ELF y tienen pruebas unitarias host en CI.
+- VFS: capa de sistema de archivos virtual montada sobre RAMFS, con rutas absolutas de raíz, descriptores limitados, apertura/creación/truncado, lectura/escritura por posición, seek, stat y readdir. Rechaza rutas relativas, traversal (`..`), subdirectorios aún no soportados y operaciones incompatibles con los permisos del descriptor. Tiene pruebas host y prueba de arranque en QEMU.
+- Dispositivos de bloques: API común de lectura/escritura por LBA, validación de rangos y modo de solo lectura, más un ramdisk sectorial para pruebas. Se verifica lectura/escritura de sectores durante el arranque QEMU; todavía no es un driver SATA/AHCI/NVMe.
+- EDFS: sistema de archivos plano propio sobre bloques de 512 bytes, con superblock, directorio fijo de 16 entradas y un sector de datos por archivo (hasta 512 bytes). Formato, montaje, creación, lectura, escritura y borrado; las pruebas remontan el volumen y comprueban que el contenido sigue ahí. En QEMU se prueba sobre ramdisk, por lo que no sobrevive al apagado de la máquina.
+- Los módulos scheduler, IPC, RAMFS, VFS, buddy y syscalls se compilan como parte del ELF y tienen pruebas unitarias host en CI.
 
 ## Pendiente
 
 raíz CR3 propia y recuperación de page faults, APIC/IOAPIC, planificador preemptivo y tarea idle, gestión de procesos/hilos, entrada de syscalls desde ring 3, drivers físicos SATA/AHCI/NVMe y red, driver físico de almacenamiento no volátil, journal, directorios y permisos, SMP, pruebas de estrés y hardware físico.
 
 
-## GDT, TSS e IST x86-64\n\n- GDT propia con selectores de kernel y usuario, descriptor TSS de 64 bits y registro TR verificado.\n- TSS configura RSP0 y tres pilas IST independientes para doble fallo, NMI y page fault. La IDT conecta los vectores 8, 2 y 14 a sus IST.\n\n**Límites:** no se ha ejecutado código en ring 3, no existe todavía cambio de privilegio ni aislamiento de direcciones de usuario.\n\n## Interrupciones y temporizador PIT
+## GDT, TSS e IST x86-64
+
+- GDT propia con selectores de kernel y usuario, descriptor TSS de 64 bits y registro TR verificado.
+- TSS configura RSP0 y tres pilas IST independientes para doble fallo, NMI y page fault. La IDT conecta los vectores 8, 2 y 14 a sus IST.
+
+**Límites:** no se ha ejecutado código en ring 3, no existe todavía cambio de privilegio ni aislamiento de direcciones de usuario.
+
+## Interrupciones y temporizador PIT
 
 - PIC 8259 remapeado a los vectores 32–47; se habilita IRQ0 y, si se detecta controlador PS/2, IRQ1. Las demás líneas permanecen enmascaradas.
 - PIT canal 0 configurado aproximadamente a 100 Hz; stub de IRQ0 guarda/restaura registros generales, despacha el tick y envía EOI al PIC.
