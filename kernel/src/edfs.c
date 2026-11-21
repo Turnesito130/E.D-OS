@@ -13,7 +13,7 @@ static int valid_name(const char *name) {
     if (!name || !name[0]) return 0;
     ed_u64 n = 0;
     while (name[n] && n <= EDOS_EDFS_NAME_MAX) {
-        if (name[n] == '/' || name[n] == '\\' || name[n] == '.') return 0;
+        if (name[n] == '/' || name[n] == '\\') return 0;
         ++n;
     }
     return n > 0 && n <= EDOS_EDFS_NAME_MAX;
