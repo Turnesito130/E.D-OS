@@ -1,5 +1,6 @@
 #include "irq.h"
 #include "keyboard.h"
+#include "scheduler.h"
 typedef unsigned char u8;
 typedef unsigned short u16;
 static volatile ed_u64 timer_ticks;
@@ -33,11 +34,13 @@ int edos_irq_init(int enable_keyboard) {
     return 1;
 }
 
-void irq_dispatch(ed_u64 vector) {
+void *irq_dispatch(ed_u64 vector, void *frame) {
     if (vector == 32U) ++timer_ticks;
     if (vector == 33U) edos_keyboard_handle_irq();
     if (vector >= 40U) outb(0xa0U, 0x20U);
     outb(0x20U, 0x20U);
+    if (vector == 32U) return edos_scheduler_timer_switch(frame);
+    return frame;
 }
 
 ed_u64 edos_timer_ticks(void) {
