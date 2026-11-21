@@ -113,8 +113,13 @@ jobs:
       - name: Boot independent kernel in QEMU (UEFI)
         run: |
           set -e
-          OVMF_CODE="$(find /usr/share/OVMF -maxdepth 1 -name 'OVMF_CODE*.fd' -print -quit)"
-          OVMF_VARS="$(find /usr/share/OVMF -maxdepth 1 -name 'OVMF_VARS*.fd' -print -quit)"
+          if [ -f /usr/share/OVMF/OVMF_CODE_4M.fd ] && [ -f /usr/share/OVMF/OVMF_VARS_4M.fd ]; then
+            OVMF_CODE=/usr/share/OVMF/OVMF_CODE_4M.fd
+            OVMF_VARS=/usr/share/OVMF/OVMF_VARS_4M.fd
+          else
+            OVMF_CODE=/usr/share/OVMF/OVMF_CODE.fd
+            OVMF_VARS=/usr/share/OVMF/OVMF_VARS.fd
+          fi
           test -n "$OVMF_CODE"
           test -n "$OVMF_VARS"
           cp "$OVMF_VARS" kernel/build/OVMF_VARS.fd
