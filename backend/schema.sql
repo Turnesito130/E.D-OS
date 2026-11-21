@@ -116,3 +116,17 @@ CREATE TABLE IF NOT EXISTS account_security_events (
 );
 CREATE INDEX IF NOT EXISTS account_security_events_account_time_idx
   ON account_security_events(account_id, created_at DESC);
+
+-- Permisos explícitos por aplicación y cuenta. Denegado por defecto.
+-- Esta tabla almacena concesiones del usuario; cada API sensible debe comprobarlas
+-- en el servidor antes de entregar el recurso.
+CREATE TABLE IF NOT EXISTS app_permission_grants (
+  account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  app_id TEXT NOT NULL CHECK (app_id ~ '^[a-z0-9][a-z0-9._-]{0,63}$'),
+  capability TEXT NOT NULL CHECK (capability IN ('microphone', 'camera', 'location', 'files', 'notifications')),
+  granted BOOLEAN NOT NULL DEFAULT false,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (account_id, app_id, capability)
+);
+CREATE INDEX IF NOT EXISTS app_permission_grants_app_idx
+  ON app_permission_grants(app_id, capability, granted);
