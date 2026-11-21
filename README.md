@@ -23,9 +23,9 @@ La compilación local del ELF x86_64 está verificada. La construcción de ISO h
 
 ## Backend de E.D. Ecosystem
 
-- Servicio experimental en `backend/`: cuentas, sesiones, inventario de dispositivos, emparejamiento temporal aprobado y sincronización versionada de registros JSON pequeños. Interfaz cliente experimental en `apps/ecosystem.html`.
+- Servicio experimental en `backend/`: cuentas, sesiones, inventario de dispositivos, emparejamiento temporal aprobado, sincronización versionada de registros JSON pequeños y controles de seguridad de cuenta (sesiones, cambio de contraseña e historial de eventos). La interfaz `apps/ecosystem.html` incorpora un panel de Seguridad y usuarios.
 - Instrucciones y rutas disponibles: [backend/README.md](backend/README.md).
-- **No está desplegado ni probado contra PostgreSQL ni entre dispositivos reales.** No usar con datos personales reales. Faltan verificación y recuperación de cuenta, cliente de emparejamiento, cifrado de extremo a extremo, sincronización de archivos, pruebas de seguridad y revisión independiente.
+- **No está desplegado ni probado contra PostgreSQL ni entre dispositivos reales.** No usar con datos personales reales. Hay pruebas unitarias iniciales para las primitivas de autenticación, pero faltan pruebas de integración de endpoints, verificación y recuperación de cuenta, MFA/passkeys, cifrado de extremo a extremo y revisión de seguridad independiente.
 
 ## Desarrollo
 
