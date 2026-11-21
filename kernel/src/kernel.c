@@ -7,6 +7,7 @@
 #include "scheduler.h"
 #include "vfs.h"
 #include "block.h"
+#include "gdt.h"
 typedef unsigned long long u64;
 __attribute__((used,section(".limine_requests"),aligned(8)))
 volatile u64 limine_base_revision[3]={0xf9562b2d5c95a6c8ULL,0x6a7b384944536bdcULL,3};
@@ -54,6 +55,8 @@ serial("\nE.D-OS kernel 0.0.5\nSERIAL_DRIVER_READY COM1\n");
 if(limine_base_revision[2]!=0){serial("BOOT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("BOOT_PROTOCOL=Limine revision 3\n");
 if(!memory_init() || !memory_validate()){serial("MEMORY_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+if(!edos_gdt_init()){serial("GDT_TSS_INIT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+serial("GDT_TSS_IST_READY\n");
 if(!idt_init()){serial("IDT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 int keyboard_ready=edos_keyboard_available();
 if(keyboard_ready)edos_keyboard_init();
