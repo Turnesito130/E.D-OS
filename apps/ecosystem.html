@@ -72,10 +72,14 @@ function readPendingSync() { return EDOSyncQueue.read(); }
 function writePendingSync(value) { return EDOSyncQueue.write(value); }
 function renderPendingSync() {
   const entries = Object.entries(readPendingSync());
-  const conflicts = entries.filter(([, item]) => item.conflict).length;
+  const conflictEntries = entries.filter(([, item]) => item.conflict);
+  const conflicts = conflictEntries.length;
+  const conflictSummary = conflictEntries.slice(0, 3)
+    .map(([key, item]) => key + ' (versión servidor: ' + (item.currentVersion ?? '?') + ')')
+    .join(', ');
   status('syncQueueStatus', entries.length
     ? entries.length + ' cambio(s) pendiente(s) en este navegador' +
-      (conflicts ? ' · ' + conflicts + ' conflicto(s) que requieren revisión' : '')
+      (conflicts ? ' · Revisa: ' + conflictSummary : '')
     : 'Sin cambios pendientes.');
 }
 async function flushPendingSync() {
