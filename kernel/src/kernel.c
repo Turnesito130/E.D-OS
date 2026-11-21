@@ -38,7 +38,9 @@ if(!edos_paging_map_4k(&address_space,test_va,test_pa,EDOS_PAGE_PRESENT|EDOS_PAG
 serial("PAGING_TABLES_OK\n");
 edos_paging_space_t active_space;u64 cr3=0,live_va=0,live_pa=0;
 __asm__ volatile("mov %%cr3, %0":"=r"(cr3));
-if(!edos_paging_adopt(&active_space,cr3&EDOS_PAGE_ADDRESS_MASK,paging_alloc_page,paging_phys_to_virt,(void*)0)||!edos_paging_find_unused_pml4(&active_space,&live_va)||!edos_paging_map_4k(&active_space,live_va,test_pa,EDOS_PAGE_PRESENT|EDOS_PAGE_WRITE)){serial("PAGING_ACTIVE_MAP_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+if(!edos_paging_adopt(&active_space,cr3&EDOS_PAGE_ADDRESS_MASK,paging_alloc_page,paging_phys_to_virt,(void*)0)||!edos_paging_find_unused_pml4(&active_space,&live_va)){serial("PAGING_ACTIVE_MAP_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+__asm__ volatile("invlpg (%0)"::"r"(live_va):"memory");
+if(!edos_paging_map_4k(&active_space,live_va,test_pa,EDOS_PAGE_PRESENT|EDOS_PAGE_WRITE)){serial("PAGING_ACTIVE_MAP_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 volatile u64 *alias=(volatile u64*)(unsigned long long)live_va;*alias=0x45444f5350414745ULL;
 if(*(volatile u64*)q!=0x45444f5350414745ULL||!edos_paging_unmap_4k(&active_space,live_va,&live_pa)||live_pa!=test_pa){serial("PAGING_ACTIVE_VERIFY_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 __asm__ volatile("invlpg (%0)"::"r"(live_va):"memory");
