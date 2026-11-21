@@ -62,7 +62,6 @@ static void preempt_task_returned(void){for(;;)__asm__ volatile("cli; hlt");}
 static void preempt_task_a_entry(void){preempt_a_started=1;for(;;)++preempt_a_runs;}
 static void preempt_task_b_entry(void){preempt_b_started=1;for(;;)++preempt_b_runs;}
 static void preempt_monitor_entry(void){
-    u64 rsp;__asm__ volatile("mov %%rsp,%0":"=r"(rsp));serial("PREEMPT_MONITOR_START rsp=");hex(rsp);serial("\n");
     while(!preempt_a_started||!preempt_b_started||preempt_a_runs<1000ULL||preempt_b_runs<1000ULL||preempt_scheduler.preemptive_switches<3ULL)__asm__ volatile("pause");
     __asm__ volatile("cli" ::: "memory");
     if(!preempt_a_started||!preempt_b_started||preempt_a_runs<1000ULL||preempt_b_runs<1000ULL||
@@ -290,13 +289,6 @@ if(!preempt_task_a||!preempt_task_b||!preempt_task_monitor||
 serial("PREEMPT_STACK_A=");hex((u64)(unsigned long long)preempt_stack_a);serial(" FRAME_A=");hex((u64)(unsigned long long)preempt_scheduler.tasks[0].interrupt_frame);serial(" ENTRY_A=");hex((u64)(unsigned long long)preempt_task_a_entry);serial(" FAULT_VA=");hex(boot_fault_address);serial("\n");
 void *first_frame=edos_scheduler_start_interrupt(&preempt_scheduler,preempt_task_a);
 if(!first_frame){serial("PREEMPTIVE_SCHEDULER_START_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
-serial("PREEMPTIVE_DEBUG stackA=");hex((u64)(unsigned long long)preempt_stack_a);
-serial(" frame=");hex((u64)(unsigned long long)first_frame);
-serial(" entry=");hex((u64)(unsigned long long)preempt_task_a_entry);
-serial(" counter=");hex((u64)(unsigned long long)&preempt_a_runs);
-serial(" frame_rip=");hex(((ed_u64*)first_frame)[17]);
-serial(" frame_cs=");hex(((ed_u64*)first_frame)[18]);
-serial(" frame_flags=");hex(((ed_u64*)first_frame)[19]);serial("\n");
 serial("PREEMPTIVE_SCHEDULER_START\n");
 edos_irq_resume_context(first_frame);
 for(;;)__asm__ volatile("cli; hlt");
