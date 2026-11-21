@@ -27,6 +27,9 @@ int main(void) {
     assert(edos_task_create(&s, task_a, 0) != 0);
     assert(edos_scheduler_validate(&s));
     assert(edos_task_set_state(&s, a, EDOS_TASK_EXITED));
+    edos_task_t *reused = edos_scheduler_schedule(&s);
+    assert(reused && reused->state == EDOS_TASK_RUNNING);
+    assert(edos_task_set_state(&s, reused->id, EDOS_TASK_EXITED));
     assert(edos_scheduler_schedule(&s) == 0);
     assert(edos_scheduler_validate(&s));
     puts("SCHEDULER_TESTS_OK");
