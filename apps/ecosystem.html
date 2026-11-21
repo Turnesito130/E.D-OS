@@ -173,7 +173,7 @@ async function revokeDevice(id) {
 }
 $('login').onclick=()=>auth('login');
 $('register').onclick=()=>auth('register');
-$('logout').onclick=async()=>{try{await call('/v1/auth/logout',{method:'POST'});}catch{} token=null;account=null;show('auth',true);show('dashboard',false);show('pair',false);show('sync',false);show('cloud',false);show('security',false);};
+$('logout').onclick=async()=>{try{await call('/v1/auth/logout',{method:'POST'});}catch{} token=null;account=null;$('appCredentialToken').replaceChildren();show('appCredentialToken',false);show('auth',true);show('dashboard',false);show('pair',false);show('sync',false);show('cloud',false);show('security',false);};
 
 function renderSecurityRows(container, rows, kind) {
   $(container).replaceChildren();
