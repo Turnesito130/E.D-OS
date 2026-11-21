@@ -65,6 +65,7 @@ isr_common:
     cli
     movq 0(%rsp), %rdi
     movq 8(%rsp), %rsi
+    movq 16(%rsp), %rdx
     andq $-16, %rsp
     call kernel_exception_panic
 1:
