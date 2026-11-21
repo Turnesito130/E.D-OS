@@ -1,12 +1,11 @@
 import { createServer } from "node:http";
-import { randomBytes, randomInt, scrypt as scryptCallback, timingSafeEqual, createHash } from "node:crypto";
-import { promisify } from "node:util";
+import { randomBytes, randomInt, timingSafeEqual, createHash } from "node:crypto";
 import pg from "pg";
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { cleanupAbandonedUploads } from "./cloud-maintenance.mjs";
+import { hashPassword, verifyPassword, tokenDigest, validEmail } from "./security-core.mjs";
 
-const scrypt = promisify(scryptCallback);
 const { Pool } = pg;
 const PORT = Number(process.env.PORT || 8787);
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -77,28 +76,6 @@ function rateLimit(req, res) {
     for (const [key, value] of attempts) if (now > value.reset) attempts.delete(key);
   }
   return true;
-}
-
-function validEmail(value) {
-  return typeof value === "string" && value.length <= 254 &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-function tokenDigest(token) {
-  return createHash("sha256").update(token).digest("hex");
-}
-
-async function hashPassword(password, salt = randomBytes(16).toString("hex")) {
-  const derived = await scrypt(password, salt, 64);
-  return `scrypt:${salt}:${Buffer.from(derived).toString("hex")}`;
-}
-
-async function verifyPassword(password, stored) {
-  const [scheme, salt, expectedHex] = String(stored).split(":");
-  if (scheme !== "scrypt" || !salt || !expectedHex) return false;
-  const actual = Buffer.from(await scrypt(password, salt, 64));
-  const expected = Buffer.from(expectedHex, "hex");
-  return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
 
