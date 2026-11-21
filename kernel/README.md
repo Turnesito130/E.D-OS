@@ -18,7 +18,7 @@ pmm_free_page exige que el llamador entregue una página obtenida previamente me
 
 ## Construcción y verificación
 
-La ejecución completa confirmada en GitHub Actions (commit `363739d7`) pasó pruebas host, compiló ELF e ISO y arrancó en QEMU BIOS. Se comprobaron por puerto serie PMM, mapeo/desmapeo sobre CR3 activo, ticks PIT, cambio cooperativo entre dos tareas, VFS, ramdisk y page fault controlado con lectura de CR2. No demuestra ring 3, multitarea preemptiva ni aislamiento de procesos.
+La ejecución completa confirmada en GitHub Actions (commit `abc242f3`) pasó pruebas host, compiló ELF e ISO y arrancó en QEMU BIOS. Se comprobaron por puerto serie PMM, GDT/TSS propios con TR activo, pilas IST, mapeo/desmapeo sobre CR3 activo, ticks PIT, cambio cooperativo entre dos tareas, VFS, ramdisk y page fault controlado con lectura de CR2. No demuestra ring 3, multitarea preemptiva ni aislamiento de procesos.
 
 \`\`\`sh
 make -C kernel clean all
@@ -39,7 +39,7 @@ El workflow debe compilar y arrancar QEMU. El hito solo se considera verificado 
 Propiedad/bitmap de páginas, raíz CR3 propia y recuperación de page faults, GDT/TSS/IST, APIC/IOAPIC, planificador preemptivo y tarea idle, gestión de procesos/hilos, entrada de syscalls desde ring 3, drivers físicos SATA/AHCI/NVMe y red, backend VFS persistente, SMP, pruebas de estrés y hardware físico.
 
 
-## Interrupciones y temporizador PIT
+## GDT, TSS e IST x86-64\n\n- GDT propia con selectores de kernel y usuario, descriptor TSS de 64 bits y registro TR verificado.\n- TSS configura RSP0 y tres pilas IST independientes para doble fallo, NMI y page fault. La IDT conecta los vectores 8, 2 y 14 a sus IST.\n\n**Límites:** no se ha ejecutado código en ring 3, no existe todavía cambio de privilegio ni aislamiento de direcciones de usuario.\n\n## Interrupciones y temporizador PIT
 
 - PIC 8259 remapeado a los vectores 32–47; se habilita IRQ0 y, si se detecta controlador PS/2, IRQ1. Las demás líneas permanecen enmascaradas.
 - PIT canal 0 configurado aproximadamente a 100 Hz; stub de IRQ0 guarda/restaura registros generales, despacha el tick y envía EOI al PIC.
