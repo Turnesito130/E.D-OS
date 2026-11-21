@@ -19,7 +19,7 @@ return (limine_hhdm_response *)(unsigned long long)hhdm_request[5];}
 static limine_memmap_response *map;
 static ed_u64 hhdm, usable_bytes, allocated_pages, free_pages, region_index, region_cursor;
 static void *free_list;
-#define PMM_OWNERSHIP_CAPACITY 65536ULL
+#define PMM_OWNERSHIP_CAPACITY 262144ULL /* 2 MiB metadata; tracks up to 1 GiB of allocated pages. */
 static ed_u64 ownership_slots[PMM_OWNERSHIP_CAPACITY];
 static edos_page_ownership_t ownership;
 static int initialized;
