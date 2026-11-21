@@ -20,6 +20,7 @@ static ed_u64 *paging_phys_to_virt(ed_u64 physical,void *opaque){(void)opaque;if
 
 static void serial_char(char c);
 static void serial(const char *s);
+static void hex(u64 v);
 static edos_ramfs_t boot_ramfs;
 static edos_vfs_t boot_vfs;
 static char boot_vfs_buffer[16];
