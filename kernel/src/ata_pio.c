@@ -60,8 +60,11 @@ static int ata_read_sector(edos_ata_pio_t *ata, ed_u64 lba, unsigned char *buffe
     outb(ATA_LBA_HIGH, (unsigned char)(lba >> 16));
     outb(ATA_COMMAND, 0x20U);
     if (!ata_wait(1U)) return 0;
-    unsigned short *words = (unsigned short *)buffer;
-    for (unsigned int i = 0; i < 256U; ++i) words[i] = inw(ATA_DATA);
+    for (unsigned int i = 0; i < 256U; ++i) {
+        unsigned short word = inw(ATA_DATA);
+        buffer[i * 2U] = (unsigned char)word;
+        buffer[i * 2U + 1U] = (unsigned char)(word >> 8);
+    }
     return ata_wait(0U);
 }
 static int ata_write_sector(edos_ata_pio_t *ata, ed_u64 lba, const unsigned char *buffer) {
@@ -74,8 +77,11 @@ static int ata_write_sector(edos_ata_pio_t *ata, ed_u64 lba, const unsigned char
     outb(ATA_LBA_HIGH, (unsigned char)(lba >> 16));
     outb(ATA_COMMAND, 0x30U);
     if (!ata_wait(1U)) return 0;
-    const unsigned short *words = (const unsigned short *)buffer;
-    for (unsigned int i = 0; i < 256U; ++i) outw(ATA_DATA, words[i]);
+    for (unsigned int i = 0; i < 256U; ++i) {
+        unsigned short word = (unsigned short)buffer[i * 2U] |
+                              ((unsigned short)buffer[i * 2U + 1U] << 8);
+        outw(ATA_DATA, word);
+    }
     if (!ata_wait(0U)) return 0;
     outb(ATA_COMMAND, 0xe7U);
     return ata_wait(0U);
