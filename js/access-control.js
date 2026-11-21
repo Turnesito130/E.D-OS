@@ -47,6 +47,11 @@
     return bytesToHex(new Uint8Array(bits));
   }
 
+  function hasSessionGrant() {
+    try { return sessionStorage.getItem(SESSION_KEY) === '1'; }
+    catch (_) { return false; }
+  }
+
   function unlock() {
     try { sessionStorage.setItem(SESSION_KEY, '1'); } catch (_) {}
     gate.hidden = true;
@@ -120,7 +125,7 @@
   }
 
   readState();
-  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+  if (hasSessionGrant()) {
     gate.hidden = true;
     document.body.style.overflow = '';
     return;
