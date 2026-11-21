@@ -119,11 +119,21 @@ function validDeviceInput(body) {
 async function issueSession(client, accountId) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + TOKEN_TTL_HOURS * 3600_000);
-  await client.query(
-    "INSERT INTO sessions (account_id, token_hash, expires_at) VALUES ($1, $2, $3)",
+  const saved = await client.query(
+    "INSERT INTO sessions (account_id, token_hash, expires_at) VALUES ($1, $2, $3) RETURNING id",
     [accountId, tokenDigest(token), expiresAt]
   );
-  return { token, expiresAt: expiresAt.toISOString() };
+  return { id: saved.rows[0].id, token, expiresAt: expiresAt.toISOString() };
+}
+
+
+async function auditSecurityEvent(db, accountId, eventType, req, details = {}) {
+  const forwarded = req.headers["x-forwarded-for"];
+  const ip = typeof forwarded === "string" ? forwarded.split(",")[0].trim() : (req.socket.remoteAddress || null);
+  await db.query(
+    "INSERT INTO account_security_events (account_id, event_type, ip_address, details) VALUES ($1, $2, $3, $4::jsonb)",
+    [accountId, eventType, ip, JSON.stringify(details)]
+  );
 }
 
 async function authenticatedAccount(req) {
@@ -132,7 +142,7 @@ async function authenticatedAccount(req) {
   const token = header.slice(7);
   if (token.length < 40 || token.length > 100) return null;
   const result = await pool.query(
-    `SELECT a.id, a.email
+    `SELECT a.id, a.email, s.id AS session_id, s.created_at AS session_created_at, s.expires_at AS session_expires_at
        FROM sessions s JOIN accounts a ON a.id = s.account_id
       WHERE s.token_hash = $1 AND s.revoked_at IS NULL
         AND s.expires_at > now() AND a.status = 'active'`,
@@ -193,6 +203,7 @@ const server = createServer(async (req, res) => {
           }
         }
         const session = await issueSession(client, account.id);
+        await auditSecurityEvent(client, account.id, url.pathname.endsWith("/register") ? "account.registered" : "auth.login", req);
         return send(res, url.pathname.endsWith("/register") ? 201 : 200, {
           account: { id: account.id, email: account.email },
           session
@@ -337,6 +348,62 @@ const server = createServer(async (req, res) => {
     const account = await authenticatedAccount(req);
     if (!account) return send(res, 401, { error: "Sesión no válida o caducada." });
 
+    if (req.method === "GET" && url.pathname === "/v1/security/sessions") {
+      const result = await pool.query(
+        `SELECT id, created_at, expires_at, revoked_at,
+                (id = $2::uuid) AS current
+           FROM sessions
+          WHERE account_id = $1 AND expires_at > now()
+          ORDER BY created_at DESC LIMIT 100`,
+        [account.id, account.session_id]
+      );
+      return send(res, 200, { sessions: result.rows });
+    }
+
+    const sessionRevokeMatch = url.pathname.match(/^\\/v1\\/security\\/sessions\\/([0-9a-f-]{36})$/i);
+    if (req.method === "DELETE" && sessionRevokeMatch) {
+      const result = await pool.query(
+        "UPDATE sessions SET revoked_at = now() WHERE id = $1 AND account_id = $2 AND revoked_at IS NULL RETURNING id",
+        [sessionRevokeMatch[1], account.id]
+      );
+      if (!result.rowCount) return send(res, 404, { error: "Sesión no encontrada o ya revocada." });
+      await auditSecurityEvent(pool, account.id, "session.revoked", req, { sessionId: sessionRevokeMatch[1] });
+      return send(res, 200, { success: true });
+    }
+
+    if (req.method === "GET" && url.pathname === "/v1/security/events") {
+      const result = await pool.query(
+        `SELECT event_type, created_at, ip_address
+           FROM account_security_events WHERE account_id = $1
+          ORDER BY created_at DESC LIMIT 100`, [account.id]
+      );
+      return send(res, 200, { events: result.rows });
+    }
+
+    if (req.method === "POST" && url.pathname === "/v1/auth/change-password") {
+      const body = await readJson(req);
+      if (typeof body.currentPassword !== "string" || typeof body.newPassword !== "string" ||
+          body.newPassword.length < 12 || body.newPassword.length > 200) {
+        return send(res, 400, { error: "La contraseña nueva debe tener entre 12 y 200 caracteres." });
+      }
+      const found = await pool.query("SELECT password_hash FROM accounts WHERE id = $1 AND status = 'active'", [account.id]);
+      if (!found.rowCount || !(await verifyPassword(body.currentPassword, found.rows[0].password_hash))) {
+        return send(res, 401, { error: "La contraseña actual no es correcta." });
+      }
+      if (body.currentPassword === body.newPassword) return send(res, 400, { error: "La contraseña nueva debe ser distinta." });
+      const newHash = await hashPassword(body.newPassword);
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query("UPDATE accounts SET password_hash = $2 WHERE id = $1", [account.id, newHash]);
+        await client.query("UPDATE sessions SET revoked_at = now() WHERE account_id = $1 AND id <> $2 AND revoked_at IS NULL", [account.id, account.session_id]);
+        await auditSecurityEvent(client, account.id, "auth.password_changed", req);
+        await client.query("COMMIT");
+      } catch (error) { await client.query("ROLLBACK"); throw error; }
+      finally { client.release(); }
+      return send(res, 200, { success: true, message: "Contraseña actualizada. Se han cerrado las demás sesiones." });
+    }
+
     if (req.method === "GET" && url.pathname === "/v1/account/me") {
       return send(res, 200, { account });
     }
@@ -344,6 +411,7 @@ const server = createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/v1/auth/logout") {
       const token = (req.headers.authorization || "").slice(7);
       await pool.query("UPDATE sessions SET revoked_at = now() WHERE token_hash = $1 AND revoked_at IS NULL", [tokenDigest(token)]);
+      await auditSecurityEvent(pool, account.id, "auth.logout", req);
       return send(res, 200, { success: true });
     }
 
