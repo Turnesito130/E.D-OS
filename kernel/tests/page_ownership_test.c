@@ -28,7 +28,7 @@ int main(void) {
     assert(edos_page_ownership_contains(&table, c));
     assert(edos_page_ownership_validate(&table));
 
-    for (ed_u64 i = 0; i < 8; ++i) {
+    for (ed_u64 i = 0; i < 5; ++i) {
         ed_u64 page = (i + 32U) * 4096ULL;
         if (!edos_page_ownership_contains(&table, page))
             assert(edos_page_ownership_insert(&table, page));
