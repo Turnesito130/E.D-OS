@@ -5,6 +5,8 @@
 #define HEAP_SLOT_OFFSET 64ULL
 #define HEAP_BITMAP_WORDS 4U
 
+typedef unsigned int ed_u32;
+
 typedef struct heap_slab {
     struct heap_slab *next;
     ed_u64 magic;
@@ -14,8 +16,6 @@ typedef struct heap_slab {
     ed_u32 free_count;
     ed_u32 reserved;
 } heap_slab_t;
-
-typedef unsigned int ed_u32;
 
 static const ed_u32 class_sizes[EDOS_HEAP_CLASS_COUNT] = {
     16U, 32U, 64U, 128U, 256U, 512U, 1024U, 2048U, 4032U
