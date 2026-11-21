@@ -18,7 +18,7 @@ $(BUILD_DIR):
 $(BUILD_DIR)/entry.o: src/entry.S | $(BUILD_DIR)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/kernel.o: src/kernel.c include/memory.h include/idt.h include/serial.h include/paging.h include/keyboard.h include/irq.h include/scheduler.h include/context.h include/vfs.h include/ramfs.h include/block.h include/gdt.h include/edfs.h | $(BUILD_DIR)
+$(BUILD_DIR)/kernel.o: src/kernel.c include/memory.h include/idt.h include/serial.h include/paging.h include/keyboard.h include/irq.h include/scheduler.h include/context.h include/vfs.h include/ramfs.h include/block.h include/gdt.h include/edfs.h include/pci.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
 $(BUILD_DIR)/irq.o: src/irq.c include/irq.h include/keyboard.h include/memory.h | $(BUILD_DIR)
@@ -86,7 +86,7 @@ $(BUILD_DIR)/interrupts.o: src/interrupts.S | $(BUILD_DIR)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
 $(TARGET): $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/gdt-load.o $(BUILD_DIR)/context.o $(BUILD_DIR)/context-switch.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/page-ownership.o $(BUILD_DIR)/pci.o $(BUILD_DIR)/paging.o $(BUILD_DIR)/keyboard.o $(BUILD_DIR)/irq.o $(BUILD_DIR)/block.o $(BUILD_DIR)/edfs.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/ramfs.o $(BUILD_DIR)/vfs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/serial.o $(BUILD_DIR)/syscall.o $(BUILD_DIR)/interrupts.o linker.ld
-	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/gdt-load.o $(BUILD_DIR)/context.o $(BUILD_DIR)/context-switch.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/page-ownership.o $(BUILD_DIR)/paging.o $(BUILD_DIR)/keyboard.o $(BUILD_DIR)/irq.o $(BUILD_DIR)/block.o $(BUILD_DIR)/edfs.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/ramfs.o $(BUILD_DIR)/vfs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/serial.o $(BUILD_DIR)/syscall.o $(BUILD_DIR)/interrupts.o
+	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/gdt-load.o $(BUILD_DIR)/context.o $(BUILD_DIR)/context-switch.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/page-ownership.o $(BUILD_DIR)/pci.o $(BUILD_DIR)/paging.o $(BUILD_DIR)/keyboard.o $(BUILD_DIR)/irq.o $(BUILD_DIR)/block.o $(BUILD_DIR)/edfs.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/ramfs.o $(BUILD_DIR)/vfs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/serial.o $(BUILD_DIR)/syscall.o $(BUILD_DIR)/interrupts.o
 
 iso: $(TARGET)
 	@test -n "$(LIMINE_DIR)" || (echo "Set LIMINE_DIR to a Limine binary release directory"; exit 1)
