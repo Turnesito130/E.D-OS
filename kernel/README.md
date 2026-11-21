@@ -29,14 +29,14 @@ El workflow debe compilar y arrancar QEMU. El hito solo se considera verificado 
 
 ## Nuevos subsistemas en fase inicial (0.1)
 
-- Planificador: tabla fija de 32 tareas, estados READY/RUNNING/BLOCKED/EXITED, creación, selección round-robin, transición de estado actual y validación de invariantes. No guarda/restaura registros ni cambia pilas; aún no es multitarea ejecutable.
+- Planificador cooperativo: tabla fija de 32 tareas, estados READY/RUNNING/BLOCKED/EXITED, preparación de pilas y contextos, cambio real de pila/registros entre tareas, transición de estados y validación de invariantes. La prueba host alterna dos tareas y QEMU repite el cambio sobre pilas asignadas por el PMM.
 - IPC: colas circulares acotadas de 16 mensajes con payload máximo de 64 bytes, validación de tamaño, índices y contador internos, y detección de cola llena/vacía/corrupta. Todavía no hay aislamiento entre procesos, bloqueo, sincronización SMP ni llamadas desde modo usuario.
 - RAMFS: sistema de archivos temporal en memoria con hasta 16 archivos de 256 bytes, creación, lectura, escritura completa y borrado; rechaza nombres con separadores de ruta y límites excedidos. No es persistente, no usa VFS, no tiene directorios, permisos, caché ni integración con dispositivos de bloques.
 - Los módulos scheduler, IPC, RAMFS, buddy y syscalls se compilan como parte del ELF y tienen pruebas unitarias host en CI.
 
 ## Pendiente
 
-Propiedad/bitmap de páginas, activación de CR3 y page faults, GDT/TSS/IST, temporizador e IRQ, cambio de contexto real, procesos/hilos, entrada de syscalls desde ring 3, drivers de almacenamiento/red, VFS y sistema de archivos persistente, SMP, pruebas de estrés y hardware físico.
+Propiedad/bitmap de páginas, activación de CR3 y page faults, GDT/TSS/IST, temporizador e IRQ, planificador preemptivo, tarea idle y gestión de procesos/hilos, entrada de syscalls desde ring 3, drivers de almacenamiento/red, VFS y sistema de archivos persistente, SMP, pruebas de estrés y hardware físico.
 
 
 ## Interrupciones y temporizador PIT
