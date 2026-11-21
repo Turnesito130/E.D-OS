@@ -45,7 +45,9 @@
     "syscall dispatcher YIELD, EXIT and GETPID integrated with scheduler state transitions and tested together",
     "COM1 serial diagnostics with UART detection, startup marker and bounded transmit",
     "x86-64 four-level page-table builder with 4 KiB map, unmap and virtual-to-physical translation",
-    "PS/2 keyboard polling driver with set-1 scancode decoding and shift/caps-lock handling"
+    "PS/2 keyboard polling driver with set-1 scancode decoding and shift/caps-lock handling",
+    "physical page allocator free-list validation and guarded node traversal",
+    "kernel boot test creates, maps, translates and unmaps a 4 KiB page-table mapping"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000."
@@ -58,7 +60,9 @@
     "persistent filesystem, VFS, block-device drivers and permission enforcement",
     "ring 3 transition, TSS and user-mode address-space isolation",
     "CR3 activation, TLB invalidation, page-fault recovery and isolated user address spaces",
-    "PS/2 keyboard IRQ delivery, event queue and international keyboard layouts"
+    "PS/2 keyboard IRQ delivery, event queue and international keyboard layouts",
+    "PS/2 keyboard IRQ delivery, event queue and international keyboard layouts",
+    "PMM page ownership tracking to reject freeing pages not returned by the allocator"
   ],
   "linux_reference": {
     "repository": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
