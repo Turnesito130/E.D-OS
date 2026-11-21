@@ -6,7 +6,7 @@
   "description": "API experimental E.D. ID, dispositivos, sincronización y E.D. Cloud",
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs",
+    "check": "node --check server.mjs && node --check security-core.mjs && node --test security-core.test.mjs",
     "test": "node --test"
   },
   "engines": {
