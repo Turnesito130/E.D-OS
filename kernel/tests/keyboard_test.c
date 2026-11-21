@@ -12,6 +12,18 @@ int main(void) {
     assert(edos_keyboard_decode(0x39, 0, 0) == ' ');
     assert(edos_keyboard_decode(0x9e, 0, 0) == 0);
     assert(edos_keyboard_decode(0x7f, 0, 0) == 0);
+    assert(edos_keyboard_enqueue_scancode(0x2a));
+    assert(edos_keyboard_enqueue_scancode(0x1e));
+    assert(edos_keyboard_enqueue_scancode(0xaa));
+    assert(edos_keyboard_poll_char() == 65);
+    assert(edos_keyboard_enqueue_scancode(0x3a));
+    assert(edos_keyboard_enqueue_scancode(0x1e));
+    assert(edos_keyboard_poll_char() == 65);
+    assert(edos_keyboard_enqueue_scancode(0x3a));
+    assert(edos_keyboard_poll_char() == 0);
+    for (unsigned int i = 0; i < 63U; ++i) assert(edos_keyboard_enqueue_scancode(0x1e));
+    assert(!edos_keyboard_enqueue_scancode(0x1e));
+    assert(edos_keyboard_poll_char() == 97);
     puts("KEYBOARD_TESTS_OK");
     return 0;
 }
