@@ -1,0 +1,35 @@
+name: E.D-OS frontend checks
+
+on:
+  push:
+    branches: [arquitectura/0.1]
+    paths:
+      - "index.html"
+      - "js/**"
+      - ".github/workflows/frontend-check.yml"
+  pull_request:
+    branches: [arquitectura/0.1]
+    paths:
+      - "index.html"
+      - "js/**"
+      - ".github/workflows/frontend-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check JavaScript syntax
+        run: |
+          set -eu
+          find js -type f -name '*.js' -print0 | while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            node --check "$file"
+          done
