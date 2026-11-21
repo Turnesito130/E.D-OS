@@ -18,7 +18,7 @@ pmm_free_page exige que el llamador entregue una página obtenida previamente me
 
 ## Construcción y verificación
 
-La ejecución completa confirmada en GitHub Actions (commit `5a6c689c`) pasó las pruebas host, compiló ELF e ISO y arrancó en QEMU BIOS. Se comprobaron por puerto serie PMM, mapeo/desmapeo sobre el CR3 activo, ticks del PIT, cambio cooperativo de contexto entre dos tareas y el manejador de excepción. No demuestra ring 3, multitarea preemptiva ni aislamiento de procesos.
+La ejecución completa confirmada en GitHub Actions (commit `363739d7`) pasó pruebas host, compiló ELF e ISO y arrancó en QEMU BIOS. Se comprobaron por puerto serie PMM, mapeo/desmapeo sobre CR3 activo, ticks PIT, cambio cooperativo entre dos tareas, VFS, ramdisk y page fault controlado con lectura de CR2. No demuestra ring 3, multitarea preemptiva ni aislamiento de procesos.
 
 \`\`\`sh
 make -C kernel clean all
