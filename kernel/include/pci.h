@@ -19,20 +19,29 @@ typedef struct {
 } edos_pci_device_t;
 
 typedef struct {
-    edos_pci_u64_placeholder base;
+    unsigned long long base;
+    edos_pci_u8 index;
+    edos_pci_u8 is_io;
+    edos_pci_u8 is_64bit;
+    edos_pci_u8 prefetchable;
 } edos_pci_bar_t;
+
 typedef edos_pci_u32 (*edos_pci_config_reader_t)(
     edos_pci_u8 bus, edos_pci_u8 slot, edos_pci_u8 function,
     edos_pci_u8 offset, void *context);
 typedef void (*edos_pci_device_callback_t)(
     const edos_pci_device_t *device, void *context);
 
-/* Testable enumerator: the reader abstracts PCI configuration mechanism #1. */
 edos_pci_u32 edos_pci_enumerate_with_reader(
     edos_pci_config_reader_t reader, void *reader_context,
     edos_pci_device_callback_t callback, void *callback_context);
-/* Real x86 legacy PCI configuration-space enumerator. */
 edos_pci_u32 edos_pci_enumerate(
     edos_pci_device_callback_t callback, void *callback_context);
+int edos_pci_read_bar_with_reader(const edos_pci_device_t *device,
+                                  edos_pci_u8 index,
+                                  edos_pci_config_reader_t reader,
+                                  void *reader_context, edos_pci_bar_t *bar);
+int edos_pci_read_bar(const edos_pci_device_t *device, edos_pci_u8 index,
+                      edos_pci_bar_t *bar);
 
 #endif
