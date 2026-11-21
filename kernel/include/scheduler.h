@@ -13,6 +13,8 @@ edos_task_t *edos_scheduler_pick(edos_scheduler_t *scheduler);
 edos_task_t *edos_scheduler_schedule(edos_scheduler_t *scheduler);
 int edos_scheduler_validate(const edos_scheduler_t *scheduler);
 int edos_scheduler_switch_to(edos_scheduler_t *scheduler, ed_u64 from_id, ed_u64 to_id);
+int edos_scheduler_block_current(edos_scheduler_t *scheduler, ed_u64 from_id, ed_u64 to_id);
+int edos_scheduler_wake(edos_scheduler_t *scheduler, ed_u64 task_id);
 int edos_task_prepare_context(edos_scheduler_t *scheduler, ed_u64 id,
                               void *stack_base, ed_u64 stack_size,
                               void (*return_trap)(void));
