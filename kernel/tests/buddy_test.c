@@ -45,8 +45,15 @@ int main(void) {
     assert(buddy_free(&partial, p, 2));
     assert(buddy_free_page_count(&partial) == 20);
     assert(buddy_validate(&partial));
-    ed_u64 saved_head = partial.free_heads[partial.pages[partial.free_heads[0]].order];
-    (void)saved_head;
+    unsigned int order = 0;
+    while (order <= partial.max_order && partial.free_heads[order] == BUDDY_NONE) ++order;
+    assert(order <= partial.max_order);
+    ed_u64 head = partial.free_heads[order];
+    ed_u64 saved_prev = partial.pages[head].prev;
+    partial.pages[head].prev = 0;
+    assert(!buddy_validate(&partial));
+    partial.pages[head].prev = saved_prev;
+    assert(buddy_validate(&partial));
 
     puts("BUDDY_TESTS_OK");
     return 0;
