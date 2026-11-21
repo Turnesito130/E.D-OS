@@ -57,8 +57,8 @@ static unsigned char preempt_stack_a[8192] __attribute__((aligned(16)));
 static unsigned char preempt_stack_b[8192] __attribute__((aligned(16)));
 static unsigned char preempt_stack_monitor[8192] __attribute__((aligned(16)));
 static void preempt_task_returned(void){for(;;)__asm__ volatile("cli; hlt");}
-static void preempt_task_a_entry(void){for(;;)++preempt_a_runs;}
-static void preempt_task_b_entry(void){for(;;)++preempt_b_runs;}
+static void preempt_task_a_entry(void){serial("PREEMPTIVE_TASK_A_STARTED\\n");for(;;)++preempt_a_runs;}
+static void preempt_task_b_entry(void){serial("PREEMPTIVE_TASK_B_STARTED\\n");for(;;)++preempt_b_runs;}
 static void preempt_monitor_entry(void){
     while(preempt_a_runs<1000ULL||preempt_b_runs<1000ULL||preempt_scheduler.preemptive_switches<3ULL)__asm__ volatile("pause");
     __asm__ volatile("cli" ::: "memory");
@@ -290,6 +290,6 @@ serial("PREEMPTIVE_SCHEDULER_START\n");
 edos_irq_resume_context(first_frame);
 for(;;)__asm__ volatile("cli; hlt");
 }
-__attribute__((noreturn)) void kernel_exception_panic(u64 vector,u64 error_code){
-serial("EXCEPTION vector=");hex(vector);serial(" error=");hex(error_code);if(vector==14ULL){u64 cr2=0;__asm__ volatile("mov %%cr2, %0":"=r"(cr2));serial(" PAGE_FAULT_ADDRESS=");hex(cr2);}serial("\nKERNEL_HALTED_ON_EXCEPTION\n");for(;;)__asm__ volatile("cli; hlt");
+__attribute__((noreturn)) void kernel_exception_panic(u64 vector,u64 error_code,u64 rip){
+serial("EXCEPTION vector=");hex(vector);serial(" error=");hex(error_code);serial(" RIP=");hex(rip);if(vector==14ULL){u64 cr2=0;__asm__ volatile("mov %%cr2, %0":"=r"(cr2));serial(" PAGE_FAULT_ADDRESS=");hex(cr2);}serial("\nKERNEL_HALTED_ON_EXCEPTION\n");for(;;)__asm__ volatile("cli; hlt");
 }
