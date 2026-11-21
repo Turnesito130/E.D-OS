@@ -42,7 +42,7 @@ $(BUILD_DIR)/idt.o: src/idt.c include/idt.h | $(BUILD_DIR)
 $(BUILD_DIR)/serial.o: src/serial.c include/serial.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
-$(BUILD_DIR)/syscall.o: src/syscall.c include/syscall.h include/memory.h | $(BUILD_DIR)
+$(BUILD_DIR)/syscall.o: src/syscall.c include/syscall.h include/scheduler.h include/memory.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
 
