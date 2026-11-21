@@ -35,6 +35,9 @@ int edos_ramfs_write(edos_ramfs_t *fs,const char *name,const void *data,ed_u64 l
  if(!f || (!data && length) || length>EDOS_RAMFS_FILE_CAPACITY) return 0;
  const unsigned char *src=(const unsigned char*)data;
  for(ed_u64 i=0;i<length;++i) f->data[i]=src[i];
+ /* A shorter rewrite is a truncate: erase the old tail so a later sparse
+  * write cannot expose bytes left by the previous contents. */
+ for(ed_u64 i=length;i<EDOS_RAMFS_FILE_CAPACITY;++i) f->data[i]=0;
  f->size=length; return 1;
 }
 ed_u64 edos_ramfs_read(edos_ramfs_t *fs,const char *name,void *buffer,ed_u64 capacity) {
@@ -64,6 +67,10 @@ int edos_ramfs_write_at(edos_ramfs_t *fs,const char *name,ed_u64 offset,const vo
  edos_ramfs_file_t *f=find_file(fs,name);
  if(!f || (!data && length) || offset>EDOS_RAMFS_FILE_CAPACITY ||
     length>EDOS_RAMFS_FILE_CAPACITY-offset) return 0;
+ /* POSIX-like sparse extension: newly exposed gaps read as zero,
+  * never as stale bytes from an earlier file version. */
+ if(offset>f->size)
+  for(ed_u64 i=f->size;i<offset;++i) f->data[i]=0;
  const unsigned char *src=(const unsigned char*)data;
  for(ed_u64 i=0;i<length;++i) f->data[offset+i]=src[i];
  if(offset+length>f->size) f->size=offset+length;
