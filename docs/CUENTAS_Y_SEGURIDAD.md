@@ -32,7 +32,7 @@ No se deben guardar contraseñas en texto plano. Los tokens no deben incluirse e
 4. El servicio vincula el dispositivo a la cuenta y emite credenciales revocables.
 5. El usuario puede revocar el vínculo desde la lista de dispositivos.
 
-El backend 0.1 permite registrar un dispositivo directamente desde una sesión ya autenticada, pero todavía no implementa este flujo de emparejamiento. El prototipo WebRTC tampoco prueba por sí mismo la identidad del otro extremo.
+El backend 0.1 ya implementa este flujo: crea solicitudes con código y secreto de consulta almacenados como hashes, exige que la aprobación proceda de una sesión autenticada y de un dispositivo activo de esa misma cuenta, y permite reclamar la solicitud una sola vez. La sesión emitida queda vinculada al dispositivo aprobado. Al revocar un dispositivo, el servidor revoca también las sesiones asociadas. El prototipo WebRTC no prueba por sí mismo la identidad del otro extremo.
 
 ## 4. Sincronización
 
@@ -77,4 +77,4 @@ El backend 0.1 permite registrar un dispositivo directamente desde una sesión y
 
 ## 8. Estado real
 
-El backend 0.1 implementa registro e inicio de sesión, sesiones opacas revocables y alta/listado/revocación de dispositivos sobre PostgreSQL. El código está guardado en `backend/`, pero aún no se ha ejecutado ni probado con una base de datos real y no está desplegado. No hay sincronización ni almacenamiento remoto de archivos. No introducir credenciales ni datos personales reales en este prototipo.
+El backend 0.1 implementa registro e inicio de sesión, hash de contraseñas con scrypt, sesiones opacas con caducidad y revocación, emparejamiento de dispositivos de un solo uso, vínculo entre sesión y dispositivo, y revocación de sesiones al retirar un dispositivo. También incluye credenciales independientes para aplicaciones, permisos por cuenta denegados por defecto, comprobación de autorización y eventos de auditoría. Hay sincronización versionada y almacenamiento de archivos mediante una API S3 compatible. Las pruebas de integración automatizadas ejecutan el backend contra PostgreSQL y un fixture S3; esto no equivale a un despliegue de producción ni a una auditoría de seguridad independiente. La comprobación `/v1/security/authorize` valida credenciales y concesiones, pero cada futura ruta que entregue un recurso sensible debe integrar esa comprobación antes de considerar el permiso aplicado a ese recurso. El bloqueo PIN de la interfaz web es solo una barrera local del navegador, no sustituye la autenticación del backend ni el aislamiento del kernel. No introducir credenciales ni datos personales reales en este prototipo.
