@@ -21,7 +21,7 @@ $(BUILD_DIR)/entry.o: src/entry.S | $(BUILD_DIR)
 $(BUILD_DIR)/kernel.o: src/kernel.c include/memory.h include/idt.h include/serial.h include/paging.h include/keyboard.h include/irq.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
-$(BUILD_DIR)/irq.o: src/irq.c include/irq.h include/memory.h | $(BUILD_DIR)
+$(BUILD_DIR)/irq.o: src/irq.c include/irq.h include/keyboard.h include/memory.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
 $(BUILD_DIR)/keyboard.o: src/keyboard.c include/keyboard.h | $(BUILD_DIR)
