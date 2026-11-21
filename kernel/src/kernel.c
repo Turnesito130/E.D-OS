@@ -8,6 +8,7 @@
 #include "vfs.h"
 #include "block.h"
 #include "gdt.h"
+#include "edfs.h"
 typedef unsigned long long u64;
 __attribute__((used,section(".limine_requests"),aligned(8)))
 volatile u64 limine_base_revision[3]={0xf9562b2d5c95a6c8ULL,0x6a7b384944536bdcULL,3};
@@ -21,9 +22,11 @@ static edos_vfs_t boot_vfs;
 static char boot_vfs_buffer[16];
 static edos_block_device_t boot_block_device;
 static edos_ramdisk_t boot_ramdisk;
-static unsigned char boot_disk_storage[4096];
+static unsigned char boot_disk_storage[18U * 512U];
 static unsigned char boot_disk_write[512];
 static unsigned char boot_disk_read[512];
+static edos_edfs_t boot_edfs, boot_edfs_remount;
+static char boot_edfs_buffer[32];
 static edos_scheduler_t boot_scheduler;
 static edos_cpu_context_t boot_main_context;
 static ed_u64 boot_task_a, boot_task_b;
@@ -107,6 +110,15 @@ if(!edos_block_write(&boot_block_device,2,1,boot_disk_write)||
     serial("BLOCK_IO_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
 }
 serial("BLOCK_RAMDISK_RUNTIME_OK\n");
+if(!edos_edfs_format(&boot_block_device)||!edos_edfs_mount(&boot_edfs,&boot_block_device)||
+   !edos_edfs_create(&boot_edfs,"boot.log")||
+   !edos_edfs_write(&boot_edfs,"boot.log","E.D-OS EDFS",11)||
+   !edos_edfs_mount(&boot_edfs_remount,&boot_block_device)||
+   edos_edfs_read(&boot_edfs_remount,"boot.log",boot_edfs_buffer,sizeof(boot_edfs_buffer))!=11||
+   boot_edfs_buffer[0]!='E'||boot_edfs_buffer[10]!='S'){
+    serial("EDFS_RUNTIME_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
+}
+serial("EDFS_RUNTIME_OK\n");
 serial("IDT_READY entries=256 exceptions=32\nMEMORY_MAP_OK usable_bytes=");hex(memory_usable_bytes());serial(" hhdm=");hex(memory_hhdm_offset());serial("\n");
 void *p=pmm_alloc_page();if(!p){serial("PMM_ALLOC_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("PMM_ALLOC_ZEROED_OK\n");
