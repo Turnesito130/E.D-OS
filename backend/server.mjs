@@ -347,6 +347,17 @@ const server = createServer(async (req, res) => {
     if (!account) return send(res, 401, { error: "Sesión no válida o caducada." });
 
     // Registro y revocación de credenciales de aplicaciones (requiere sesión del titular).
+    if (req.method === "GET" && url.pathname === "/v1/security/apps") {
+      const result = await pool.query(
+        `SELECT app_id, created_at, last_used_at
+           FROM app_credentials
+          WHERE account_id = $1 AND revoked_at IS NULL
+          ORDER BY app_id LIMIT 200`,
+        [account.id]
+      );
+      return send(res, 200, { apps: result.rows });
+    }
+
     if (req.method === "POST" && url.pathname === "/v1/security/apps") {
       if (!rateLimit(req, res)) return;
       const body = await readJson(req);
