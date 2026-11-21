@@ -70,22 +70,22 @@ if(boot_task_stage!=3||boot_scheduler.current_id!=boot_task_a||
 }
 serial("SCHEDULER_CONTEXT_SWITCH_OK\n");
 edos_ramfs_init(&boot_ramfs);
-if(!edos_vfs_mount_root(&boot_vfs,&boot_ramfs)){serial("VFS_MOUNT_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");}
+if(!edos_vfs_mount_root(&boot_vfs,&boot_ramfs)){serial("VFS_MOUNT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 int vfs_fd=edos_vfs_open(&boot_vfs,"/boot.txt",EDOS_VFS_CREATE|EDOS_VFS_READ|EDOS_VFS_WRITE);
 if(vfs_fd<0||edos_vfs_write(&boot_vfs,vfs_fd,"E.D-OS VFS",10)!=10||
    !edos_vfs_seek(&boot_vfs,vfs_fd,0,EDOS_VFS_SEEK_SET)||
    edos_vfs_read(&boot_vfs,vfs_fd,boot_vfs_buffer,10)!=10||
    boot_vfs_buffer[0]!='E'||boot_vfs_buffer[9]!='S'){
-    serial("VFS_RUNTIME_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");
+    serial("VFS_RUNTIME_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
 }
 edos_vfs_dirent_t vfs_info;
 ed_u64 vfs_cursor=0;
 if(!edos_vfs_stat(&boot_vfs,"/boot.txt",&vfs_info)||vfs_info.size!=10||
    !edos_vfs_readdir(&boot_vfs,&vfs_cursor,&vfs_info)||vfs_info.size!=10||
    !edos_vfs_close(&boot_vfs,vfs_fd)){
-    serial("VFS_RUNTIME_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");
+    serial("VFS_RUNTIME_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
 }
-serial("VFS_RUNTIME_OK\\n");
+serial("VFS_RUNTIME_OK\n");
 serial("IDT_READY entries=256 exceptions=32\nMEMORY_MAP_OK usable_bytes=");hex(memory_usable_bytes());serial(" hhdm=");hex(memory_hhdm_offset());serial("\n");
 void *p=pmm_alloc_page();if(!p){serial("PMM_ALLOC_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("PMM_ALLOC_ZEROED_OK\n");
