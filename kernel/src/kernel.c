@@ -2,6 +2,7 @@
 #include "idt.h"
 #include "serial.h"
 #include "paging.h"
+#include "keyboard.h"
 typedef unsigned long long u64;
 __attribute__((used,section(".limine_requests"),aligned(8)))
 volatile u64 limine_base_revision[3]={0xf9562b2d5c95a6c8ULL,0x6a7b384944536bdcULL,3};
@@ -31,7 +32,9 @@ edos_paging_space_t address_space;
 if(!edos_paging_init(&address_space,paging_alloc_page,paging_phys_to_virt,(void*)0)){serial("PAGING_INIT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 u64 test_va=0xffff900000000000ULL, test_pa=(u64)(unsigned long long)q-memory_hhdm_offset(), translated=0;
 if(!edos_paging_map_4k(&address_space,test_va,test_pa,EDOS_PAGE_PRESENT|EDOS_PAGE_WRITE)||!edos_paging_translate(&address_space,test_va+0x42,&translated,(ed_u64*)0)||translated!=test_pa+0x42||!edos_paging_unmap_4k(&address_space,test_va,(ed_u64*)0)){serial("PAGING_TEST_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
-serial("PAGING_TABLES_OK\nKERNEL_MEMORY_MILESTONE_OK\nTEST: triggering breakpoint exception (vector 3).\n");
+serial("PAGING_TABLES_OK\n");
+if(edos_keyboard_available()){edos_keyboard_init();serial("PS2_KEYBOARD_POLL_READY\n");}
+serial("KERNEL_MEMORY_MILESTONE_OK\nTEST: triggering breakpoint exception (vector 3).\n");
 __asm__ volatile("int3");for(;;)__asm__ volatile("cli; hlt");
 }
 __attribute__((noreturn)) void kernel_exception_panic(u64 vector,u64 error_code){
