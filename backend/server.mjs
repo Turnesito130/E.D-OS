@@ -334,7 +334,7 @@ const server = createServer(async (req, res) => {
       return send(res, 200, { capabilities: ["microphone", "camera", "location", "files", "notifications"], grants: result.rows });
     }
 
-    const appPermissionMatch = url.pathname.match(/^\\/v1\\/security\\/app-permissions\\/([a-z0-9][a-z0-9._-]{0,63})$/);
+    const appPermissionMatch = url.pathname.match(/^\/v1\/security\/app-permissions\/([a-z0-9][a-z0-9._-]{0,63})$/);
     if (req.method === "PUT" && appPermissionMatch) {
       const { normalizePermissionGrant } = await import("./security-permissions.mjs");
       const body = await readJson(req);
