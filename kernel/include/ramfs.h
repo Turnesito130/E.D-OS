@@ -10,5 +10,7 @@ void edos_ramfs_init(edos_ramfs_t *fs);
 int edos_ramfs_create(edos_ramfs_t *fs,const char *name);
 int edos_ramfs_write(edos_ramfs_t *fs,const char *name,const void *data,ed_u64 length);
 ed_u64 edos_ramfs_read(edos_ramfs_t *fs,const char *name,void *buffer,ed_u64 capacity);
+ed_u64 edos_ramfs_read_at(edos_ramfs_t *fs,const char *name,ed_u64 offset,void *buffer,ed_u64 capacity);
+int edos_ramfs_write_at(edos_ramfs_t *fs,const char *name,ed_u64 offset,const void *data,ed_u64 length);
 int edos_ramfs_delete(edos_ramfs_t *fs,const char *name);
 #endif
