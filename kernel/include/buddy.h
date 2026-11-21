@@ -31,5 +31,6 @@ ed_u64 buddy_alloc(buddy_allocator_t *allocator, unsigned int order);
 int buddy_free(buddy_allocator_t *allocator, ed_u64 first_page,
                unsigned int order);
 ed_u64 buddy_free_page_count(const buddy_allocator_t *allocator);
+int buddy_validate(const buddy_allocator_t *allocator);
 
 #endif
