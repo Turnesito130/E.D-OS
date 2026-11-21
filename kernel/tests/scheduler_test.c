@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include "scheduler.h"
+static unsigned char task_stack[4096] __attribute__((aligned(16)));
+static void task_returned(void) {}
 static void task_a(void) {}
 static void task_b(void) {}
 int main(void) {
@@ -10,6 +12,8 @@ int main(void) {
     ed_u64 a = edos_task_create(&s, task_a, (void *)1);
     ed_u64 b = edos_task_create(&s, task_b, (void *)2);
     assert(a && b && a != b);
+    assert(edos_task_prepare_context(&s, a, task_stack, sizeof(task_stack), task_returned));
+    assert(s.tasks[0].context_ready);
     assert(edos_scheduler_validate(&s));
     edos_task_t *current = edos_scheduler_schedule(&s);
     assert(current && current->id == a && current->state == EDOS_TASK_RUNNING);
