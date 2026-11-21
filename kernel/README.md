@@ -34,8 +34,16 @@ El workflow debe compilar y arrancar QEMU. El hito solo se considera verificado 
 
 ## Pendiente
 
-Propiedad/bitmap de páginas, paginación y page faults, GDT/TSS/IST, temporizador e IRQ, cambio de contexto real, procesos/hilos, entrada de syscalls desde ring 3, drivers de teclado/almacenamiento/red, VFS y sistema de archivos persistente, SMP, pruebas de estrés y hardware físico.
+Propiedad/bitmap de páginas, activación de CR3 y page faults, GDT/TSS/IST, temporizador e IRQ, cambio de contexto real, procesos/hilos, entrada de syscalls desde ring 3, drivers de teclado/almacenamiento/red, VFS y sistema de archivos persistente, SMP, pruebas de estrés y hardware físico.
 
+
+## Paginación x86-64 (fase inicial)
+
+- Construcción de tablas de cuatro niveles (PML4, PDPT, PD y PT) con páginas asignadas por un callback.
+- Mapeo, traducción y desmapeo de páginas de 4 KiB; comprueba canonicalidad de direcciones, alineación, flags admitidos, entradas duplicadas y páginas enormes no soportadas.
+- Pruebas host para direcciones altas, offsets, flags, errores y desmapeo. El arranque QEMU prueba además la creación de tablas y una traducción usando páginas del PMM.
+
+**Límites:** las tablas creadas todavía no sustituyen CR3 ni se activan; no hay TLB shootdown/invalidation, páginas enormes, copy-on-write, protección real de espacios de usuario ni recuperación de fallos de página. El mapeo se prueba como estructura de datos, no como memoria virtual activa del sistema.
 
 ## Driver serie y ABI de syscalls (fase experimental)
 
