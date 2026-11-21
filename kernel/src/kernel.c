@@ -52,17 +52,18 @@ static unsigned char boot_task_stack_b[8192] __attribute__((aligned(16)));
 static edos_scheduler_t preempt_scheduler;
 static ed_u64 preempt_task_a, preempt_task_b, preempt_task_monitor;
 static volatile ed_u64 preempt_a_runs, preempt_b_runs;
+static volatile ed_u64 preempt_a_started, preempt_b_started;
 static ed_u64 boot_fault_address;
 static unsigned char preempt_stack_a[8192] __attribute__((aligned(16)));
 static unsigned char preempt_stack_b[8192] __attribute__((aligned(16)));
 static unsigned char preempt_stack_monitor[8192] __attribute__((aligned(16)));
 static void preempt_task_returned(void){for(;;)__asm__ volatile("cli; hlt");}
-static void preempt_task_a_entry(void){serial("PREEMPTIVE_TASK_A_STARTED\\n");for(;;)++preempt_a_runs;}
-static void preempt_task_b_entry(void){serial("PREEMPTIVE_TASK_B_STARTED\\n");for(;;)++preempt_b_runs;}
+static void preempt_task_a_entry(void){preempt_a_started=1;for(;;)++preempt_a_runs;}
+static void preempt_task_b_entry(void){preempt_b_started=1;for(;;)++preempt_b_runs;}
 static void preempt_monitor_entry(void){
-    while(preempt_a_runs<1000ULL||preempt_b_runs<1000ULL||preempt_scheduler.preemptive_switches<3ULL)__asm__ volatile("pause");
+    while(!preempt_a_started||!preempt_b_started||preempt_a_runs<1000ULL||preempt_b_runs<1000ULL||preempt_scheduler.preemptive_switches<3ULL)__asm__ volatile("pause");
     __asm__ volatile("cli" ::: "memory");
-    if(preempt_a_runs<1000ULL||preempt_b_runs<1000ULL||
+    if(!preempt_a_started||!preempt_b_started||preempt_a_runs<1000ULL||preempt_b_runs<1000ULL||
        preempt_scheduler.preemptive_switches<3ULL||
        !edos_scheduler_validate(&preempt_scheduler)){
         serial("PREEMPTIVE_SCHEDULER_ERROR\n");
