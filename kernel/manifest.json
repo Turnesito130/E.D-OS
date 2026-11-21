@@ -67,13 +67,16 @@
     "syscall YIELD invokes real cooperative context switching when the current and next task have prepared CPU contexts",
     "custom x86-64 GDT with kernel and user code/data selectors",
     "64-bit TSS with kernel RSP0 and dedicated IST stacks for double fault, NMI and page fault",
-    "IDT routes double fault, NMI and page fault through dedicated TSS IST stacks"
+    "IDT routes double fault, NMI and page fault through dedicated TSS IST stacks",
+    "EDFS flat block-backed filesystem with versioned superblock, fixed root directory and one 512-byte data sector per file",
+    "EDFS format, mount, create, read, write and delete operations with directory validation and duplicate-name rejection",
+    "QEMU BIOS and UEFI smoke tests format EDFS on a RAM disk, create and write a file, remount the filesystem and read back its data"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000.",
     "GitHub Actions host tests passed for PS/2 decoding, four-level page tables, buddy allocator, scheduler, IPC, syscall dispatcher integration and RAMFS.",
     "GitHub Actions passed host tests, built the Limine hybrid ISO and booted BIOS QEMU with custom GDT/TR, TSS RSP0 and IST stacks, cooperative task switching, VFS, RAM-disk I/O and controlled page-fault CR2 diagnostics (commit abc242f3).",
-    "GitHub Actions booted the hybrid Limine ISO under OVMF UEFI as well as BIOS QEMU and verified GDT/TSS/IST, cooperative tasks, VFS, RAM disk and page-fault CR2 reporting (commit 8b2a8f48)."
+    "GitHub Actions passed host tests, built the hybrid ISO and booted both BIOS and OVMF UEFI in QEMU; both runs verified custom GDT/TSS/IST, cooperative tasks, VFS, RAM-disk I/O, EDFS remount persistence and page-fault CR2 diagnostics (commit 5a184649)."
   ],
   "pending_verification": [
     "physical hardware compatibility",
@@ -82,10 +85,10 @@
     "PMM page ownership tracking to reject freeing pages not returned by the allocator",
     "timer preemption and scheduler integration",
     "APIC/IOAPIC, HPET and advanced interrupt routing",
-    "persistent block-backed filesystem, nested directories and file permissions",
     "physical SATA/AHCI/NVMe storage drivers and persistent filesystem backend",
     "page-fault recovery, lazy allocation and copy-on-write",
-    "ring 3 transition and safe return to ring 0"
+    "ring 3 transition and safe return to ring 0",
+    "nonvolatile SATA/AHCI/NVMe backend, crash-safe journaling, nested directories and file permissions"
   ],
   "linux_reference": {
     "repository": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
