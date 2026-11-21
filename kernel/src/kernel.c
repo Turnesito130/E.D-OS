@@ -46,6 +46,30 @@ static ed_u64 boot_task_a, boot_task_b;
 static volatile int boot_task_stage;
 static unsigned char boot_task_stack_a[8192] __attribute__((aligned(16)));
 static unsigned char boot_task_stack_b[8192] __attribute__((aligned(16)));
+static edos_scheduler_t preempt_scheduler;
+static ed_u64 preempt_task_a, preempt_task_b, preempt_task_monitor;
+static volatile ed_u64 preempt_a_runs, preempt_b_runs;
+static ed_u64 boot_fault_address;
+static unsigned char preempt_stack_a[8192] __attribute__((aligned(16)));
+static unsigned char preempt_stack_b[8192] __attribute__((aligned(16)));
+static unsigned char preempt_stack_monitor[8192] __attribute__((aligned(16)));
+static void preempt_task_returned(void){for(;;)__asm__ volatile("cli; hlt");}
+static void preempt_task_a_entry(void){for(;;)++preempt_a_runs;}
+static void preempt_task_b_entry(void){for(;;)++preempt_b_runs;}
+static void preempt_monitor_entry(void){
+    while(preempt_a_runs<1000ULL||preempt_b_runs<1000ULL)__asm__ volatile("pause");
+    __asm__ volatile("cli" ::: "memory");
+    if(preempt_a_runs<1000ULL||preempt_b_runs<1000ULL||
+       preempt_scheduler.preemptive_switches<3ULL||
+       !edos_scheduler_validate(&preempt_scheduler)){
+        serial("PREEMPTIVE_SCHEDULER_ERROR\n");
+        for(;;)__asm__ volatile("cli; hlt");
+    }
+    serial("PREEMPTIVE_SCHEDULER_OK\n");
+    volatile u64 fault_value=*(volatile u64*)(unsigned long long)boot_fault_address;
+    (void)fault_value;
+    for(;;)__asm__ volatile("cli; hlt");
+}
 static void boot_task_returned(void){for(;;)__asm__ volatile("cli; hlt");}
 static void boot_task_a_entry(void){
     boot_task_stage=1;
@@ -224,9 +248,24 @@ serial("PAGING_ACTIVE_MAP_OK\n");
 if(keyboard_ready)serial("PS2_KEYBOARD_IRQ_READY\n");
 u64 timer_start=edos_timer_ticks();
 while(edos_timer_ticks()-timer_start<3ULL)__asm__ volatile("hlt");
-serial("PIT_TIMER_IRQ_OK\nKERNEL_MEMORY_MILESTONE_OK\nTEST: triggering page fault (vector 14).\n");
-volatile u64 fault_value=*(volatile u64*)(unsigned long long)live_va;
-(void)fault_value;
+serial("PIT_TIMER_IRQ_OK\nKERNEL_MEMORY_MILESTONE_OK\n");
+boot_fault_address=live_va;
+__asm__ volatile("cli" ::: "memory");
+edos_scheduler_init(&preempt_scheduler);
+preempt_task_a=edos_task_create(&preempt_scheduler,preempt_task_a_entry,preempt_stack_a);
+preempt_task_b=edos_task_create(&preempt_scheduler,preempt_task_b_entry,preempt_stack_b);
+preempt_task_monitor=edos_task_create(&preempt_scheduler,preempt_monitor_entry,preempt_stack_monitor);
+if(!preempt_task_a||!preempt_task_b||!preempt_task_monitor||
+   !edos_task_prepare_interrupt_context(&preempt_scheduler,preempt_task_a,preempt_stack_a,sizeof(preempt_stack_a),preempt_task_returned)||
+   !edos_task_prepare_interrupt_context(&preempt_scheduler,preempt_task_b,preempt_stack_b,sizeof(preempt_stack_b),preempt_task_returned)||
+   !edos_task_prepare_interrupt_context(&preempt_scheduler,preempt_task_monitor,preempt_stack_monitor,sizeof(preempt_stack_monitor),preempt_task_returned)||
+   !edos_scheduler_validate(&preempt_scheduler)){
+    serial("PREEMPTIVE_SCHEDULER_INIT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
+}
+void *first_frame=edos_scheduler_start_interrupt(&preempt_scheduler,preempt_task_a);
+if(!first_frame){serial("PREEMPTIVE_SCHEDULER_START_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+serial("PREEMPTIVE_SCHEDULER_START\n");
+edos_irq_resume_context(first_frame);
 for(;;)__asm__ volatile("cli; hlt");
 }
 __attribute__((noreturn)) void kernel_exception_panic(u64 vector,u64 error_code){
