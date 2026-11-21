@@ -34,15 +34,19 @@ jobs:
         run: |
           gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/buddy.c kernel/tests/buddy_test.c -o /tmp/ed-os-buddy-test
           /tmp/ed-os-buddy-test
+      - name: Unit-test x86-64 cooperative context switching
+        run: |
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/context.c kernel/src/context.S kernel/tests/context_test.c -o /tmp/ed-os-context-test
+          /tmp/ed-os-context-test
       - name: Unit-test scheduler and IPC foundations
         run: |
-          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/scheduler.c kernel/tests/scheduler_test.c -o /tmp/ed-os-scheduler-test
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/context.c kernel/src/context.S kernel/src/scheduler.c kernel/tests/scheduler_test.c -o /tmp/ed-os-scheduler-test
           /tmp/ed-os-scheduler-test
           gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/ipc.c kernel/tests/ipc_test.c -o /tmp/ed-os-ipc-test
           /tmp/ed-os-ipc-test
       - name: Unit-test syscall dispatcher
         run: |
-          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/scheduler.c kernel/src/syscall.c kernel/tests/syscall_test.c -o /tmp/ed-os-syscall-test
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/context.c kernel/src/context.S kernel/src/scheduler.c kernel/src/syscall.c kernel/tests/syscall_test.c -o /tmp/ed-os-syscall-test
           /tmp/ed-os-syscall-test
       - name: Unit-test RAM filesystem
         run: |
