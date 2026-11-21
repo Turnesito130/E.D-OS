@@ -73,7 +73,10 @@
     "QEMU BIOS and UEFI smoke tests format EDFS on a RAM disk, create and write a file, remount the filesystem and read back its data",
     "PMM page ownership hash table tracks allocated physical pages and rejects invalid and duplicate frees",
     "VFS supports interchangeable RAMFS and EDFS backends with common file descriptors, offsets, stat and directory enumeration",
-    "QEMU BIOS and UEFI boot tests mount EDFS through VFS and read a file after remounting the block-backed volume"
+    "QEMU BIOS and UEFI boot tests mount EDFS through VFS and read a file after remounting the block-backed volume",
+    "IPC task-owned endpoints with sender identity checks, bounded queues and blocking receive",
+    "IPC send wakes a blocked receiver and receive cooperatively switches to a ready sender task",
+    "cooperative scheduler supports BLOCKED task state, explicit wake and context switch into blocked tasks"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000.",
