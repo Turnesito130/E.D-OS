@@ -3,7 +3,7 @@
   "kernel_strategy": "independent_ed_os_kernel",
   "linux_role": "study_reference_and_candidate_source_for_selective_components",
   "runtime_dependency_on_linux": false,
-  "status": "kernel_subsystems_foundations_in_progress",
+  "status": "kernel_bootable_foundations_and_experimental_syscall_abi",
   "ed_os_target": {
     "architecture": "x86_64",
     "virtual_machine": "QEMU",
@@ -36,21 +36,22 @@
     "GitHub Actions QEMU boot-test workflow",
     "fixed-capacity cooperative task registry and round-robin task selection prototype",
     "bounded in-kernel IPC message queue prototype",
-    "bounded in-memory RAM filesystem prototype (16 files, 256 bytes per file)"
+    "bounded in-memory RAM filesystem prototype (16 files, 256 bytes per file)",
+    "COM1 UART serial driver with bounded transmit polling",
+    "experimental syscall ABI dispatcher for WRITE, EXIT, YIELD and GETPID with range checks"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000."
   ],
   "pending_verification": [
-    "GitHub Actions downloads and verifies the pinned Limine release",
-    "Hybrid ISO creation",
-    "QEMU BIOS boot",
-    "KERNEL_BOOT_OK serial marker observed from QEMU",
     "UEFI boot",
     "physical hardware compatibility",
     "scheduler context switching and real task execution",
     "IPC integration with isolated processes and syscalls",
-    "persistent filesystem, VFS, block-device drivers and permission enforcement"
+    "persistent filesystem, VFS, block-device drivers and permission enforcement",
+    "ring 3 transition, TSS and user-mode address-space isolation",
+    "SYSCALL/SYSRET entry path and syscall dispatcher integration",
+    "COM1 hardware-presence detection and receive/interrupt support"
   ],
   "linux_reference": {
     "repository": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
