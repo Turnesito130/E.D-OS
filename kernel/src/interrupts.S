@@ -72,6 +72,13 @@ isr_common:
     hlt
     jmp 1b
 
+ .global irq_keyboard_stub
+.type irq_keyboard_stub, @function
+irq_keyboard_stub:
+    pushq $0
+    pushq $33
+    jmp irq_common
+
 .global irq_timer_stub
 .type irq_timer_stub, @function
 irq_timer_stub:
