@@ -46,27 +46,27 @@ int edos_vfs_open(edos_vfs_t *vfs, const char *path, unsigned int flags) {
     char name[EDOS_RAMFS_NAME_MAX + 1U];
     if (!vfs || !vfs->mounted || !copy_path_name(path, name) ||
         !(flags & (EDOS_VFS_READ | EDOS_VFS_WRITE)) ||
+        ((flags & EDOS_VFS_TRUNC) && !(flags & EDOS_VFS_WRITE)) ||
         (flags & ~(EDOS_VFS_READ | EDOS_VFS_WRITE | EDOS_VFS_CREATE | EDOS_VFS_TRUNC)))
         return -1;
+    unsigned int free_slot = EDOS_VFS_MAX_FDS;
+    for (unsigned int i = 0; i < EDOS_VFS_MAX_FDS; ++i)
+        if (!vfs->descriptors[i].used) { free_slot = i; break; }
+    if (free_slot == EDOS_VFS_MAX_FDS) return -1;
     edos_ramfs_file_t *file = find_entry(vfs, name);
     if (!file) {
         if (!(flags & EDOS_VFS_CREATE) || !edos_ramfs_create(vfs->root, name)) return -1;
-    } else if ((flags & EDOS_VFS_CREATE) && (flags & EDOS_VFS_TRUNC) &&
-               !(flags & EDOS_VFS_WRITE)) return -1;
-    if ((flags & EDOS_VFS_TRUNC) && (flags & EDOS_VFS_WRITE) &&
-        !edos_ramfs_write(vfs->root, name, (const void *)0, 0)) return -1;
-    for (unsigned int i = 0; i < EDOS_VFS_MAX_FDS; ++i) {
-        edos_vfs_fd_t *entry = &vfs->descriptors[i];
-        if (entry->used) continue;
-        unsigned int j = 0;
-        while (name[j]) { entry->name[j] = name[j]; ++j; }
-        entry->name[j] = 0;
-        entry->position = 0;
-        entry->flags = flags;
-        entry->used = 1;
-        return EDOS_VFS_FD_BASE + (int)i;
     }
-    return -1;
+    if ((flags & EDOS_VFS_TRUNC) &&
+        !edos_ramfs_write(vfs->root, name, (const void *)0, 0)) return -1;
+    edos_vfs_fd_t *entry = &vfs->descriptors[free_slot];
+    unsigned int j = 0;
+    while (name[j]) { entry->name[j] = name[j]; ++j; }
+    entry->name[j] = 0;
+    entry->position = 0;
+    entry->flags = flags;
+    entry->used = 1;
+    return EDOS_VFS_FD_BASE + (int)free_slot;
 }
 int edos_vfs_close(edos_vfs_t *vfs, int fd) {
     edos_vfs_fd_t *entry = get_fd(vfs, fd);
