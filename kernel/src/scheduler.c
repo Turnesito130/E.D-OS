@@ -15,6 +15,7 @@ void edos_scheduler_init(edos_scheduler_t *s) {
         s->tasks[i].state = EDOS_TASK_UNUSED;
         s->tasks[i].entry = (void (*)(void))0;
         s->tasks[i].stack = (void *)0;
+        s->tasks[i].context_ready = 0;
     }
     s->next_id = 1;
     s->cursor = 0;
@@ -33,6 +34,7 @@ ed_u64 edos_task_create(edos_scheduler_t *s, void (*entry)(void), void *stack) {
             t->id = id;
             t->entry = entry;
             t->stack = stack;
+            t->context_ready = 0;
             t->state = EDOS_TASK_READY;
             return id;
         }
@@ -95,7 +97,7 @@ int edos_scheduler_validate(const edos_scheduler_t *s) {
             if (t->id != 0) return 0;
             continue;
         }
-        if (!t->id || !t->entry) return 0;
+        if (!t->id || !t->entry || (t->context_ready != 0 && t->context_ready != 1)) return 0;
         for (unsigned int j = i + 1; j < EDOS_SCHEDULER_MAX_TASKS; ++j)
             if (s->tasks[j].state != EDOS_TASK_UNUSED &&
                 s->tasks[j].id == t->id) return 0;
@@ -106,4 +108,17 @@ int edos_scheduler_validate(const edos_scheduler_t *s) {
     }
     return running <= 1 && ((running == 0 && s->current_id == 0) ||
                             (running == 1 && s->current_id == running_id));
+}
+
+int edos_task_prepare_context(edos_scheduler_t *s, ed_u64 id,
+                              void *stack_base, ed_u64 stack_size,
+                              void (*return_trap)(void)) {
+    edos_task_t *task = find_task(s, id);
+    if (!task || task->state != EDOS_TASK_READY || !task->entry ||
+        !edos_context_init(&task->context, stack_base, stack_size,
+                           task->entry, return_trap))
+        return 0;
+    task->stack = stack_base;
+    task->context_ready = 1;
+    return 1;
 }
