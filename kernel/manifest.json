@@ -76,13 +76,16 @@
     "QEMU BIOS and UEFI boot tests mount EDFS through VFS and read a file after remounting the block-backed volume",
     "IPC task-owned endpoints with sender identity checks, bounded queues and blocking receive",
     "IPC send wakes a blocked receiver and receive cooperatively switches to a ready sender task",
-    "cooperative scheduler supports BLOCKED task state, explicit wake and context switch into blocked tasks"
+    "cooperative scheduler supports BLOCKED task state, explicit wake and context switch into blocked tasks",
+    "PCI configuration-space enumeration of buses, slots and multifunction devices using mechanism #1",
+    "PCI BAR decoding for I/O, 32-bit memory and 64-bit memory resources, including prefetchable attributes and 64-bit BAR pairing",
+    "BIOS and UEFI QEMU smoke tests enumerate six PCI devices and decode nine BAR resources"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000.",
     "GitHub Actions host tests passed for PS/2 decoding, four-level page tables, buddy allocator, scheduler, IPC, syscall dispatcher integration and RAMFS.",
     "GitHub Actions passed host tests, built the Limine hybrid ISO and booted BIOS QEMU with custom GDT/TR, TSS RSP0 and IST stacks, cooperative task switching, VFS, RAM-disk I/O and controlled page-fault CR2 diagnostics (commit abc242f3).",
-    "GitHub Actions passed PMM ownership, scheduler/syscall, VFS, block-device and EDFS host tests; built the hybrid ISO and booted BIOS and OVMF UEFI with VFS mounted over EDFS, remount readback and CR2 page-fault diagnostics (commit 0326c71e)."
+    "GitHub Actions passed host tests including IPC block/wake context switching and PCI BAR decoding, built the hybrid ISO and booted BIOS and OVMF UEFI; both boots enumerated six PCI devices and decoded nine BARs (commit a1f550de)."
   ],
   "pending_verification": [
     "physical hardware compatibility",
