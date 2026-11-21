@@ -8,4 +8,5 @@ ed_u64 memory_usable_bytes(void);
 ed_u64 pmm_pages_allocated(void);
 ed_u64 pmm_pages_free(void);
 ed_u64 memory_hhdm_offset(void);
+int memory_validate(void);
 #endif
