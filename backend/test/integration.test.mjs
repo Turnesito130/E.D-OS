@@ -237,6 +237,9 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
     method: "PUT", token, body: { grants: { files: true, camera: false } }
   });
   assert.equal(ownerGrant.status, 200);
+  const savedAppPermissions = await request("/v1/security/app-permissions", { token });
+  assert.equal(savedAppPermissions.data.grants.find(grant => grant.app_id === appId && grant.capability === "files").granted, true);
+  assert.equal(savedAppPermissions.data.grants.find(grant => grant.app_id === appId && grant.capability === "camera").granted, false);
   const allowed = await request("/v1/security/authorize", {
     method: "POST", appToken, body: { capability: "files" }
   });
