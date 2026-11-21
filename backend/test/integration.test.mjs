@@ -223,6 +223,8 @@ test("API integration: accounts, device pairing, sync isolation and revocation",
   assert.equal(deniedByDefault.data.reason, "permission_not_granted");
 
   // A grant on another account must never authorize this app's credential.
+  const otherApps = await request("/v1/security/apps", { token: other.data.session.token });
+  assert.equal(otherApps.data.apps.some(app => app.app_id === appId), false);
   const otherGrant = await request("/v1/security/app-permissions/" + appId, {
     method: "PUT", token: other.data.session.token,
     body: { grants: { files: true } }
