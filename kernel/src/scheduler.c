@@ -122,3 +122,18 @@ int edos_task_prepare_context(edos_scheduler_t *s, ed_u64 id,
     task->context_ready = 1;
     return 1;
 }
+
+int edos_scheduler_switch_to(edos_scheduler_t *s, ed_u64 from_id, ed_u64 to_id) {
+    if (!s || !s->initialized || !from_id || !to_id || from_id == to_id ||
+        s->current_id != from_id) return 0;
+    edos_task_t *from = find_task(s, from_id);
+    edos_task_t *to = find_task(s, to_id);
+    if (!from || !to || !from->context_ready || !to->context_ready ||
+        from->state != EDOS_TASK_RUNNING || to->state != EDOS_TASK_READY)
+        return 0;
+    from->state = EDOS_TASK_READY;
+    to->state = EDOS_TASK_RUNNING;
+    s->current_id = to_id;
+    edos_context_switch(&from->context, &to->context);
+    return 1;
+}
