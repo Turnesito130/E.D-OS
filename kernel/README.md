@@ -8,17 +8,25 @@ E.D-OS tendrá un kernel propio e independiente. Linux se estudia como referenci
 - Mapa de memoria Limine y HHDM.
 - Asignador físico bootstrap de páginas de 4 KiB.
 - Lista enlazada de páginas liberadas para reutilización, comprobación segura de nodos y validador de invariantes del PMM.
-- Rechazo de direcciones desalineadas/no utilizables y doble liberación detectada; tabla hash de propiedad que registra las páginas asignadas y evita liberar páginas que no pertenecen al PMM.
+- Rechazo de direcciones desalineadas/no utilizables y doble liberación detectada; tabla hash de propiedad con 262.144 entradas (hasta 1 GiB de páginas simultáneamente asignadas), que registra las páginas asignadas y evita liberar páginas que no pertenecen al PMM.
 - IDT de 256 entradas y stubs para excepciones.
 - Pruebas QEMU superadas: asignar, liberar, rechazar doble liberación, reutilizar la misma página, comprobar que vuelve a cero y validar la lista libre. El handler de page fault identifica el vector 14 y registra CR2; una prueba de arranque provoca un fallo controlado en una dirección virtual desmapeada.
 
+## Descubrimiento de dispositivos PCI
+
+- Enumerador x86 de configuración PCI legacy (CF8/CFC): recorre buses, slots y funciones, identifica fabricante/dispositivo, clase, subclase, interfaz y tipo de cabecera.
+- Respeta el bit multifunción de la función 0 y no consulta funciones adicionales de dispositivos que no las declaran.
+- Tiene lector abstracto para pruebas host y se ejecuta durante el arranque; el workflow exige el marcador de enumeración en BIOS y UEFI.
+
+**Límites:** por ahora descubre e inventaría dispositivos; todavía no enlaza controladores ni implementa PCIe ECAM, interrupciones MSI/MSI-X, DMA, AHCI, NVMe, USB, red o gráficos.
+
 ## Límites conocidos
 
-El registro de propiedad es una tabla hash estática de 65.536 entradas (límite actual de páginas simultáneamente asignadas); no hay bloqueo SMP, coalescencia ni integración completa con el buddy allocator. Esto sigue siendo un asignador bootstrap, no uno de producción.
+El registro de propiedad es una tabla hash estática de 262.144 entradas (2 MiB de metadatos; límite teórico de 1 GiB de páginas simultáneamente asignadas). No hay bloqueo SMP, coalescencia ni integración completa con el buddy allocator. Esto sigue siendo un asignador bootstrap, no uno de producción.
 
 ## Construcción y verificación
 
-La ejecución completa confirmada en GitHub Actions (commit `0326c71e`) pasó pruebas host, compiló la ISO híbrida y arrancó en QEMU BIOS y UEFI con OVMF. En ambos firmwares se comprobaron propiedad de páginas PMM, GDT/TSS con TR activo, pilas IST, mapeo sobre CR3 activo, ticks PIT, cambio cooperativo entre dos tareas, VFS sobre RAMFS y EDFS, ramdisk, remontaje EDFS y page fault controlado con lectura de CR2. No demuestra ring 3, multitarea preemptiva ni aislamiento de procesos.
+La ejecución completa confirmada en GitHub Actions (commit `4a2d2b83`) pasó pruebas host, compiló la ISO híbrida y arrancó en QEMU BIOS y UEFI con OVMF. En ambos firmwares se comprobaron propiedad de páginas PMM, enumeración PCI, GDT/TSS con TR activo, pilas IST, mapeo sobre CR3 activo, ticks PIT, cambio cooperativo entre dos tareas, VFS sobre RAMFS y EDFS, ramdisk, remontaje EDFS y page fault controlado con lectura de CR2. No demuestra ring 3, multitarea preemptiva ni aislamiento de procesos.
 
 \`\`\`sh
 make -C kernel clean all
