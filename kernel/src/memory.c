@@ -20,6 +20,7 @@ static ed_u64 hhdm, usable_bytes, allocated_pages, free_pages, region_index, reg
 static void *free_list;
 static int initialized;
 static int add_overflows(ed_u64 a, ed_u64 b) { return b > (~0ULL-a); }
+static int physical_page_is_usable(ed_u64 p);
 static int valid_free_node(void *node) {
 if(!node)return 1;
 ed_u64 va=(ed_u64)(unsigned long long)node;
