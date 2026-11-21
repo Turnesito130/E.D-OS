@@ -273,6 +273,14 @@ if(keyboard_ready)serial("PS2_KEYBOARD_IRQ_READY\n");
 u64 timer_start=edos_timer_ticks();
 while(edos_timer_ticks()-timer_start<3ULL)__asm__ volatile("hlt");
 serial("PIT_TIMER_IRQ_OK\nKERNEL_MEMORY_MILESTONE_OK\n");
+if(keyboard_ready){
+    u64 keyboard_start=edos_timer_ticks();
+    while(edos_timer_ticks()-keyboard_start<150ULL){
+        int key=edos_keyboard_poll_char();
+        if(key=='a'){serial("PS2_KEYBOARD_IRQ_INPUT_OK\n");break;}
+        __asm__ volatile("hlt");
+    }
+}
 boot_fault_address=live_va;
 __asm__ volatile("cli" ::: "memory");
 edos_scheduler_init(&preempt_scheduler);
