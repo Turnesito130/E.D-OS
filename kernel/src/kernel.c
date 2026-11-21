@@ -60,7 +60,7 @@ static void preempt_task_returned(void){for(;;)__asm__ volatile("cli; hlt");}
 static void preempt_task_a_entry(void){for(;;)++preempt_a_runs;}
 static void preempt_task_b_entry(void){for(;;)++preempt_b_runs;}
 static void preempt_monitor_entry(void){
-    while(preempt_a_runs<1000ULL||preempt_b_runs<1000ULL)__asm__ volatile("pause");
+    while(preempt_a_runs<1000ULL||preempt_b_runs<1000ULL||preempt_scheduler.preemptive_switches<3ULL)__asm__ volatile("pause");
     __asm__ volatile("cli" ::: "memory");
     if(preempt_a_runs<1000ULL||preempt_b_runs<1000ULL||
        preempt_scheduler.preemptive_switches<3ULL||
