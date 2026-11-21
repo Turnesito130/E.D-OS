@@ -1,7 +1,8 @@
 #include "syscall.h"
 ed_u64 edos_syscall_dispatch(ed_u64 number, ed_u64 arg0, ed_u64 arg1,
                              edos_syscall_context_t *context) {
-    if (!context) return EDOS_SYSCALL_EINVAL;
+    if (!context || context->user_start > context->user_end)
+        return EDOS_SYSCALL_EINVAL;
     switch (number) {
     case EDOS_SYSCALL_WRITE: {
         if (arg1 > EDOS_SYSCALL_MAX_WRITE || (!arg0 && arg1))
