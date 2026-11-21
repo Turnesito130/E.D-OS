@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const STORAGE_KEY = 'ed-os-sync-pending-v1';
+  const CACHE_KEY = 'ed-os-sync-cache-v1';
   const MAX_ITEMS = 500;
   const MAX_PAYLOAD_BYTES = 12_000;
   const KEY_PATTERN = /^[a-zA-Z0-9._-]{1,100}$/;
@@ -13,6 +14,28 @@
         : Object.create(null);
     } catch (_) {
       return Object.create(null);
+    }
+  }
+
+  function readCache(storage = window.localStorage) {
+    try {
+      const parsed = JSON.parse(storage.getItem(CACHE_KEY) || '{}');
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? Object.assign(Object.create(null), parsed)
+        : Object.create(null);
+    } catch (_) {
+      return Object.create(null);
+    }
+  }
+
+  function writeCache(cache, storage = window.localStorage) {
+    if (!cache || typeof cache !== 'object' || Array.isArray(cache) ||
+        Object.keys(cache).length > MAX_ITEMS) return false;
+    try {
+      storage.setItem(CACHE_KEY, JSON.stringify(cache));
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -66,6 +89,6 @@
   }
 
   window.EDOSyncQueue = Object.freeze({
-    read, write, enqueue, remove, markConflict, STORAGE_KEY, MAX_ITEMS, MAX_PAYLOAD_BYTES
+    read, write, readCache, writeCache, enqueue, remove, markConflict, STORAGE_KEY, CACHE_KEY, MAX_ITEMS, MAX_PAYLOAD_BYTES
   });
 })();
