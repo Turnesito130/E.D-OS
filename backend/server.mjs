@@ -336,7 +336,7 @@ const server = createServer(async (req, res) => {
       return send(res, 200, { sessions: result.rows });
     }
 
-    const sessionRevokeMatch = url.pathname.match(/^\\/v1\\/security\\/sessions\\/([0-9a-f-]{36})$/i);
+    const sessionRevokeMatch = url.pathname.match(/^\/v1\/security\/sessions\/([0-9a-f-]{36})$/i);
     if (req.method === "DELETE" && sessionRevokeMatch) {
       const result = await pool.query(
         "UPDATE sessions SET revoked_at = now() WHERE id = $1 AND account_id = $2 AND revoked_at IS NULL RETURNING id",
