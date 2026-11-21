@@ -10,6 +10,7 @@
 #include "gdt.h"
 #include "edfs.h"
 #include "pci.h"
+#include "ata_pio.h"
 #include "heap.h"
 typedef unsigned long long u64;
 __attribute__((used,section(".limine_requests"),aligned(8)))
@@ -23,6 +24,9 @@ static edos_ramfs_t boot_ramfs;
 static edos_vfs_t boot_vfs;
 static char boot_vfs_buffer[16];
 static edos_block_device_t boot_block_device;
+static edos_block_device_t boot_ata_block;
+static edos_ata_pio_t boot_ata;
+static unsigned char boot_ata_sector[512];
 static edos_ramdisk_t boot_ramdisk;
 static unsigned char boot_disk_storage[18U * 512U];
 static unsigned char boot_disk_write[512];
@@ -84,6 +88,15 @@ for(ed_u64 i=0;i<pci_device_count&&i<32ULL;++i)
     }
 if(!pci_bar_count){serial("PCI_BAR_DECODE_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("PCI_BAR_DECODE_OK bars=");hex(pci_bar_count);serial("\n");
+if(edos_ata_pio_init(&boot_ata_block,&boot_ata,0U)){
+    if(!edos_block_read(&boot_ata_block,0,1,boot_ata_sector)||
+       boot_ata_sector[510]!=0x55U||boot_ata_sector[511]!=0xaaU){
+        serial("ATA_PIO_READ_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
+    }
+    serial("ATA_PIO_READ_OK sectors=");hex(boot_ata.sector_count);serial("\n");
+}else{
+    serial("ATA_PIO_NOT_PRESENT\n");
+}
 if(!edos_irq_init(keyboard_ready)){serial("IRQ_INIT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 edos_scheduler_init(&boot_scheduler);
 boot_task_a=edos_task_create(&boot_scheduler,boot_task_a_entry,boot_task_stack_a);
