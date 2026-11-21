@@ -9,7 +9,7 @@ static void serial(const char*s){(void)edos_serial_write(s);}
 static void hex(u64 v){static const char d[]="0123456789abcdef";serial("0x");for(int s=60;s>=0;s-=4)serial_char(d[(v>>s)&15]);}
 __attribute__((noreturn)) void kernel_main(void){
 if (!edos_serial_init()) { for(;;)__asm__ volatile("cli; hlt"); }
-serial("\nE.D-OS kernel 0.0.5\n");
+serial("\nE.D-OS kernel 0.0.5\nSERIAL_DRIVER_READY COM1\n");
 if(limine_base_revision[2]!=0){serial("BOOT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("BOOT_PROTOCOL=Limine revision 3\n");
 if(!memory_init()){serial("MEMORY_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
