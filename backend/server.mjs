@@ -5,6 +5,7 @@ import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, Delete
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { cleanupAbandonedUploads } from "./cloud-maintenance.mjs";
 import { hashPassword, verifyPassword, tokenDigest, validEmail } from "./security-core.mjs";
+import { createRateLimiter } from "./rate-limit.mjs";
 
 const { Pool } = pg;
 const PORT = Number(process.env.PORT || 8787);
@@ -13,7 +14,7 @@ const TOKEN_TTL_HOURS = 12;
 const PAIRING_TTL_MINUTES = 5;
 const MAX_BODY_BYTES = 16 * 1024;
 const pool = DATABASE_URL ? new Pool({ connectionString: DATABASE_URL, ssl: process.env.PGSSLMODE === "require" ? { rejectUnauthorized: true } : undefined }) : null;
-const attempts = new Map();
+const rateLimiter = createRateLimiter({ limit: 20, windowMs: 60_000, maxEntries: 5_000 });
 const allowedOrigins = new Set((process.env.CORS_ORIGINS || "").split(",").map(value => value.trim()).filter(Boolean));
 const CLOUD_MAX_FILE_BYTES = 50 * 1024 * 1024;
 const CLOUD_QUOTA_BYTES = 2 * 1024 * 1024 * 1024;
@@ -62,20 +63,14 @@ function readJson(req) {
 }
 
 function rateLimit(req, res) {
-  const ip = req.socket.remoteAddress || "unknown";
-  const now = Date.now();
-  const entry = attempts.get(ip) || { count: 0, reset: now + 60_000 };
-  if (now > entry.reset) { entry.count = 0; entry.reset = now + 60_000; }
-  entry.count++;
-  attempts.set(ip, entry);
-  if (entry.count > 20) {
-    send(res, 429, { error: "Demasiados intentos. Espera un minuto." });
+  const result = rateLimiter.consume(req.socket.remoteAddress || "unknown");
+  if (result.allowed) return true;
+  if (result.reason === "capacity") {
+    send(res, 503, { error: "Protección temporalmente saturada. Inténtalo de nuevo en un minuto." });
     return false;
   }
-  if (attempts.size > 5000) {
-    for (const [key, value] of attempts) if (now > value.reset) attempts.delete(key);
-  }
-  return true;
+  send(res, 429, { error: "Demasiados intentos. Espera un minuto." });
+  return false;
 }
 
 
