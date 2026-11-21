@@ -79,13 +79,17 @@
     "cooperative scheduler supports BLOCKED task state, explicit wake and context switch into blocked tasks",
     "PCI configuration-space enumeration of buses, slots and multifunction devices using mechanism #1",
     "PCI BAR decoding for I/O, 32-bit memory and 64-bit memory resources, including prefetchable attributes and 64-bit BAR pairing",
-    "BIOS and UEFI QEMU smoke tests enumerate six PCI devices and decode nine BAR resources"
+    "BIOS and UEFI QEMU smoke tests enumerate six PCI devices and decode nine BAR resources",
+    "preemptive ring-0 task scheduler driven by PIT IRQ0 with interrupt-frame switching and task monitor validation",
+    "primary-channel ATA PIO block driver with IDENTIFY, bounded polling, LBA28 sector reads and writes",
+    "QEMU IDE test disk validates ATA PIO sector read/write and EDFS plus VFS file persistence across remount",
+    "preemptive scheduler QEMU BIOS and UEFI smoke tests verify two worker tasks receive CPU time and scheduler invariants"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000.",
     "GitHub Actions host tests passed for PS/2 decoding, four-level page tables, buddy allocator, scheduler, IPC, syscall dispatcher integration and RAMFS.",
     "GitHub Actions passed host tests, built the Limine hybrid ISO and booted BIOS QEMU with custom GDT/TR, TSS RSP0 and IST stacks, cooperative task switching, VFS, RAM-disk I/O and controlled page-fault CR2 diagnostics (commit abc242f3).",
-    "GitHub Actions passed host tests including IPC block/wake context switching and PCI BAR decoding, built the hybrid ISO and booted BIOS and OVMF UEFI; both boots enumerated six PCI devices and decoded nine BARs (commit a1f550de)."
+    "GitHub Actions passed all host tests, BIOS and OVMF UEFI QEMU boots with the preemptive ring-0 scheduler and IPC, PCI BAR enumeration, EDFS/VFS, and a dedicated QEMU IDE disk test that verified ATA PIO read/write plus EDFS file readback after remount (commit 40163f25)."
   ],
   "pending_verification": [
     "physical hardware compatibility",
