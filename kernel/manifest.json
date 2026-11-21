@@ -50,7 +50,9 @@
     "kernel boot test creates, maps, translates and unmaps a 4 KiB page-table mapping",
     "8259 PIC remapping and PIT channel 0 periodic timer configuration at approximately 100 Hz",
     "IRQ0 assembly entry preserving general-purpose registers and dispatching timer ticks with PIC EOI",
-    "active CR3 page-table adoption and live map/unmap test using a free PML4 slot"
+    "active CR3 page-table adoption and live map/unmap test using a free PML4 slot",
+    "PS/2 IRQ1 handler with bounded 64-entry scancode queue and character polling API",
+    "PIC remapping enables IRQ1 only when a PS/2 controller is detected"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000.",
@@ -66,7 +68,7 @@
     "persistent filesystem, VFS, block-device drivers and permission enforcement",
     "ring 3 transition, TSS and user-mode address-space isolation",
     "switching to an independently built CR3 root, automatic TLB management, page-fault recovery and isolated user address spaces",
-    "PS/2 keyboard IRQ delivery, event queue and international keyboard layouts",
+    "PS/2 real-key event validation and international keyboard layouts",
     "PMM page ownership tracking to reject freeing pages not returned by the allocator",
     "APIC/IOAPIC support, keyboard IRQ1, timer preemption and scheduler context switching"
   ],
