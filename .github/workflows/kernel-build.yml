@@ -32,6 +32,10 @@ jobs:
           /tmp/ed-os-scheduler-test
           gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/ipc.c kernel/tests/ipc_test.c -o /tmp/ed-os-ipc-test
           /tmp/ed-os-ipc-test
+      - name: Unit-test syscall dispatcher
+        run: |
+          gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/syscall.c kernel/tests/syscall_test.c -o /tmp/ed-os-syscall-test
+          /tmp/ed-os-syscall-test
       - name: Unit-test RAM filesystem
         run: |
           gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/ramfs.c kernel/tests/ramfs_test.c -o /tmp/ed-os-ramfs-test
