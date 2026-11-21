@@ -15,6 +15,29 @@ static void do_yield(void *opaque) { ((test_state *)opaque)->yields++; }
 static void do_exit(ed_u64 status, void *opaque) { ((test_state *)opaque)->exit_status = status; }
 static void task_one(void) {}
 static void task_two(void) {}
+static edos_scheduler_t yield_scheduler;
+static edos_cpu_context_t yield_main_context;
+static ed_u64 yield_task_a_id, yield_task_b_id;
+static unsigned char yield_stack_a[4096] __attribute__((aligned(16)));
+static unsigned char yield_stack_b[4096] __attribute__((aligned(16)));
+static volatile int yield_stage;
+static void yield_return_trap(void) { for (;;) {} }
+static void yield_task_a(void) {
+    yield_stage = 1;
+    edos_syscall_context_t context = { .scheduler = &yield_scheduler };
+    assert(edos_syscall_dispatch(EDOS_SYSCALL_YIELD, 0, 0, &context) == EDOS_SYSCALL_OK);
+    assert(yield_stage == 2);
+    yield_stage = 3;
+    edos_context_switch(&yield_scheduler.tasks[0].context, &yield_main_context);
+    for (;;) {}
+}
+static void yield_task_b(void) {
+    assert(yield_stage == 1);
+    yield_stage = 2;
+    edos_syscall_context_t context = { .scheduler = &yield_scheduler };
+    assert(edos_syscall_dispatch(EDOS_SYSCALL_YIELD, 0, 0, &context) == EDOS_SYSCALL_OK);
+    for (;;) {}
+}
 
 int main(void) {
     const char message[] = "E.D-OS";
@@ -58,6 +81,20 @@ int main(void) {
     assert(edos_scheduler_validate(&scheduler));
     assert(edos_syscall_dispatch(EDOS_SYSCALL_YIELD, 0, 0, &integrated) == EDOS_SYSCALL_OK);
     assert(scheduler.current_id == first);
+
+    edos_scheduler_init(&yield_scheduler);
+    yield_task_a_id = edos_task_create(&yield_scheduler, yield_task_a, yield_stack_a);
+    yield_task_b_id = edos_task_create(&yield_scheduler, yield_task_b, yield_stack_b);
+    assert(yield_task_a_id && yield_task_b_id);
+    assert(edos_task_prepare_context(&yield_scheduler, yield_task_a_id, yield_stack_a, sizeof(yield_stack_a), yield_return_trap));
+    assert(edos_task_prepare_context(&yield_scheduler, yield_task_b_id, yield_stack_b, sizeof(yield_stack_b), yield_return_trap));
+    assert(edos_task_set_state(&yield_scheduler, yield_task_a_id, EDOS_TASK_RUNNING));
+    edos_context_switch(&yield_main_context, &yield_scheduler.tasks[0].context);
+    assert(yield_stage == 3);
+    assert(yield_scheduler.current_id == yield_task_a_id);
+    assert(yield_scheduler.tasks[0].state == EDOS_TASK_RUNNING);
+    assert(yield_scheduler.tasks[1].state == EDOS_TASK_READY);
+    assert(edos_scheduler_validate(&yield_scheduler));
     puts("SYSCALL_TESTS_OK");
     return 0;
 }
