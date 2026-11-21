@@ -16,3 +16,11 @@ test("app IDs use a strict lowercase allowlist", () => {
   assert.equal(validAppId("../admin"), false);
   assert.equal(validAppId(""), false);
 });
+
+test("authorization denies invalid credentials and missing grants by default", async () => {
+  const { permissionDecision } = await import("./security-permissions.mjs");
+  assert.deepEqual(permissionDecision({ credentialActive: false, grant: true }), { allowed: false, reason: "invalid_app_credential" });
+  assert.deepEqual(permissionDecision({ credentialActive: true, grant: false }), { allowed: false, reason: "permission_not_granted" });
+  assert.deepEqual(permissionDecision({ credentialActive: true, grant: null }), { allowed: false, reason: "permission_not_granted" });
+  assert.deepEqual(permissionDecision({ credentialActive: true, grant: true }), { allowed: true, reason: "granted" });
+});
