@@ -27,7 +27,10 @@ $(BUILD_DIR)/memory.o: src/memory.c include/memory.h | $(BUILD_DIR)
 $(BUILD_DIR)/scheduler.o: src/scheduler.c include/scheduler.h include/memory.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
-$(BUILD_DIR)/ipc.o: src/ipc.c include/ipc.h include/memory.h | $(BUILD_DIR)
+$(BUILD_DIR)/ramfs.o: src/ramfs.c include/ramfs.h include/memory.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+$(BUILD_DIR)/ipc.o: src/ipc.c include/ipc.h include/memory.h
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
 $(BUILD_DIR)/buddy.o: src/buddy.c include/buddy.h include/memory.h
@@ -39,7 +42,7 @@ $(BUILD_DIR)/idt.o: src/idt.c include/idt.h | $(BUILD_DIR)
 $(BUILD_DIR)/interrupts.o: src/interrupts.S | $(BUILD_DIR)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
-$(TARGET): $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/interrupts.o linker.ld
+$(TARGET): $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/scheduler.o $(BUILD_DIR)/ipc.o $(BUILD_DIR)/ramfs.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/interrupts.o linker.ld
 	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/entry.o $(BUILD_DIR)/kernel.o $(BUILD_DIR)/memory.o $(BUILD_DIR)/buddy.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/interrupts.o
 
 iso: $(TARGET)
