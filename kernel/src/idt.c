@@ -47,7 +47,12 @@ static void idt_set_gate(u8 vector, void (*handler)(void), u16 selector, u8 ist)
     idt[vector].reserved = 0;
 }
 
-static void idt_set_user_gate(u8 vector, void (*handler)(void), u16 selector) {\n    idt_set_gate(vector, handler, selector, 0);\n    idt[vector].attributes = 0xee; /* present, DPL 3, 64-bit interrupt gate */\n}\n\nint idt_init(void) {
+static void idt_set_user_gate(u8 vector, void (*handler)(void), u16 selector) {
+    idt_set_gate(vector, handler, selector, 0);
+    idt[vector].attributes = 0xee; /* present, DPL 3, 64-bit interrupt gate */
+}
+
+int idt_init(void) {
     u16 code_selector;
     __asm__ volatile ("mov %%cs, %0" : "=r"(code_selector));
     if (code_selector == 0) return 0;
@@ -68,7 +73,8 @@ static void idt_set_user_gate(u8 vector, void (*handler)(void), u16 selector) {\
     idt_set_gate(8U, isr8, code_selector, 1);
     idt_set_gate(14U, isr14, code_selector, 3);
     idt_set_gate(32U, irq_timer_stub, code_selector, 0);
-    idt_set_gate(33U, irq_keyboard_stub, code_selector, 0);\n    idt_set_user_gate(128U, syscall_stub, code_selector);
+    idt_set_gate(33U, irq_keyboard_stub, code_selector, 0);
+    idt_set_user_gate(128U, syscall_stub, code_selector);
 
     idtr descriptor = {
         .limit = (u16)(sizeof(idt) - 1),
