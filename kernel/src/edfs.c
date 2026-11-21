@@ -18,17 +18,17 @@ static int valid_name(const char *name) {
     }
     return n > 0 && n <= EDOS_EDFS_NAME_MAX;
 }
-static ed_u32 read_u32(const unsigned char *p) {
-    return (ed_u32)p[0] | ((ed_u32)p[1] << 8) | ((ed_u32)p[2] << 16) | ((ed_u32)p[3] << 24);
+static unsigned int read_u32(const unsigned char *p) {
+    return (unsigned int)p[0] | ((unsigned int)p[1] << 8) | ((unsigned int)p[2] << 16) | ((unsigned int)p[3] << 24);
 }
-static void write_u32(unsigned char *p, ed_u32 value) {
+static void write_u32(unsigned char *p, unsigned int value) {
     p[0]=(unsigned char)value; p[1]=(unsigned char)(value>>8);
     p[2]=(unsigned char)(value>>16); p[3]=(unsigned char)(value>>24);
 }
-static ed_u16 read_u16(const unsigned char *p) {
-    return (ed_u16)((ed_u16)p[0] | ((ed_u16)p[1] << 8));
+static unsigned short read_u16(const unsigned char *p) {
+    return (unsigned short)((unsigned short)p[0] | ((unsigned short)p[1] << 8));
 }
-static void write_u16(unsigned char *p, ed_u16 value) {
+static void write_u16(unsigned char *p, unsigned short value) {
     p[0]=(unsigned char)value; p[1]=(unsigned char)(value>>8);
 }
 static int read_directory(edos_edfs_t *fs, unsigned char *directory) {
@@ -56,7 +56,7 @@ int edos_edfs_format(edos_block_device_t *device) {
     const unsigned char magic[8] = {'E','D','F','S','v','0','0','1'};
     copy_bytes(sector, magic, 8);
     write_u32(sector + 8, 1U);
-    write_u32(sector + 12, (ed_u32)device->sector_count);
+    write_u32(sector + 12, (unsigned int)device->sector_count);
     write_u32(sector + 16, EDOS_EDFS_MAX_FILES);
     if (!edos_block_write(device, 0, 1, sector)) return 0;
     zero_bytes(sector, sizeof(sector));
@@ -121,7 +121,7 @@ int edos_edfs_write(edos_edfs_t *fs, const char *name, const void *data, ed_u64 
     zero_bytes(sector, sizeof(sector));
     if (length) copy_bytes(sector, (const unsigned char *)data, length);
     if (!edos_block_write(fs->device, EDFS_DATA_START + (ed_u64)slot, 1, sector)) return 0;
-    write_u16(directory + (unsigned int)slot * EDFS_ENTRY_SIZE + 27U, (ed_u16)length);
+    write_u16(directory + (unsigned int)slot * EDFS_ENTRY_SIZE + 27U, (unsigned short)length);
     return edos_block_write(fs->device, EDFS_DIRECTORY_SECTOR, 1, directory);
 }
 ed_u64 edos_edfs_read(edos_edfs_t *fs, const char *name, void *buffer, ed_u64 capacity) {
