@@ -135,8 +135,10 @@ serial("PAGING_ACTIVE_MAP_OK\n");
 if(keyboard_ready)serial("PS2_KEYBOARD_IRQ_READY\n");
 u64 timer_start=edos_timer_ticks();
 while(edos_timer_ticks()-timer_start<3ULL)__asm__ volatile("hlt");
-serial("PIT_TIMER_IRQ_OK\nKERNEL_MEMORY_MILESTONE_OK\nTEST: triggering breakpoint exception (vector 3).\n");
-__asm__ volatile("int3");for(;;)__asm__ volatile("cli; hlt");
+serial("PIT_TIMER_IRQ_OK\nKERNEL_MEMORY_MILESTONE_OK\nTEST: triggering page fault (vector 14).\n");
+volatile u64 fault_value=*(volatile u64*)(unsigned long long)live_va;
+(void)fault_value;
+for(;;)__asm__ volatile("cli; hlt");
 }
 __attribute__((noreturn)) void kernel_exception_panic(u64 vector,u64 error_code){
 serial("EXCEPTION vector=");hex(vector);serial(" error=");hex(error_code);serial("\nKERNEL_HALTED_ON_EXCEPTION\n");for(;;)__asm__ volatile("cli; hlt");
