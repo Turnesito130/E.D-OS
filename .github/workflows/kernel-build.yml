@@ -21,7 +21,7 @@ jobs:
       - name: Install build and emulator tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang lld make binutils xorriso qemu-system-x86
+          sudo apt-get install -y clang lld make binutils xorriso qemu-system-x86 ovmf
       - name: Unit-test PS/2 keyboard decoding
         run: |
           gcc -std=c11 -O2 -Wall -Wextra -Werror -Ikernel/include kernel/src/keyboard.c kernel/tests/keyboard_test.c -o /tmp/ed-os-keyboard-test
@@ -110,6 +110,32 @@ jobs:
           grep -q "EXCEPTION vector=0x000000000000000e" kernel/build/qemu-serial.log
           grep -q "PAGE_FAULT_ADDRESS=" kernel/build/qemu-serial.log
           grep -q "KERNEL_HALTED_ON_EXCEPTION" kernel/build/qemu-serial.log
+      - name: Boot independent kernel in QEMU (UEFI)
+        run: |
+          set -e
+          OVMF_CODE="$(find /usr/share/OVMF -maxdepth 1 -name 'OVMF_CODE*.fd' -print -quit)"
+          OVMF_VARS="$(find /usr/share/OVMF -maxdepth 1 -name 'OVMF_VARS*.fd' -print -quit)"
+          test -n "$OVMF_CODE"
+          test -n "$OVMF_VARS"
+          cp "$OVMF_VARS" kernel/build/OVMF_VARS.fd
+          set +e
+          timeout 20s qemu-system-x86_64 -machine q35 -m 256M -drive if=pflash,format=raw,readonly=on,file="$OVMF_CODE" -drive if=pflash,format=raw,file=kernel/build/OVMF_VARS.fd -boot order=d -cdrom kernel/build/ed-os.iso -display none -serial file:kernel/build/qemu-uefi-serial.log -monitor none -no-reboot -no-shutdown
+          status=$?
+          set -e
+          if [ "$status" -ne 124 ] && [ "$status" -ne 0 ]; then
+            echo "QEMU UEFI exited unexpectedly: $status"
+            exit "$status"
+          fi
+          cat kernel/build/qemu-uefi-serial.log
+          grep -q "SERIAL_DRIVER_READY COM1" kernel/build/qemu-uefi-serial.log
+          grep -q "GDT_TSS_IST_READY" kernel/build/qemu-uefi-serial.log
+          grep -q "SCHEDULER_CONTEXT_SWITCH_OK" kernel/build/qemu-uefi-serial.log
+          grep -q "VFS_RUNTIME_OK" kernel/build/qemu-uefi-serial.log
+          grep -q "BLOCK_RAMDISK_RUNTIME_OK" kernel/build/qemu-uefi-serial.log
+          grep -q "PAGING_ACTIVE_MAP_OK" kernel/build/qemu-uefi-serial.log
+          grep -q "PIT_TIMER_IRQ_OK" kernel/build/qemu-uefi-serial.log
+          grep -q "EXCEPTION vector=0x000000000000000e" kernel/build/qemu-uefi-serial.log
+          grep -q "PAGE_FAULT_ADDRESS=" kernel/build/qemu-uefi-serial.log
       - name: Upload kernel and boot diagnostics
         uses: actions/upload-artifact@v4
         with:
@@ -118,3 +144,4 @@ jobs:
             kernel/build/ed-os-kernel.elf
             kernel/build/ed-os.iso
             kernel/build/qemu-serial.log
+            kernel/build/qemu-uefi-serial.log
