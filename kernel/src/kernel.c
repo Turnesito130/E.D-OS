@@ -22,16 +22,16 @@ static unsigned char boot_task_stack_b[8192] __attribute__((aligned(16)));
 static void boot_task_returned(void){for(;;)__asm__ volatile("cli; hlt");}
 static void boot_task_a_entry(void){
     boot_task_stage=1;
-    if(!edos_scheduler_switch_to(&boot_scheduler,boot_task_a,boot_task_b)){serial("SCHEDULER_SWITCH_A_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");}
-    if(boot_task_stage!=2){serial("SCHEDULER_STAGE_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");}
+    if(!edos_scheduler_switch_to(&boot_scheduler,boot_task_a,boot_task_b)){serial("SCHEDULER_SWITCH_A_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+    if(boot_task_stage!=2){serial("SCHEDULER_STAGE_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
     boot_task_stage=3;
     edos_context_switch(&boot_scheduler.tasks[0].context,&boot_main_context);
     for(;;)__asm__ volatile("cli; hlt");
 }
 static void boot_task_b_entry(void){
-    if(boot_task_stage!=1){serial("SCHEDULER_STAGE_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");}
+    if(boot_task_stage!=1){serial("SCHEDULER_STAGE_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
     boot_task_stage=2;
-    if(!edos_scheduler_switch_to(&boot_scheduler,boot_task_b,boot_task_a)){serial("SCHEDULER_SWITCH_B_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");}
+    if(!edos_scheduler_switch_to(&boot_scheduler,boot_task_b,boot_task_a)){serial("SCHEDULER_SWITCH_B_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
     for(;;)__asm__ volatile("cli; hlt");
 }
 
@@ -55,16 +55,16 @@ if(!boot_task_a||!boot_task_b||
    !edos_task_prepare_context(&boot_scheduler,boot_task_a,boot_task_stack_a,sizeof(boot_task_stack_a),boot_task_returned)||
    !edos_task_prepare_context(&boot_scheduler,boot_task_b,boot_task_stack_b,sizeof(boot_task_stack_b),boot_task_returned)||
    !edos_task_set_state(&boot_scheduler,boot_task_a,EDOS_TASK_RUNNING)){
-    serial("SCHEDULER_INIT_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");
+    serial("SCHEDULER_INIT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
 }
 edos_context_switch(&boot_main_context,&boot_scheduler.tasks[0].context);
 if(boot_task_stage!=3||boot_scheduler.current_id!=boot_task_a||
    boot_scheduler.tasks[0].state!=EDOS_TASK_RUNNING||
    boot_scheduler.tasks[1].state!=EDOS_TASK_READY||
    !edos_scheduler_validate(&boot_scheduler)){
-    serial("SCHEDULER_VERIFY_ERROR\\n");for(;;)__asm__ volatile("cli; hlt");
+    serial("SCHEDULER_VERIFY_ERROR\n");for(;;)__asm__ volatile("cli; hlt");
 }
-serial("SCHEDULER_CONTEXT_SWITCH_OK\\n");
+serial("SCHEDULER_CONTEXT_SWITCH_OK\n");
 serial("IDT_READY entries=256 exceptions=32\nMEMORY_MAP_OK usable_bytes=");hex(memory_usable_bytes());serial(" hhdm=");hex(memory_hhdm_offset());serial("\n");
 void *p=pmm_alloc_page();if(!p){serial("PMM_ALLOC_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("PMM_ALLOC_ZEROED_OK\n");
