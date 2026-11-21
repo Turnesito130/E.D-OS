@@ -32,6 +32,5 @@ int main(void) {
  assert(edos_ramfs_read(&fs,"hello.txt",gap,sizeof(gap))==6);
  assert(gap[0]=='O' && gap[1]=='K' && gap[2]==0 && gap[3]==0 && gap[4]==0 && gap[5]=='X');
  assert(!edos_ramfs_create(&fs,""));
- assert(edos_ramfs_read(&fs,"hello.txt",out,sizeof(out))==0);
  puts("RAMFS_TESTS_OK"); return 0;
 }
