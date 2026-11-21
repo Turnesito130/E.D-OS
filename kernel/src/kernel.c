@@ -1,7 +1,7 @@
 #include "memory.h"
 #include "idt.h"
 #include "serial.h"
-typedef unsigned char u8; typedef unsigned short u16; typedef unsigned long long u64;
+typedef unsigned long long u64;
 __attribute__((used,section(".limine_requests"),aligned(8)))
 volatile u64 limine_base_revision[3]={0xf9562b2d5c95a6c8ULL,0x6a7b384944536bdcULL,3};
 static void serial_char(char c){(void)edos_serial_write_char(c);}
