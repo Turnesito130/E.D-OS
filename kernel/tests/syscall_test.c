@@ -13,6 +13,8 @@ static int capture(const char *buffer, ed_u64 length, void *opaque) {
 }
 static void do_yield(void *opaque) { ((test_state *)opaque)->yields++; }
 static void do_exit(ed_u64 status, void *opaque) { ((test_state *)opaque)->exit_status = status; }
+static void task_one(void) {}
+static void task_two(void) {}
 
 int main(void) {
     const char message[] = "E.D-OS";
@@ -41,6 +43,21 @@ int main(void) {
     invalid.user_start = invalid.user_end + 1;
     assert(edos_syscall_dispatch(EDOS_SYSCALL_WRITE, invalid.user_start, 1, &invalid) == EDOS_SYSCALL_EINVAL);
     assert(edos_syscall_dispatch(EDOS_SYSCALL_WRITE, 0, 0, &context) == EDOS_SYSCALL_OK);
+    edos_scheduler_t scheduler;
+    edos_scheduler_init(&scheduler);
+    ed_u64 first = edos_task_create(&scheduler, task_one, 0);
+    ed_u64 second = edos_task_create(&scheduler, task_two, 0);
+    assert(first && second);
+    assert(edos_scheduler_schedule(&scheduler)->id == first);
+    edos_syscall_context_t integrated = { .scheduler = &scheduler };
+    assert(edos_syscall_dispatch(EDOS_SYSCALL_GETPID, 0, 0, &integrated) == first);
+    assert(edos_syscall_dispatch(EDOS_SYSCALL_YIELD, 0, 0, &integrated) == EDOS_SYSCALL_OK);
+    assert(scheduler.current_id == second);
+    assert(edos_syscall_dispatch(EDOS_SYSCALL_EXIT, 0, 0, &integrated) == EDOS_SYSCALL_OK);
+    assert(scheduler.tasks[1].state == EDOS_TASK_EXITED);
+    assert(edos_scheduler_validate(&scheduler));
+    assert(edos_syscall_dispatch(EDOS_SYSCALL_YIELD, 0, 0, &integrated) == EDOS_SYSCALL_OK);
+    assert(scheduler.current_id == first);
     puts("SYSCALL_TESTS_OK");
     return 0;
 }
