@@ -71,7 +71,7 @@ edos_task_t *edos_scheduler_pick(edos_scheduler_t *s) {
     return (edos_task_t *)0;
 }
 
-/* Updates scheduler bookkeeping; it does not save/restore CPU registers or stacks. */
+/* Legacy round-robin selection API. Use edos_scheduler_switch_to for an actual cooperative CPU context switch. */
 edos_task_t *edos_scheduler_schedule(edos_scheduler_t *s) {
     if (!s || !s->initialized) return (edos_task_t *)0;
     edos_task_t *previous = find_task(s, s->current_id);
