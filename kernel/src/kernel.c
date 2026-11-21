@@ -3,6 +3,7 @@
 #include "serial.h"
 #include "paging.h"
 #include "keyboard.h"
+#include "irq.h"
 typedef unsigned long long u64;
 __attribute__((used,section(".limine_requests"),aligned(8)))
 volatile u64 limine_base_revision[3]={0xf9562b2d5c95a6c8ULL,0x6a7b384944536bdcULL,3};
@@ -18,6 +19,7 @@ if(limine_base_revision[2]!=0){serial("BOOT_ERROR\n");for(;;)__asm__ volatile("c
 serial("BOOT_PROTOCOL=Limine revision 3\n");
 if(!memory_init() || !memory_validate()){serial("MEMORY_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 if(!idt_init()){serial("IDT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
+if(!edos_irq_init()){serial("IRQ_INIT_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("IDT_READY entries=256 exceptions=32\nMEMORY_MAP_OK usable_bytes=");hex(memory_usable_bytes());serial(" hhdm=");hex(memory_hhdm_offset());serial("\n");
 void *p=pmm_alloc_page();if(!p){serial("PMM_ALLOC_ERROR\n");for(;;)__asm__ volatile("cli; hlt");}
 serial("PMM_ALLOC_ZEROED_OK\n");
@@ -47,7 +49,9 @@ __asm__ volatile("invlpg (%0)"::"r"(live_va):"memory");
 *(volatile u64*)q=0;
 serial("PAGING_ACTIVE_MAP_OK\n");
 if(edos_keyboard_available()){edos_keyboard_init();serial("PS2_KEYBOARD_POLL_READY\n");}
-serial("KERNEL_MEMORY_MILESTONE_OK\nTEST: triggering breakpoint exception (vector 3).\n");
+u64 timer_start=edos_timer_ticks();
+while(edos_timer_ticks()-timer_start<3ULL)__asm__ volatile("hlt");
+serial("PIT_TIMER_IRQ_OK\nKERNEL_MEMORY_MILESTONE_OK\nTEST: triggering breakpoint exception (vector 3).\n");
 __asm__ volatile("int3");for(;;)__asm__ volatile("cli; hlt");
 }
 __attribute__((noreturn)) void kernel_exception_panic(u64 vector,u64 error_code){
