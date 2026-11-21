@@ -8,6 +8,7 @@ E.D-OS tendrá un kernel propio e independiente. Linux se estudia como referenci
 - Mapa de memoria Limine y HHDM.
 - Asignador físico bootstrap de páginas de 4 KiB.
 - Lista enlazada de páginas liberadas para reutilización, comprobación segura de nodos y validador de invariantes del PMM.
+- Heap de kernel por clases tipo slab (16–4032 bytes), respaldado por PMM, con asignación alineada, inicialización a cero, liberación validada y devolución de slabs vacíos adicionales.
 - Rechazo de direcciones desalineadas/no utilizables y doble liberación detectada; tabla hash de propiedad con 262.144 entradas (hasta 1 GiB de páginas simultáneamente asignadas), que registra las páginas asignadas y evita liberar páginas que no pertenecen al PMM.
 - IDT de 256 entradas y stubs para excepciones.
 - Pruebas QEMU superadas: asignar, liberar, rechazar doble liberación, reutilizar la misma página, comprobar que vuelve a cero y validar la lista libre. El handler de page fault identifica el vector 14 y registra CR2; una prueba de arranque provoca un fallo controlado en una dirección virtual desmapeada.
@@ -22,7 +23,7 @@ E.D-OS tendrá un kernel propio e independiente. Linux se estudia como referenci
 
 ## Límites conocidos
 
-El registro de propiedad es una tabla hash estática de 262.144 entradas (2 MiB de metadatos; límite teórico de 1 GiB de páginas simultáneamente asignadas). No hay bloqueo SMP, coalescencia ni integración completa con el buddy allocator. Esto sigue siendo un asignador bootstrap, no uno de producción.
+El registro de propiedad es una tabla hash estática de 262.144 entradas (2 MiB de metadatos; límite teórico de 1 GiB de páginas simultáneamente asignadas). El heap admite hasta 4032 bytes por asignación y no hace asignaciones contiguas de varias páginas; tampoco hay bloqueo SMP ni integración completa con el buddy allocator. Esto sigue siendo un asignador bootstrap, no uno de producción.
 
 ## Construcción y verificación
 
@@ -38,6 +39,7 @@ El workflow compila ELF e ISO híbrida y arranca en QEMU BIOS y UEFI. El hito so
 ## Nuevos subsistemas en fase inicial (0.1)
 
 - Planificador cooperativo: tabla fija de 32 tareas, estados READY/RUNNING/BLOCKED/EXITED, preparación de pilas y contextos, cambio real de pila/registros entre tareas, transición de estados y validación de invariantes. La prueba host alterna dos tareas y el arranque QEMU repite el cambio entre dos tareas sobre pilas estáticas dedicadas. El tick PIT sigue siendo independiente y no realiza preempción.
+- Heap de kernel: nueve clases slab (16, 32, 64, 128, 256, 512, 1024, 2048 y 4032 bytes), zero-on-alloc/free, comprobación de punteros y bitmap de ocupación, liberación de páginas vacías sobrantes al PMM y pruebas host de reutilización, doble liberación y expansión a varios slabs. El arranque QEMU comprueba asignar, limpiar, liberar y reutilizar un bloque.
 - IPC: colas circulares acotadas de 16 mensajes con payload máximo de 64 bytes y endpoints asociados a una tarea propietaria. El envío valida que el emisor sea la tarea actual; la recepción puede bloquear al receptor, y un envío despierta la tarea bloqueada. Se prueba el cambio real de contexto entre emisor y receptor. Todavía no hay aislamiento entre procesos, sincronización SMP ni llamadas desde modo usuario.
 - RAMFS: sistema de archivos temporal en memoria con hasta 16 archivos de 256 bytes, creación, lectura, escritura completa y borrado; rechaza nombres con separadores de ruta y límites excedidos. No es persistente y no tiene directorios jerárquicos, permisos, caché ni integración con dispositivos de bloques.
 - VFS: capa de sistema de archivos virtual montada sobre RAMFS, con rutas absolutas de raíz, descriptores limitados, apertura/creación/truncado, lectura/escritura por posición, seek, stat y readdir. Rechaza rutas relativas, traversal (`..`), subdirectorios aún no soportados y operaciones incompatibles con los permisos del descriptor. Tiene pruebas host y prueba de arranque en QEMU.
