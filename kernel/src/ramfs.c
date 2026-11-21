@@ -24,7 +24,9 @@ int edos_ramfs_create(edos_ramfs_t *fs,const char *name) {
  for(unsigned int i=0;i<EDOS_RAMFS_MAX_FILES;++i) if(!fs->files[i].used) {
   edos_ramfs_file_t *f=&fs->files[i]; unsigned int j=0;
   while(name[j] && j<=EDOS_RAMFS_NAME_MAX) { f->name[j]=name[j]; ++j; }
-  f->name[j]=0; f->size=0; f->used=1; return 1;
+  f->name[j]=0; f->size=0;
+  for(ed_u64 k=0;k<EDOS_RAMFS_FILE_CAPACITY;++k) f->data[k]=0;
+  f->used=1; return 1;
  }
  return 0;
 }
@@ -45,5 +47,6 @@ ed_u64 edos_ramfs_read(edos_ramfs_t *fs,const char *name,void *buffer,ed_u64 cap
 }
 int edos_ramfs_delete(edos_ramfs_t *fs,const char *name) {
  edos_ramfs_file_t *f=find_file(fs,name); if(!f) return 0;
+ for(ed_u64 i=0;i<EDOS_RAMFS_FILE_CAPACITY;++i) f->data[i]=0;
  f->used=0; f->size=0; f->name[0]=0; return 1;
 }
