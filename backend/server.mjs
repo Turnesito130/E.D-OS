@@ -379,13 +379,28 @@ const server = createServer(async (req, res) => {
       const appId = url.pathname.slice("/v1/security/apps/".length);
       const { validAppId } = await import("./security-permissions.mjs");
       if (!validAppId(appId)) return send(res, 400, { error: "Identificador de aplicación no válido." });
-      const result = await pool.query(
-        "UPDATE app_credentials SET revoked_at = now() WHERE account_id = $1 AND app_id = $2 AND revoked_at IS NULL RETURNING id",
-        [account.id, appId]
-      );
-      if (!result.rowCount) return send(res, 404, { error: "Aplicación no encontrada o ya revocada." });
-      await auditSecurityEvent(pool, account.id, "app.credential.revoked", req, { appId });
-      return send(res, 200, { success: true, appId });
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const result = await client.query(
+          "UPDATE app_credentials SET revoked_at = now() WHERE account_id = $1 AND app_id = $2 AND revoked_at IS NULL RETURNING id",
+          [account.id, appId]
+        );
+        if (!result.rowCount) {
+          await client.query("ROLLBACK");
+          return send(res, 404, { error: "Aplicación no encontrada o ya revocada." });
+        }
+        await client.query(
+          "UPDATE app_permission_grants SET granted = false, updated_at = now() WHERE account_id = $1 AND app_id = $2",
+          [account.id, appId]
+        );
+        await auditSecurityEvent(client, account.id, "app.credential.revoked", req, { appId });
+        await client.query("COMMIT");
+        return send(res, 200, { success: true, appId });
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally { client.release(); }
     }
 
 
