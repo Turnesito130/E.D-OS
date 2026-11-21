@@ -47,7 +47,10 @@
     "x86-64 four-level page-table builder with 4 KiB map, unmap and virtual-to-physical translation",
     "PS/2 keyboard polling driver with set-1 scancode decoding and shift/caps-lock handling",
     "physical page allocator free-list validation and guarded node traversal",
-    "kernel boot test creates, maps, translates and unmaps a 4 KiB page-table mapping"
+    "kernel boot test creates, maps, translates and unmaps a 4 KiB page-table mapping",
+    "8259 PIC remapping and PIT channel 0 periodic timer configuration at approximately 100 Hz",
+    "IRQ0 assembly entry preserving general-purpose registers and dispatching timer ticks with PIC EOI",
+    "active CR3 page-table adoption and live map/unmap test using a free PML4 slot"
   ],
   "verified": [
     "Local Clang/LLD build produced a statically linked ELF64 x86-64 executable with entry point 0xffffffff80000000.",
@@ -63,7 +66,8 @@
     "ring 3 transition, TSS and user-mode address-space isolation",
     "CR3 activation, TLB invalidation, page-fault recovery and isolated user address spaces",
     "PS/2 keyboard IRQ delivery, event queue and international keyboard layouts",
-    "PMM page ownership tracking to reject freeing pages not returned by the allocator"
+    "PMM page ownership tracking to reject freeing pages not returned by the allocator",
+    "APIC/IOAPIC support, keyboard IRQ1, timer preemption and scheduler context switching"
   ],
   "linux_reference": {
     "repository": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
