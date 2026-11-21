@@ -187,3 +187,56 @@ int buddy_free(buddy_allocator_t *a, ed_u64 first_page,
 ed_u64 buddy_free_page_count(const buddy_allocator_t *a) {
     return (a && a->initialized) ? a->free_pages : 0U;
 }
+
+
+/* Full consistency check intended for diagnostics and tests, not the fast path. */
+int buddy_validate(const buddy_allocator_t *a) {
+    if (!a || !a->initialized || !a->pages || !a->page_count ||
+        a->max_order > BUDDY_MAX_ORDER)
+        return 0;
+
+    ed_u64 listed_pages = 0;
+    for (unsigned int order = 0; order <= a->max_order; ++order) {
+        ed_u64 index = a->free_heads[order];
+        ed_u64 previous = BUDDY_NONE;
+        ed_u64 traversed = 0;
+        while (index != BUDDY_NONE) {
+            if (index >= a->page_count || ++traversed > a->page_count)
+                return 0;
+            const buddy_page_t *head = &a->pages[index];
+            ed_u64 count = block_size(order);
+            if (head->state != PAGE_FREE || head->order != order ||
+                head->prev != previous || (index & (count - 1U)) != 0U ||
+                count > a->page_count - index)
+                return 0;
+            for (ed_u64 offset = 1; offset < count; ++offset)
+                if (a->pages[index + offset].state != PAGE_TAIL)
+                    return 0;
+            if (count > (~(ed_u64)0 - listed_pages)) return 0;
+            listed_pages += count;
+            previous = index;
+            if (head->next != BUDDY_NONE &&
+                (head->next >= a->page_count ||
+                 a->pages[head->next].prev != index))
+                return 0;
+            index = head->next;
+        }
+    }
+    if (listed_pages != a->free_pages) return 0;
+
+    /* Every free block head must occur exactly once in its matching list. */
+    for (ed_u64 page = 0; page < a->page_count; ++page) {
+        if (a->pages[page].state != PAGE_FREE) continue;
+        unsigned int order = a->pages[page].order;
+        if (order > a->max_order) return 0;
+        unsigned int occurrences = 0;
+        ed_u64 index = a->free_heads[order];
+        for (ed_u64 seen = 0; index != BUDDY_NONE && seen < a->page_count; ++seen) {
+            if (index == page) ++occurrences;
+            if (index >= a->page_count) return 0;
+            index = a->pages[index].next;
+        }
+        if (occurrences != 1) return 0;
+    }
+    return 1;
+}
